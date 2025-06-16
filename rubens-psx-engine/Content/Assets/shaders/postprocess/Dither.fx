@@ -51,7 +51,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float threshold = bayer4x4[y * 4 + x];
 
     // Quantize to fixed levels
-    float levels = 4.0;
+    float levels = 6.0;
     color.rgb = floor(color.rgb * levels + threshold) / (levels - 1.0);
 
 
