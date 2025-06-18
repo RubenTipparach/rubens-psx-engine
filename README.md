@@ -7,9 +7,11 @@ but it was ported over to monogame because of the Content pipeline and shader su
 ![image](ps1_render.gif)
 
 
-A couple of tips to get his running. You'll need the dotnet cli:
+A couple of tips to get his running. You'll need the [dotnet cli](https://dotnet.microsoft.com/en-us/download) and run the template command to get monogame installed:
 
+```dotnet new install MonoGame.Templates.CSharp```
 
 if it needs cleaning and you get the "package mapper error:
 ```dotnet nuget locals -c all```
-``
+```dotnet restore```
+
