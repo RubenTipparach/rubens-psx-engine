@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using anakinsoft.system.cameras;
+﻿using anakinsoft.system.cameras;
+using anakinsoft.system.physics;
+using BepuPhysics;
+using BepuPhysics.Collidables;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 
 namespace rubens_psx_engine
@@ -16,6 +19,12 @@ namespace rubens_psx_engine
 
         Entity chair;
 
+        //adding physics for test
+        PhysicsSystem physics;
+        Dictionary<BodyHandle, Matrix> bodyTransforms = new();
+        Model cubeModel;
+        Model bulletModel;
+
         public Worldscreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -25,7 +34,15 @@ namespace rubens_psx_engine
             chair = new Entity("models/waterfall.xnb", "models/texture_1", true);
             chair.SetPosition(new Vector3(0, 0, 50));
 
+            // Create ground
+            var groundDesc = new CollidableDescription(
+                physics.Simulation.Shapes.Add(new Box(100, 1, 100)), 0.1f);
 
+            //var groundHandle = physics.Simulation.Bodies.Add(
+            //    BodyDescription.CreateKinematic(
+            //        pose: new RigidPose(new System.Numerics.Vector3(0, -0.5f, 0)),
+                    
+            //        groundDesc));
 
         }
 
