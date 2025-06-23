@@ -10,6 +10,7 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <RootNamespace>anakinsoft</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Content\bin\**" />
@@ -22,6 +23,7 @@
   <ItemGroup>
     <PackageReference Include="BepuPhysics" Version="2.4.0" />
     <PackageReference Include="BepuUtilities" Version="2.4.0" />
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

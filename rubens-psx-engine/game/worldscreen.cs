@@ -2,6 +2,8 @@
 using anakinsoft.system.physics;
 using BepuPhysics;
 using BepuPhysics.Collidables;
+using BepuPhysics.CollisionDetection;
+using BepuUtilities.Memory;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -9,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-
+using Vector3N = System.Numerics.Vector3;
 namespace rubens_psx_engine
 {
     public class Worldscreen : Screen
@@ -20,10 +22,12 @@ namespace rubens_psx_engine
         Entity chair;
 
         //adding physics for test
-        PhysicsSystem physics;
+        Simulation simulation;
         Dictionary<BodyHandle, Matrix> bodyTransforms = new();
         Model cubeModel;
         Model bulletModel;
+        PhysicsSandbox physicsSandbox;
+        //BufferPool bufferPool;
 
         public Worldscreen()
         {
@@ -32,22 +36,25 @@ namespace rubens_psx_engine
             camera.Position = Globals.CAMERAPOS;
 
             chair = new Entity("models/waterfall.xnb", "models/texture_1", true);
+            //bufferPool = new();
             chair.SetPosition(new Vector3(0, 0, 50));
 
+
             // Create ground
-            var groundDesc = new CollidableDescription(
-                physics.Simulation.Shapes.Add(new Box(100, 1, 100)), 0.1f);
+      
 
             //var groundHandle = physics.Simulation.Bodies.Add(
             //    BodyDescription.CreateKinematic(
             //        pose: new RigidPose(new System.Numerics.Vector3(0, -0.5f, 0)),
-                    
-            //        groundDesc));
 
+            //        groundDesc));
+            physicsSandbox = new();
         }
 
         public override void Update(GameTime gameTime)
         {
+            physicsSandbox.Update(gameTime);
+
             base.Update(gameTime);
         }
 
@@ -81,7 +88,8 @@ namespace rubens_psx_engine
         public override void Draw3D(GameTime gameTime)
         {
             //Render the chair model.
-            chair.Draw3D(gameTime, this.camera);           
+            physicsSandbox.Draw(gameTime, this.camera);
+            //chair.Draw3D(gameTime, this.camera);           
         }
     }
 }
