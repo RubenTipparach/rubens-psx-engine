@@ -125,7 +125,7 @@ namespace rubens_psx_engine
                     effect.Parameters["World"].SetValue(world);
                     effect.Parameters["View"].SetValue(view);
                     effect.Parameters["Projection"].SetValue(projection);
-                    effect.Parameters["Texture"].SetValue(texture);
+                    //effect.Parameters["Texture"].SetValue(texture);
 
                 }
 

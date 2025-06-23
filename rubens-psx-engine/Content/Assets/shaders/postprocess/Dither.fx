@@ -12,6 +12,10 @@ Texture2D SpriteTexture;
 sampler2D SpriteTextureSampler = sampler_state
 {
     Texture = <SpriteTexture>;
+    MinFilter = POINT; // Nearest-neighbor
+    MagFilter = POINT;
+    MipFilter = NONE;
+
 };
 float2 ScreenSize = float2(320, 180); // Optional: can be set from C#
 

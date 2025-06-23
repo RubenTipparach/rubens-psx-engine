@@ -67,7 +67,9 @@ namespace rubens_psx_engine
             }
 
             graphics.PreferredBackBufferWidth = settingsManager.GetSettings.screenwidth;
-            graphics.PreferredBackBufferHeight = settingsManager.GetSettings.screenheight;            
+            graphics.PreferredBackBufferHeight = settingsManager.GetSettings.screenheight;   
+            
+
             SoundEffect.MasterVolume = settingsManager.GetSettings.soundvolume;
 
             graphics.SynchronizeWithVerticalRetrace = true; //vsync

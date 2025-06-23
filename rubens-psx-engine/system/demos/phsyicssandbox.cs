@@ -6,7 +6,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
-using SharpDX.Direct2D1.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +22,7 @@ public class PhysicsSandbox {
     Dictionary<BodyHandle, Matrix> bodyTransforms = new();
     Model cubeModel;
     Model bulletModel;
-
+    Texture2D brickTexture;
 
     public List<BodyHandle> bullets;
     public List<BodyHandle> boxes;
@@ -32,6 +31,25 @@ public class PhysicsSandbox {
         physics = new PhysicsSystem();
         cubeModel = Globals.screenManager.Content.Load<Model>("models/cube");   // Must exist
         bulletModel = Globals.screenManager.Content.Load<Model>("models/sphere"); // Use a small sphere model
+        brickTexture = Globals.screenManager.Content.Load<Texture2D>("textures/prototype/brick"); // Load a texture for the boxes
+        //var ps1Effect = Globals.screenManager.Content.Load<Effect>("shaders/surface/Unlit");
+
+        foreach (var m in cubeModel.Meshes)
+        {
+            foreach (var part  in m.MeshParts)
+            {
+                //part.Effect = Globals.screenManager.Content.Load<Effect>("shaders/surface/Unlit");
+                (part.Effect as BasicEffect) .TextureEnabled = true;
+                (part.Effect as BasicEffect).Texture = brickTexture;
+
+                //part.Effect.Parameters["Texture"].SetValue(brickTexture);
+                //    ps1Effect.Parameters["Texture"].SetValue(brickTexture);
+
+                //part.Effect = ps1Effect;
+                //ps1Effect.CurrentTechnique = ps1Effect.Techniques["Unlit"];
+
+            }
+        }
 
         // Create ground
         var groundDesc = new CollidableDescription(
@@ -123,36 +141,48 @@ public class PhysicsSandbox {
     public void Draw(GameTime gameTime, Camera camera)
     {
         //var handles = bullets.Concat(boxes);
-
-        foreach (ModelMesh mesh in cubeModel.Meshes)
+        foreach (var bodyHandle in boxes)
         {
-            // do this for custom effects
-            foreach (BasicEffect effect in mesh.Effects)
+            var bodyRef = physics.Simulation.Bodies.GetBodyReference(bodyHandle);
+            var pose = bodyRef.Pose;
+
+            foreach (ModelMesh mesh in cubeModel.Meshes)
             {
-                bool shaded = true;
-                effect.LightingEnabled = shaded;
-
-                if (shaded)
+                // do this for custom effects
+                //foreach (BasicEffect effect in mesh.Effects)
+                foreach (BasicEffect effect in mesh.Effects)
                 {
-                    effect.DiffuseColor = new Vector3(1, 1, 0);
-                    effect.DirectionalLight0.DiffuseColor = new Vector3(.7f, .7f, .7f);
-                    Vector3 lightAngle = new Vector3(20, -60, -60);
-                    lightAngle.Normalize();
-                    effect.DirectionalLight0.Direction = lightAngle;
-                    effect.AmbientLightColor = new Vector3(.3f, .3f, .3f);
-                }
+                    bool shaded = true;
+                    effect.LightingEnabled = shaded;
 
-                foreach (var bodyHandle in boxes)
-                {
-                    var bodyRef = physics.Simulation.Bodies.GetBodyReference(bodyHandle);
-                    var pose = bodyRef.Pose;
+                    if (shaded)
+                    {
+                        effect.DiffuseColor = new Vector3(1, 1, 0);
+                        effect.DirectionalLight0.DiffuseColor = new Vector3(.7f, .7f, .7f);
+                        Vector3 lightAngle = new Vector3(20, -60, -60);
+                        lightAngle.Normalize();
+                        effect.DirectionalLight0.Direction = lightAngle;
+                        effect.AmbientLightColor = new Vector3(.3f, .3f, .3f);
+                    }
+
 
                     Matrix world = Matrix.CreateScale(1f) *
                                    Matrix.CreateFromQuaternion(new Quaternion(pose.Orientation.X, pose.Orientation.Y, pose.Orientation.Z, pose.Orientation.W)) *
                                    Matrix.CreateTranslation(pose.Position);
 
                     cubeModel.Draw(world, camera.View, camera.Projection); // Choose model based on shape
+
+                    var view = camera.View;
+                    var projection = camera.Projection;
+                    //ps1Effect.Parameters["WorldViewProj"]?.SetValue(world * view * projection);
+
+                    //effect.Parameters["World"].SetValue(world);
+                    //effect.Parameters["View"].SetValue(view);
+                    //effect.Parameters["Projection"].SetValue(projection);
+                    //effect.Parameters["Texture"].SetValue(brickTexture);
+
                 }
+                mesh.Draw();
 
             }
         }
