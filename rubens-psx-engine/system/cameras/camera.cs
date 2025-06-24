@@ -11,6 +11,7 @@ namespace rubens_psx_engine
         public Vector3 Position { get; set; }
         public Vector3 Target { get; protected set; }
         public Vector3 Up { get; protected set; } = Vector3.Up;
+        public Vector3 Forward => Target;// you sure? lol
         public Matrix View => Matrix.CreateLookAt(Position, Target, Up);
         public Matrix Projection { get; protected set; }
 

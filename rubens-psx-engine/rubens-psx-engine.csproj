@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
@@ -11,6 +11,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <RootNamespace>anakinsoft</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Content\bin\**" />
@@ -21,8 +22,6 @@
     <None Remove="Content\obj\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="BepuPhysics" Version="2.4.0" />
-    <PackageReference Include="BepuUtilities" Version="2.4.0" />
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
@@ -32,6 +31,14 @@
   <ItemGroup>
     <Folder Include="Content\Assets\fonts\" />
     <Folder Include="Content\Assets\shaders\surface\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="BepuPhysics">
+      <HintPath>Content\BepuPhysics.dll</HintPath>
+    </Reference>
+    <Reference Include="BepuUtilities">
+      <HintPath>Content\BepuUtilities.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Update="Content\Assets\sound\click.wav">
