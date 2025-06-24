@@ -80,6 +80,7 @@ public struct CharacterInput
 
     public void UpdateCharacterGoals(KeyboardState input, Camera camera, float simulationTimestepDuration)
     {
+        var jumpWasPushed = JumpWasPushed(input, Jump);
         Vector2 movementDirection = default;
         if (input.IsKeyDown(MoveForward))
         {
@@ -104,7 +105,7 @@ public struct CharacterInput
         }
 
         ref var character = ref characters.GetCharacterByBodyHandle(bodyHandle);
-        character.TryJump = JumpWasPushed(input, Jump); //|| input.WasPushed(JumpAlternate);
+        character.TryJump = jumpWasPushed; //|| input.WasPushed(JumpAlternate);
 
         var characterBody = new BodyReference(bodyHandle, characters.Simulation.Bodies);
         var effectiveSpeed = input.IsKeyDown(Sprint) ? speed * 1.75f : speed;
