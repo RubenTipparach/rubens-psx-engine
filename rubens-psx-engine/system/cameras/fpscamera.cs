@@ -14,12 +14,11 @@ namespace anakinsoft.system.cameras
 
     public class FPSCamera : Camera
     {
-        private float yaw, pitch;
         private float moveSpeed = 50f;
         private float mouseSensitivity = 0.0015f;
         private GraphicsDevice device;
         private Point screenCenter;
-
+        bool disableControls = false;
         public FPSCamera(GraphicsDevice graphicsDevice, Vector3 startPosition) : base(graphicsDevice)
         {
             device = graphicsDevice;
@@ -30,31 +29,36 @@ namespace anakinsoft.system.cameras
 
         public override void Update(GameTime gameTime)
         {
-            float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            base.Update(gameTime);
+            //disableControls = true;
+            if (!disableControls)
+            {
+                float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // Handle input
-            var k = Keyboard.GetState();
-            var mouse = Mouse.GetState();
+                // Handle input
+                var k = Keyboard.GetState();
+                var mouse = Mouse.GetState();
 
-            float dx = (mouse.X - screenCenter.X) * mouseSensitivity;
-            float dy = (mouse.Y - screenCenter.Y) * mouseSensitivity;
+                float dx = (mouse.X - screenCenter.X) * mouseSensitivity;
+                float dy = (mouse.Y - screenCenter.Y) * mouseSensitivity;
 
-            yaw -= dx;
-            pitch -= dy;
-            pitch = MathHelper.Clamp(pitch, -MathHelper.PiOver2 + 0.01f, MathHelper.PiOver2 - 0.01f);
+                yaw -= dx;
+                pitch -= dy;
+                pitch = MathHelper.Clamp(pitch, -MathHelper.PiOver2 + 0.01f, MathHelper.PiOver2 - 0.01f);
 
-            Vector3 forward = Vector3.Normalize(Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(yaw, pitch, 0)));
-            Vector3 right = Vector3.Normalize(Vector3.Cross(forward, Vector3.Up));
 
-            if (k.IsKeyDown(Keys.W)) Position += forward * moveSpeed * delta;
-            if (k.IsKeyDown(Keys.S)) Position -= forward * moveSpeed * delta;
-            if (k.IsKeyDown(Keys.A)) Position -= right * moveSpeed * delta;
-            if (k.IsKeyDown(Keys.D)) Position += right * moveSpeed * delta;
+                if (k.IsKeyDown(Keys.W)) Position += Forward * moveSpeed * delta;
+                if (k.IsKeyDown(Keys.S)) Position -= Forward * moveSpeed * delta;
+                if (k.IsKeyDown(Keys.A)) Position -= Right * moveSpeed * delta;
+                if (k.IsKeyDown(Keys.D)) Position += Right * moveSpeed * delta;
 
-            Target = Position + forward;
 
-            // Reset cursor
-            Mouse.SetPosition(screenCenter.X, screenCenter.Y);
+                // Reset cursor
+                Mouse.SetPosition(screenCenter.X, screenCenter.Y);
+            }
+
+            Target = Position + Forward;
+
         }
     }
 

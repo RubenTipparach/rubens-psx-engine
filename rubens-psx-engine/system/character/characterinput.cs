@@ -29,6 +29,16 @@ public struct CharacterInput
 
     public BodyHandle BodyHandle { get { return bodyHandle; } }
 
+    public BodyReference Body
+    {
+        get
+        {
+            ref var character = ref characters.GetCharacterByBodyHandle(bodyHandle);
+
+            return new BodyReference(bodyHandle, characters.Simulation.Bodies);
+        }
+    }
+
     public CharacterInput(CharacterControllers characters, Vector3 initialPosition, Capsule shape,
         float minimumSpeculativeMargin, float mass, float maximumHorizontalForce, float maximumVerticalGlueForce,
         float jumpVelocity, float speed, float maximumSlope = MathF.PI * 0.25f)
@@ -82,21 +92,22 @@ public struct CharacterInput
     {
         var jumpWasPushed = JumpWasPushed(input, Jump);
         Vector2 movementDirection = default;
+        var speed = 100;
         if (input.IsKeyDown(MoveForward))
         {
-            movementDirection = new Vector2(0, 1);
+            movementDirection = new Vector2(0, 1) * speed;
         }
         if (input.IsKeyDown(MoveBackward))
         {
-            movementDirection += new Vector2(0, -1);
+            movementDirection += new Vector2(0, -1) * speed;
         }
         if (input.IsKeyDown(MoveLeft))
         {
-            movementDirection += new Vector2(-1, 0);
+            movementDirection += new Vector2(-1, 0) * speed;
         }
         if (input.IsKeyDown(MoveRight))
         {
-            movementDirection += new Vector2(1, 0);
+            movementDirection += new Vector2(1, 0) * speed;
         }
         var movementDirectionLengthSquared = movementDirection.LengthSquared();
         if (movementDirectionLengthSquared > 0)
@@ -159,14 +170,16 @@ public struct CharacterInput
         }
     }
 
-    public void UpdateCameraPosition(Camera camera, float cameraBackwardOffsetScale = 4)
+    public void UpdateCameraPosition(Camera camera, float cameraBackwardOffsetScale = 10)
     {
         //We'll override the demo harness's camera control by attaching the camera to the character controller body.
         ref var character = ref characters.GetCharacterByBodyHandle(bodyHandle);
-        var characterBody = new BodyReference(bodyHandle, characters.Simulation.Bodies);
+        var c = new BodyReference(bodyHandle, characters.Simulation.Bodies);
         //Use a simple sorta-neck model so that when the camera looks down, the center of the screen sees past the character.
         //Makes mouselocked ray picking easier.
-        camera.Position = characterBody.Pose.Position + new Vector3(0, shape.HalfLength, 0) +
+
+        //camera.Position = c.Pose.Position + new Vector3(0, 0, 40) ;
+        camera.Position = c.Pose.Position + new Vector3(0, shape.HalfLength, 0) +
             camera.Up * (shape.Radius * 1.2f) -
             camera.Forward * (shape.HalfLength + shape.Radius) * cameraBackwardOffsetScale;
     }

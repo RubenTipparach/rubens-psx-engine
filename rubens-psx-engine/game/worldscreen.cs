@@ -53,7 +53,7 @@ namespace rubens_psx_engine
 
         public override void Update(GameTime gameTime)
         {
-            physicsSandbox.Update(gameTime);
+            physicsSandbox.Update(gameTime, camera, Keyboard.GetState());
 
             base.Update(gameTime);
         }

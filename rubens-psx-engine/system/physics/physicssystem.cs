@@ -1,4 +1,5 @@
-﻿using BepuPhysics;
+﻿using anakinsoft.system.character;
+using BepuPhysics;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
 using BepuUtilities;
@@ -19,10 +20,13 @@ namespace anakinsoft.system.physics
         public BufferPool BufferPool = new BufferPool();
         public ThreadDispatcher ThreadDispatcher;
 
-        public PhysicsSystem()
+        public PhysicsSystem(ref CharacterControllers characters)
         {
-            Simulation = Simulation.Create(BufferPool, new DemoNarrowPhaseCallbacks(new SpringSettings(30, 3)),
-                new DemoPoseIntegratorCallbacks(new Vector3(0, -10, 0), angularDamping: 0.2f),
+            characters = new CharacterControllers(BufferPool);
+
+            Simulation = Simulation.Create(BufferPool,
+                new DemoNarrowPhaseCallbacks(new SpringSettings(30, 3), characters),
+                new DemoPoseIntegratorCallbacks(new Vector3(0, -100, 0), angularDamping: 0.2f),
                 new SolveDescription(8, 1));
 
             ThreadDispatcher = new ThreadDispatcher(Environment.ProcessorCount);

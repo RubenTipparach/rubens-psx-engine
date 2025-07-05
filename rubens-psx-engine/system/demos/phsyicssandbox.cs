@@ -1,7 +1,11 @@
-﻿using anakinsoft.system.physics;
+﻿using anakinsoft.system.character;
+using anakinsoft.system.physics;
+using anakinsoft.utilities;
 using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuUtilities;
+using BepuUtilities.Memory;
+using Demos.Demos.Characters;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -22,24 +26,33 @@ public class PhysicsSandbox {
     Dictionary<BodyHandle, Matrix> bodyTransforms = new();
     Model cubeModel;
     Model bulletModel;
+    Model characterModel;
+
     Texture2D brickTexture;
 
     public List<BodyHandle> bullets;
     public List<BodyHandle> boxes;
+
+    CharacterControllers characters;
+
+
     public PhysicsSandbox()
     {
-        physics = new PhysicsSystem();
+        physics = new PhysicsSystem(ref characters);
+
+
         cubeModel = Globals.screenManager.Content.Load<Model>("models/cube");   // Must exist
         bulletModel = Globals.screenManager.Content.Load<Model>("models/sphere"); // Use a small sphere model
         brickTexture = Globals.screenManager.Content.Load<Texture2D>("textures/prototype/brick"); // Load a texture for the boxes
+        characterModel = Globals.screenManager.Content.Load<Model>("models/capsule");
         //var ps1Effect = Globals.screenManager.Content.Load<Effect>("shaders/surface/Unlit");
 
         foreach (var m in cubeModel.Meshes)
         {
-            foreach (var part  in m.MeshParts)
+            foreach (var part in m.MeshParts)
             {
                 //part.Effect = Globals.screenManager.Content.Load<Effect>("shaders/surface/Unlit");
-                (part.Effect as BasicEffect) .TextureEnabled = true;
+                (part.Effect as BasicEffect).TextureEnabled = true;
                 (part.Effect as BasicEffect).Texture = brickTexture;
 
                 //part.Effect.Parameters["Texture"].SetValue(brickTexture);
@@ -58,7 +71,7 @@ public class PhysicsSandbox {
         //physics.Simulation.
         var groundHandle = physics.Simulation.Bodies.Add(
             BodyDescription.CreateKinematic(
-                new RigidPose(new Vector3N(0, -20f, 0)), groundDesc, 
+                new RigidPose(new Vector3N(0, -20f, 0)), groundDesc,
                 new BodyActivityDescription(.1f)));
         // Add ground
         //var groundShape = new Box(50f, 1f, 50f);
@@ -78,13 +91,13 @@ public class PhysicsSandbox {
         var offset = -50f;
         for (int i = 0; i < 5; i++)
         {
-            var position = new Vector3N( 1 + i * 1.2f * 20 -10 + offset, 0,0);
+            var position = new Vector3N(1 + i * 1.2f * 20 - 10 + offset, 0, 0);
             SpawnBox(position);
         }
 
         for (int i = 0; i < 4; i++)
         {
-            var position = new Vector3N( 1 + i * 1.2f * 20 + offset, 20 , 0);
+            var position = new Vector3N(1 + i * 1.2f * 20 + offset, 20, 0);
             SpawnBox(position);
         }
 
@@ -93,6 +106,26 @@ public class PhysicsSandbox {
             var position = new Vector3N(1 + i * 1.2f * 20 + offset, 30, 0);
             SpawnBox(position);
         }
+
+        CreateCharacter(new Vector3N(0, 2, 40));
+    }
+
+    bool characterActive;
+    CharacterInput character;
+    double time;
+
+    void CreateCharacter(Vector3N position)
+    {
+        characterActive = true;
+        character = new CharacterInput(characters, position, 
+            new Capsule(0.5f*10, 1 * 10),
+            minimumSpeculativeMargin: 0.1f, 
+            mass: .1f, 
+            maximumHorizontalForce: 200,
+            maximumVerticalGlueForce: 10000,
+            jumpVelocity: 100,
+            speed: 40,
+            maximumSlope: MathF.PI * 0.4f);
     }
 
     void SpawnBox(Vector3N position)
@@ -108,16 +141,18 @@ public class PhysicsSandbox {
     {
         var shape = new Sphere(5);
         var collidable = new CollidableDescription(physics.Simulation.Shapes.Add(shape), 0.1f);
-        var desc = BodyDescription.CreateConvexDynamic(new RigidPose(position), new BodyVelocity(Vector3N.Zero), 1, physics.Simulation.Shapes, shape);
-        desc.Velocity.Linear = direction * 100f;
+        var desc = BodyDescription.CreateConvexDynamic(new RigidPose(position), new BodyVelocity(Vector3N.Zero), 10, physics.Simulation.Shapes, shape);
+        desc.Velocity.Linear = direction * 250f;
         var handle = physics.Simulation.Bodies.Add(desc);
         bullets.Add(handle);
     }
     bool mouseClick = false;
-    public void Update(GameTime gameTime)
-    {
-        physics.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
+    public void Update(GameTime gameTime, Camera camera, KeyboardState input)
+    {
+        var gameTimePassed = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        physics.Update(gameTimePassed);
+        
         if (Mouse.GetState().LeftButton == ButtonState.Pressed && !mouseClick)
         {
             var camPos = new Vector3N(0, 0, -20);
@@ -133,8 +168,12 @@ public class PhysicsSandbox {
 
             if (Keyboard.GetState().IsKeyDown(Keys.B))
         {
-            SpawnBox(new Vector3N(0, 5, 0));
+            SpawnBox(new Vector3N(0, 5, -10));
         }
+
+        //Console.WriteLine($"Supported: {characters.GetCharacterByBodyHandle(character.BodyHandle).Supported}");
+        character.UpdateCharacterGoals(input, camera, gameTimePassed);
+        character.UpdateCameraPosition(camera);
 
     }
 
@@ -217,7 +256,36 @@ public class PhysicsSandbox {
                     bulletModel.Draw(world, camera.View, camera.Projection); // Choose model based on shape
                 }
 
+
             }
         }
+
+
+        foreach (ModelMesh mesh in characterModel.Meshes)
+        {
+
+            foreach (BasicEffect effect in mesh.Effects)
+            {
+                effect.LightingEnabled = true;
+                effect.DiffuseColor = new Vector3(1, 1, 0);
+                effect.DirectionalLight0.DiffuseColor = new Vector3(.7f, .7f, .7f);
+                Vector3 lightAngle = new Vector3(20, -60, -60);
+                lightAngle.Normalize();
+                effect.DirectionalLight0.Direction = lightAngle;
+                effect.AmbientLightColor = new Vector3(.3f, .3f, .3f);
+
+            }
+
+            var meshPos = character.Body.Pose.Position.ToVector3() - new Vector3(0, 10, 0);
+            var meshOrientation = character.Body.Pose.Orientation.ToQuaternion();
+
+            Matrix world = Matrix.CreateScale(.5f) *
+                           Matrix.CreateFromQuaternion(meshOrientation) *
+                           Matrix.CreateTranslation(meshPos);
+
+            characterModel.Draw(world, camera.View, camera.Projection);
+        }
+
+        
     }
 }

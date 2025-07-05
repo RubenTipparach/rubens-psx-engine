@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using anakinsoft.system.character;
 using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
@@ -11,8 +6,13 @@ using BepuPhysics.Constraints;
 using BepuUtilities;
 using BepuUtilities.Memory;
 using System;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
 
 
 namespace anakinsoft.system.physics
@@ -62,17 +62,26 @@ namespace anakinsoft.system.physics
             velocity.Angular = velocity.Angular * angularDampingDt;
         }
     }
+
+
+    // Narrow phase
     public struct DemoNarrowPhaseCallbacks : INarrowPhaseCallbacks
     {
         public SpringSettings ContactSpringiness;
         public float MaximumRecoveryVelocity;
         public float FrictionCoefficient;
+        public CharacterControllers Characters;
 
-        public DemoNarrowPhaseCallbacks(SpringSettings contactSpringiness, float maximumRecoveryVelocity = 2f, float frictionCoefficient = 1f)
+        public DemoNarrowPhaseCallbacks(SpringSettings contactSpringiness, 
+            CharacterControllers characters,
+            float maximumRecoveryVelocity = 2f, float frictionCoefficient = 1f)
         {
             ContactSpringiness = contactSpringiness;
             MaximumRecoveryVelocity = maximumRecoveryVelocity;
             FrictionCoefficient = frictionCoefficient;
+
+            Characters = characters;
+
         }
 
         public void Initialize(Simulation simulation)
@@ -83,6 +92,8 @@ namespace anakinsoft.system.physics
                 MaximumRecoveryVelocity = 2f;
                 FrictionCoefficient = 1f;
             }
+
+            Characters.Initialize(simulation);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,6 +114,9 @@ namespace anakinsoft.system.physics
             pairMaterial.FrictionCoefficient = FrictionCoefficient;
             pairMaterial.MaximumRecoveryVelocity = MaximumRecoveryVelocity;
             pairMaterial.SpringSettings = ContactSpringiness;
+
+            Characters.TryReportContacts(pair, ref manifold, workerIndex, ref pairMaterial);
+
             return true;
         }
 
@@ -114,6 +128,7 @@ namespace anakinsoft.system.physics
 
         public void Dispose()
         {
+            Characters.Dispose();
         }
     }
 

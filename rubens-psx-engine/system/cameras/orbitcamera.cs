@@ -26,6 +26,8 @@ namespace anakinsoft.system.cameras
 
         public override void Update(GameTime gameTime)
         {
+            base.Update(gameTime);
+
             //float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             //MouseState mouse = Mouse.GetState();
