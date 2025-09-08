@@ -17,6 +17,12 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace rubens_psx_engine
 {
+    /// <summary>
+    /// DEPRECATED: This component has been replaced by the RetroRenderer system.
+    /// Use RetroRenderer with config.yml settings instead.
+    /// This class is maintained for compatibility but should not be used in new code.
+    /// </summary>
+    [Obsolete("BloomComponent is deprecated. Use RetroRenderer with config.yml instead.", false)]
     public class BloomComponent : DrawableGameComponent
     {
         #region Fields

@@ -1,0 +1,73 @@
+# Rubens PSX Engine Configuration
+# This file contains settings for the retro PSX-style rendering effects
+
+# Dither/Pixelation Settings
+dither:
+  # Internal rendering resolution (lower = more pixelated)
+  renderWidth: 320
+  renderHeight: 180
+  
+  # Dithering strength (0.0 = no dithering, 1.0 = full dithering)
+  strength: 0.8
+  
+  # Color quantization levels (lower = fewer colors, more retro)
+  colorLevels: 4.0
+  
+  # Whether to use point sampling (pixelated) or linear sampling
+  usePointSampling: true
+
+# Bloom Effect Settings  
+bloom:
+  # Which preset to use (0-7: Default, Soft, Desaturated, Saturated, Blurry, Subtle, Blendo, off)
+  preset: 6  # Blendo
+  
+  # Override individual bloom settings (optional)
+  # threshold: 0.3
+  # intensity: 1.0
+  # blurAmount: 6.0
+
+# Tint Effect Settings
+tint:
+  enabled: false
+  color: [1.0, 1.0, 1.0, 1.0]  # RGBA
+  intensity: 1.0
+
+# Rendering Pipeline Settings
+rendering:
+  # Enable/disable the entire post-processing stack
+  enablePostProcessing: true
+  
+  # Scale mode for final output
+  # "nearest" = pixel-perfect scaling (recommended for retro look)
+  # "linear" = smooth scaling
+  scaleMode: "nearest"
+  
+  # Whether to maintain aspect ratio when scaling
+  maintainAspectRatio: true
+  
+  # Antialiasing settings
+  antialiasing:
+    # Enable/disable antialiasing for 3D world (MSAA)
+    enabled: true
+    # Sample count (1, 2, 4, 8, 16) - higher = better quality but slower
+    sampleCount: 1
+    
+  # UI rendering settings
+  ui:
+    # Render UI at native resolution (crisp and clean)
+    useNativeResolution: true
+    # UI scaling factor (1.0 = no scaling, 2.0 = 2x scaling)
+    scaleFactor: 1.0
+
+# Input Settings
+input:
+  # Whether to lock the mouse cursor to the game window
+  lockMouse: false
+  
+# Development Settings  
+development:
+  # Enable screenshot functionality (F12 key)
+  enableScreenshots: true
+  
+  # Screenshot directory (relative to executable)
+  screenshotDirectory: "screenshots"

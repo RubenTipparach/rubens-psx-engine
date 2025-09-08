@@ -22,10 +22,25 @@ namespace rubens_psx_engine
         public GraphicsDeviceManager getGraphicsDevice { get { return graphics; } }
 
         SpriteBatch spriteBatch;
-        public SpriteBatch getSpriteBatch { get { return spriteBatch; } }
+        public SpriteBatch getSpriteBatch 
+        { 
+            get 
+            { 
+                // Return the appropriate SpriteBatch based on rendering mode
+                var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
+                if (config.Rendering.UI.UseNativeResolution && retroRenderer != null)
+                {
+                    return retroRenderer.UISpriteBatch;
+                }
+                return spriteBatch; 
+            } 
+        }
 
         BloomComponent bloom;
-        public BloomComponent getBloom { get { return bloom; } }        
+        public BloomComponent getBloom { get { return bloom; } }
+
+        rubens_psx_engine.system.postprocess.RetroRenderer retroRenderer;
+        rubens_psx_engine.system.utils.ScreenshotManager screenshotManager;
 
         SoundManager soundManager;
         public SoundManager GetSoundManager { get { return soundManager; } }
@@ -77,6 +92,7 @@ namespace rubens_psx_engine
             this.IsFixedTimeStep = false;
             this.Window.Title = Globals.WINDOWNAME;
             this.Window.AllowUserResizing = false;
+            // Mouse visibility will be set based on config
             this.IsMouseVisible = true;
 
             soundManager = new SoundManager();
@@ -95,6 +111,9 @@ namespace rubens_psx_engine
 
                 screens[i].Reinitialize();
             }
+
+            // Handle resolution change for retro renderer
+            retroRenderer?.OnResolutionChanged();
         }
 
         //Add a new screen to the stack.
@@ -112,9 +131,11 @@ namespace rubens_psx_engine
         
         protected override void Initialize()
         {
-            bloom = new BloomComponent(this);
-            bloom.Settings = BloomSettings.PresetSettings[6];
-            Components.Add(bloom); //Add bloom.
+            // DEPRECATED: BloomComponent disabled in favor of RetroRenderer
+            // bloom = new BloomComponent(this);
+            // bloom.Settings = BloomSettings.PresetSettings[6];
+            // Components.Add(bloom);
+
             base.Initialize();
         }
 
@@ -123,17 +144,29 @@ namespace rubens_psx_engine
             spriteBatch = new SpriteBatch(GraphicsDevice);
             Globals.white = Content.Load<Texture2D>("textures\\white");
 
+            // Initialize the retro renderer after GraphicsDevice is ready
+            retroRenderer = new rubens_psx_engine.system.postprocess.RetroRenderer(GraphicsDevice, this);
+            retroRenderer.Initialize();
+
+            // Initialize screenshot manager
+            screenshotManager = new rubens_psx_engine.system.utils.ScreenshotManager(GraphicsDevice, this);
+
             AddScreen(new LoadScreen()); //Go to the loading screen.
         }
 
         protected override void UnloadContent()
         {
+            retroRenderer?.Dispose();
         }
 
         //This gets called every frame. This is the main update loop.
         protected override void Update(GameTime gameTime)
         {
             InputManager.Update(gameTime);
+            
+            // Update mouse lock based on config
+            var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
+            this.IsMouseVisible = !config.Input.LockMouse;
 
             for (int i = screens.Count - 1; i >= 0; i--)
             {
@@ -158,29 +191,53 @@ namespace rubens_psx_engine
             }
 
             soundManager.Update(gameTime);
+            
+            // Update screenshot manager
+            screenshotManager?.Update();
 
             base.Update(gameTime);
         }
 
-        //Draw 2D and 3D stuff.
+        //Draw 2D and 3D stuff with separated rendering pipeline.
         protected override void Draw(GameTime gameTime)
         {
-            bloom.BeginDraw();
-            GraphicsDevice.Clear(Globals.COLOR_BACKGROUND);                       
+            // Always use RetroRenderer system now (BloomComponent is deprecated)
+            // Post-processing can be enabled/disabled via config
+            var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
+            bool usePostProcessing = config.Rendering.EnablePostProcessing;
+            bool useNativeUI = config.Rendering.UI.UseNativeResolution;
 
+            // PHASE 1: Render 3D world (always use RetroRenderer for consistent behavior)
+            // The RetroRenderer handles both post-processing enabled and disabled cases
+            retroRenderer.BeginScene();
+            GraphicsDevice.Clear(Globals.COLOR_BACKGROUND);
+            
+            // Render 3D world and game content
             for (int i = 0; i < screens.Count; i++)
             {
                 if (screens[i] == null)
                     continue;
 
-                //Draw 3D things.
+                //Draw 3D things at low resolution for retro effect
                 screens[i].Draw3D(gameTime);
+            }
+            
+            graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            retroRenderer.EndScene();
 
-                //Draw 2D things.
+            // PHASE 2: Render UI (temporarily forcing legacy mode to debug)
+            // TODO: Fix native UI resolution rendering
+            {
+                // Legacy: Render UI at same resolution as 3D world
                 spriteBatch.Begin();
-                screens[i].Draw2D(gameTime);
+                for (int i = 0; i < screens.Count; i++)
+                {
+                    if (screens[i] == null)
+                        continue;
+
+                    screens[i].Draw2D(gameTime);
+                }
                 spriteBatch.End();
-                graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             }
             
             graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
@@ -195,6 +252,15 @@ namespace rubens_psx_engine
             bloom = new BloomComponent(this);
             bloom.Settings = BloomSettings.PresetSettings[6];
             Components.Add(bloom);
+        }
+
+        /// <summary>
+        /// Reload configuration and update retro renderer settings
+        /// </summary>
+        public void ReloadRenderingConfig()
+        {
+            rubens_psx_engine.system.config.RenderingConfigManager.ReloadConfig();
+            retroRenderer?.ReloadConfig();
         }
 
         //Delete all screens from the stack.
