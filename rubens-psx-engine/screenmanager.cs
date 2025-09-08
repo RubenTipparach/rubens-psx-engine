@@ -26,12 +26,8 @@ namespace rubens_psx_engine
         { 
             get 
             { 
-                // Return the appropriate SpriteBatch based on rendering mode
-                var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
-                if (config.Rendering.UI.UseNativeResolution && retroRenderer != null)
-                {
-                    return retroRenderer.UISpriteBatch;
-                }
+                // TODO: Currently using legacy mode due to native UI resolution issues
+                // Always return the standard spriteBatch for now
                 return spriteBatch; 
             } 
         }
