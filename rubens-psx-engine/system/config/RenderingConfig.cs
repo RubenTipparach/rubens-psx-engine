@@ -119,6 +119,15 @@ namespace rubens_psx_engine.system.config
     }
 
     /// <summary>
+    /// Scene configuration settings
+    /// </summary>
+    public class SceneConfig
+    {
+        public string DefaultScene { get; set; } = "thirdPersonSandbox";
+        public bool ShowSceneMenu { get; set; } = false;
+    }
+
+    /// <summary>
     /// Development and debugging configuration
     /// </summary>
     public class DevelopmentConfig
@@ -137,6 +146,7 @@ namespace rubens_psx_engine.system.config
         public TintConfig Tint { get; set; } = new TintConfig();
         public RenderingPipelineConfig Rendering { get; set; } = new RenderingPipelineConfig();
         public InputConfig Input { get; set; } = new InputConfig();
+        public SceneConfig Scene { get; set; } = new SceneConfig();
         public DevelopmentConfig Development { get; set; } = new DevelopmentConfig();
     }
 

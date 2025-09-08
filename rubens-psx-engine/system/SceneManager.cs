@@ -1,0 +1,87 @@
+using rubens_psx_engine.system.config;
+
+namespace rubens_psx_engine.system
+{
+    /// <summary>
+    /// Manages scene creation and loading based on configuration
+    /// </summary>
+    public static class SceneManager
+    {
+        /// <summary>
+        /// Create a scene screen based on scene type string
+        /// </summary>
+        /// <param name="sceneType">Type of scene to create</param>
+        /// <returns>Screen instance for the scene</returns>
+        public static Screen CreateScene(string sceneType)
+        {
+            return sceneType switch
+            {
+                "thirdPersonSandbox" => new ThirdPersonSandboxScreen(),
+                "basic" => new BasicScene(),
+                "cameraTest" => new CameraTestScene(),
+                "thirdPersonHallway" => new ThirdPersonHallwayScene(),
+                _ => new ThirdPersonSandboxScreen() // Default fallback
+            };
+        }
+
+        /// <summary>
+        /// Load the default scene from configuration
+        /// </summary>
+        /// <returns>Screen instance for the default scene</returns>
+        public static Screen LoadDefaultScene()
+        {
+            var config = RenderingConfigManager.Config.Scene;
+            return CreateScene(config.DefaultScene);
+        }
+
+        /// <summary>
+        /// Load either the scene selection menu or default scene based on config
+        /// </summary>
+        /// <returns>Screen instance to load on startup</returns>
+        public static Screen LoadStartupScene()
+        {
+            var config = RenderingConfigManager.Config.Scene;
+            
+            if (config.ShowSceneMenu)
+            {
+                return new SceneSelectionMenu();
+            }
+            else
+            {
+                return LoadDefaultScene();
+            }
+        }
+
+        /// <summary>
+        /// Get all available scene types
+        /// </summary>
+        /// <returns>Array of scene type strings</returns>
+        public static string[] GetAvailableScenes()
+        {
+            return new string[]
+            {
+                "thirdPersonSandbox",
+                "basic",
+                "cameraTest",
+                "thirdPersonHallway"
+            };
+        }
+
+        /// <summary>
+        /// Get display name for a scene type
+        /// </summary>
+        /// <param name="sceneType">Scene type string</param>
+        /// <returns>Human-readable scene name</returns>
+        public static string GetSceneDisplayName(string sceneType)
+        {
+            return sceneType switch
+            {
+                "thirdPersonSandbox" => "Third Person Sandbox",
+                "basic" => "Basic Scene",
+                "cameraTest" => "Camera Test Scene",
+                "thirdPersonHallway" => "Third Person Hallway",
+                _ => "Unknown Scene"
+            };
+        }
+    }
+}

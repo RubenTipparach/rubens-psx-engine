@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Input;
 namespace rubens_psx_engine
 {
 
-    public class PauseMenu : Screen
+    public class PauseMenu : rubens_psx_engine.system.MenuScreen
     {
         const int MARGIN_LEFT = 50;
 
@@ -25,6 +25,7 @@ namespace rubens_psx_engine
             buttons = new Button[]
             {
             new Button("Resume", HitButton_Resume),
+            new Button("Scene Selection", HitButton_SceneSelection),
             new Button("Options", HitButton_Settings),            
             new Button("Exit to desktop", HitButton_Quit)
             };
@@ -32,7 +33,7 @@ namespace rubens_psx_engine
 
             for (int i = 0; i < buttons.Length; i++)
             {
-                buttons[i].SetPosition(new Vector2(100, 200 + i * 90));
+                buttons[i].SetPosition(new Vector2(100, 200 + i * 80));
             }
         }
 
@@ -63,6 +64,11 @@ namespace rubens_psx_engine
         private void HitButton_Resume(object sender, ButtonArgs data)
         {
             ExitScreen();
+        }
+
+        private void HitButton_SceneSelection(object sender, ButtonArgs data)
+        {
+            Globals.screenManager.AddScreen(new SceneSelectionMenu());
         }
 
         private void HitButton_Settings(object sender, ButtonArgs data)

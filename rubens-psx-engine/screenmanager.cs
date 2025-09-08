@@ -124,6 +124,12 @@ namespace rubens_psx_engine
             return (screens[screens.Count - 1] == screen);
         }
 
+        //Get the list of screens (for menu management)
+        public List<Screen> GetScreens()
+        {
+            return screens;
+        }
+
         
         protected override void Initialize()
         {

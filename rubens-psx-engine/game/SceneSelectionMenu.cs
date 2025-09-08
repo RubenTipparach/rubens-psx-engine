@@ -1,0 +1,142 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using rubens_psx_engine.system.config;
+using System.Collections.Generic;
+
+namespace rubens_psx_engine
+{
+    public class SceneSelectionMenu : rubens_psx_engine.system.MenuScreen
+    {
+        private List<Button> sceneButtons;
+        private Button backButton;
+
+        public SceneSelectionMenu()
+        {
+            sceneButtons = new List<Button>();
+
+            // Create buttons for each scene
+            var thirdPersonButton = new Button("Third Person Sandbox", (sender, args) => LoadScene("thirdPersonSandbox"));
+            thirdPersonButton.SetPosition(new Vector2(100, 180));
+            sceneButtons.Add(thirdPersonButton);
+
+            var basicButton = new Button("Basic Scene", (sender, args) => LoadScene("basic"));
+            basicButton.SetPosition(new Vector2(100, 240));
+            sceneButtons.Add(basicButton);
+
+            var cameraTestButton = new Button("Camera Test Scene", (sender, args) => LoadScene("cameraTest"));
+            cameraTestButton.SetPosition(new Vector2(100, 300));
+            sceneButtons.Add(cameraTestButton);
+
+            var thirdPersonHallwayButton = new Button("Third Person Hallway", (sender, args) => LoadScene("thirdPersonHallway"));
+            thirdPersonHallwayButton.SetPosition(new Vector2(100, 360));
+            sceneButtons.Add(thirdPersonHallwayButton);
+
+            // Back button
+            backButton = new Button("Back", (sender, args) => ExitScreen());
+            backButton.SetPosition(new Vector2(100, 440));
+        }
+
+        private void LoadScene(string sceneType)
+        {
+            // Clear all screens first
+            Globals.screenManager.ExitAllScreens();
+
+            // Load the appropriate scene
+            Screen newScene = sceneType switch
+            {
+                "thirdPersonSandbox" => new ThirdPersonSandboxScreen(),
+                "basic" => new BasicScene(),
+                "cameraTest" => new CameraTestScene(),
+                "thirdPersonHallway" => new ThirdPersonHallwayScene(),
+                _ => new ThirdPersonSandboxScreen() // Default fallback
+            };
+
+            Globals.screenManager.AddScreen(newScene);
+        }
+
+        public override void UpdateInput(GameTime gameTime)
+        {
+            if (!Globals.screenManager.IsActive)
+                return;
+
+            // Handle escape key
+            if (InputManager.GetKeyboardClick(Keys.Escape))
+            {
+                ExitScreen();
+                return;
+            }
+
+            // Update buttons
+            foreach (var button in sceneButtons)
+            {
+                button.Update(gameTime);
+            }
+            backButton.Update(gameTime);
+
+            // Handle number key shortcuts
+            if (InputManager.GetKeyboardClick(Keys.D1))
+            {
+                LoadScene("thirdPersonSandbox");
+            }
+            else if (InputManager.GetKeyboardClick(Keys.D2))
+            {
+                LoadScene("basic");
+            }
+            else if (InputManager.GetKeyboardClick(Keys.D3))
+            {
+                LoadScene("cameraTest");
+            }
+            else if (InputManager.GetKeyboardClick(Keys.D4))
+            {
+                LoadScene("thirdPersonHallway");
+            }
+        }
+
+        public override void Update(GameTime gameTime)
+        {
+            base.Update(gameTime);
+        }
+
+        public override void Draw2D(GameTime gameTime)
+        {
+            // Draw title
+            string title = "Scene Selection";
+            Vector2 titleSize = Globals.fontNTR.MeasureString(title);
+            Vector2 titlePosition = new Vector2(
+                Globals.screenManager.Window.ClientBounds.Width / 2 - titleSize.X / 2,
+                50
+            );
+
+            // Draw title with outline
+            getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
+
+            // Draw instructions
+            string instructions = "Press 1-4 for scenes or use mouse to click buttons\n1=Third Person  2=Basic  3=Camera Test  4=Third Person Hallway\nESC to go back";
+            Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
+            Vector2 instructionsPosition = new Vector2(
+                Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,
+                120
+            );
+
+            getSpriteBatch.DrawString(Globals.fontNTR, instructions, instructionsPosition + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, instructions, instructionsPosition, Color.Gray);
+
+            // Draw buttons
+            foreach (var button in sceneButtons)
+            {
+                button.Draw2D(gameTime);
+            }
+            backButton.Draw2D(gameTime);
+
+            // Draw current config info
+            var config = RenderingConfigManager.Config.Scene;
+            string configInfo = $"Current default scene: {config.DefaultScene}";
+            Vector2 configPosition = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 60);
+            
+            getSpriteBatch.DrawString(Globals.fontNTR, configInfo, configPosition + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, configInfo, configPosition, Color.Yellow);
+        }
+    }
+}

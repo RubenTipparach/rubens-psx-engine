@@ -59,6 +59,15 @@ rendering:
     # UI scaling factor (1.0 = no scaling, 2.0 = 2x scaling)
     scaleFactor: 1.0
 
+# Scene Settings
+scene:
+  # Default scene to load on startup
+  # Available scenes: "thirdPersonSandbox", "fpsSandbox", "cameraTest", "thirdPersonHallway"
+  defaultScene: "cameraTest"
+  
+  # Whether to show scene selection menu on startup
+  showSceneMenu: true
+
 # Input Settings
 input:
   # Whether to lock the mouse cursor to the game window

@@ -30,7 +30,10 @@ namespace anakinsoft.system.cameras
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
-            //disableControls = true;
+            
+            // Disable controls when any menu is open (game is paused)
+            disableControls = HasActiveMenu();
+            
             if (!disableControls)
             {
                 float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -59,6 +62,26 @@ namespace anakinsoft.system.cameras
 
             Target = Position + Forward;
 
+        }
+
+        /// <summary>
+        /// Check if any menu screen is currently active (game is paused)
+        /// </summary>
+        /// <returns>True if any menu is active</returns>
+        private bool HasActiveMenu()
+        {
+            var screens = Globals.screenManager.GetScreens();
+            
+            foreach (var screen in screens)
+            {
+                if (screen is rubens_psx_engine.system.MenuScreen && 
+                    screen.getState != ScreenState.Deactivated)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
     }
 
