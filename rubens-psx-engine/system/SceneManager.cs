@@ -17,6 +17,7 @@ namespace rubens_psx_engine.system
             return sceneType switch
             {
                 "thirdPersonSandbox" => new ThirdPersonSandboxScreen(),
+                "fpsSandbox" => new FPSSandboxScreen(),
                 "basic" => new BasicScene(),
                 "cameraTest" => new CameraTestScene(),
                 "thirdPersonHallway" => new ThirdPersonHallwayScene(),
@@ -61,6 +62,7 @@ namespace rubens_psx_engine.system
             return new string[]
             {
                 "thirdPersonSandbox",
+                "fpsSandbox",
                 "basic",
                 "cameraTest",
                 "thirdPersonHallway"
@@ -77,6 +79,7 @@ namespace rubens_psx_engine.system
             return sceneType switch
             {
                 "thirdPersonSandbox" => "Third Person Sandbox",
+                "fpsSandbox" => "FPS Sandbox",
                 "basic" => "Basic Scene",
                 "cameraTest" => "Camera Test Scene",
                 "thirdPersonHallway" => "Third Person Hallway",

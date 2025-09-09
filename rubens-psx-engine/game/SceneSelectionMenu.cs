@@ -20,21 +20,25 @@ namespace rubens_psx_engine
             thirdPersonButton.SetPosition(new Vector2(100, 180));
             sceneButtons.Add(thirdPersonButton);
 
+            var fpsButton = new Button("FPS Sandbox", (sender, args) => LoadScene("fpsSandbox"));
+            fpsButton.SetPosition(new Vector2(100, 240));
+            sceneButtons.Add(fpsButton);
+
             var basicButton = new Button("Basic Scene", (sender, args) => LoadScene("basic"));
-            basicButton.SetPosition(new Vector2(100, 240));
+            basicButton.SetPosition(new Vector2(100, 300));
             sceneButtons.Add(basicButton);
 
             var cameraTestButton = new Button("Camera Test Scene", (sender, args) => LoadScene("cameraTest"));
-            cameraTestButton.SetPosition(new Vector2(100, 300));
+            cameraTestButton.SetPosition(new Vector2(100, 360));
             sceneButtons.Add(cameraTestButton);
 
             var thirdPersonHallwayButton = new Button("Third Person Hallway", (sender, args) => LoadScene("thirdPersonHallway"));
-            thirdPersonHallwayButton.SetPosition(new Vector2(100, 360));
+            thirdPersonHallwayButton.SetPosition(new Vector2(100, 420));
             sceneButtons.Add(thirdPersonHallwayButton);
 
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 440));
+            backButton.SetPosition(new Vector2(100, 500));
         }
 
         private void LoadScene(string sceneType)
@@ -42,15 +46,8 @@ namespace rubens_psx_engine
             // Clear all screens first
             Globals.screenManager.ExitAllScreens();
 
-            // Load the appropriate scene
-            Screen newScene = sceneType switch
-            {
-                "thirdPersonSandbox" => new ThirdPersonSandboxScreen(),
-                "basic" => new BasicScene(),
-                "cameraTest" => new CameraTestScene(),
-                "thirdPersonHallway" => new ThirdPersonHallwayScene(),
-                _ => new ThirdPersonSandboxScreen() // Default fallback
-            };
+            // Load the appropriate scene using SceneManager
+            Screen newScene = rubens_psx_engine.system.SceneManager.CreateScene(sceneType);
 
             Globals.screenManager.AddScreen(newScene);
         }
@@ -81,13 +78,17 @@ namespace rubens_psx_engine
             }
             else if (InputManager.GetKeyboardClick(Keys.D2))
             {
-                LoadScene("basic");
+                LoadScene("fpsSandbox");
             }
             else if (InputManager.GetKeyboardClick(Keys.D3))
             {
-                LoadScene("cameraTest");
+                LoadScene("basic");
             }
             else if (InputManager.GetKeyboardClick(Keys.D4))
+            {
+                LoadScene("cameraTest");
+            }
+            else if (InputManager.GetKeyboardClick(Keys.D5))
             {
                 LoadScene("thirdPersonHallway");
             }
@@ -113,7 +114,7 @@ namespace rubens_psx_engine
             getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
 
             // Draw instructions
-            string instructions = "Press 1-4 for scenes or use mouse to click buttons\n1=Third Person  2=Basic  3=Camera Test  4=Third Person Hallway\nESC to go back";
+            string instructions = "Press 1-5 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway\nESC to go back";
             Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,
