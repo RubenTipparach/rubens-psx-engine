@@ -57,8 +57,11 @@ namespace anakinsoft.game.scenes
             // Create corridor with multiple materials
             CreateCorridorWithMaterials();
             
-            // Create physics ground for collision (invisible, just for physics)
+            // Create physics ground for collision (visible for testing)
             CreatePhysicsGround();
+            
+            // Create test cube in the middle of the scene
+            //CreateTestCube();
 
             // Create character
             CreateCharacter(new Vector3(0, 10, 100)); // Start at back of corridor
@@ -67,19 +70,19 @@ namespace anakinsoft.game.scenes
         private void CreateCorridorWithMaterials()
         {
             // Create three different materials for the corridor channels using actual texture files
-            var material1 = new UnlitMaterial("textures/test/0_0");
+            var material1 = new UnlitMaterial("textures/test/0_3");
             material1.VertexJitterAmount = 1.0f;
-            material1.AffineAmount = 0.8f;
+            material1.AffineAmount = 0.4f;
             
-            var material2 = new VertexLitMaterial("textures/test/0_1");  
+            var material2 = new UnlitMaterial("textures/test/0_1");  
             material2.VertexJitterAmount = 1.2f;
-            material2.AffineAmount = 0.6f;
-            material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
+            material2.AffineAmount = 0.4f;
+            //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
             
-            var material3 = new BakedVertexLitMaterial("textures/test/0_3");
+            var material3 = new UnlitMaterial("textures/test/0_3");
             material3.VertexJitterAmount = 0.8f;
-            material3.AffineAmount = 0.9f;
-            material3.BakedLightIntensity = 1.2f;
+            material3.AffineAmount = 0.4f;
+            //material3.BakedLightIntensity = 1.2f;
 
             // Create corridor entity with three material channels
             corridorEntity = new MultiMaterialRenderingEntity("models/corridor_single", 
@@ -91,7 +94,7 @@ namespace anakinsoft.game.scenes
                 });
 
             corridorEntity.Position = Vector3.Zero;
-            corridorEntity.Scale = Vector3.One;
+            corridorEntity.Scale = Vector3.One * .1f;
             corridorEntity.IsVisible = true;
             
             // Add to rendering entities
@@ -100,11 +103,24 @@ namespace anakinsoft.game.scenes
 
         private void CreatePhysicsGround()
         {
-            // Create invisible ground plane for character physics
-            ground = CreateGround(new Vector3(0, -10f, 0), new Vector3(200, 2, 400), 
-                "models/cube", null);
-            ground.IsVisible = false; // Invisible - corridor model provides visuals
+            // Create visible ground plane for character physics and visual reference
+            ground = CreateGround(new Vector3(0, -10f, 0), new Vector3(800, 2, 800), 
+                "models/cube", "textures/prototype/concrete");
+            ground.IsVisible = true; // Make it visible for testing
             ground.Scale = new Vector3(10f, 0.1f, 20f);
+            ground.Color = new Vector3(0.5f, 0.5f, 0.5f); // Gray color
+        }
+
+        private void CreateTestCube()
+        {
+            // Create a simple test cube with unlit material in the center
+            var testMaterial = new UnlitMaterial("textures/prototype/brick");
+            testMaterial.VertexJitterAmount = 2.0f;
+            testMaterial.AffineAmount = 1.0f;
+            
+            var testCube = CreateBoxWithMaterial(new Vector3(0, 10, 0), testMaterial, new Vector3(3f));
+            testCube.Color = new Vector3(1.0f, 0.5f, 0.2f); // Orange color
+            testCube.IsVisible = true;
         }
 
         void CreateCharacter(Vector3 position)

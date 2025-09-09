@@ -206,12 +206,6 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/Unlit.fx;Assets/shaders/surface/Unlit
 
-#begin Assets/shaders/surface/Unlit.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Assets/shaders/surface/Unlit.fx;Assets/shaders/surface/Unlit
-
 #begin Assets/shaders/surface/VertexLit.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -434,7 +428,7 @@
 /processorParam:TextureFormat=Color
 /build:Assets/textures/prototype/wood.png;Assets/textures/prototype/wood
 
-#begin Assets/textures/test/0_0.jpg
+#begin Assets/textures/test/0_0.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -444,9 +438,9 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Assets/textures/test/0_0.jpg;Assets/textures/0_0
+/build:Assets/textures/test/0_0.png
 
-#begin Assets/textures/test/0_1.jpg
+#begin Assets/textures/test/0_1.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -456,9 +450,9 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Assets/textures/test/0_1.jpg;Assets/textures/0_1
+/build:Assets/textures/test/0_1.png
 
-#begin Assets/textures/test/0_3.jpg
+#begin Assets/textures/test/0_3.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -468,7 +462,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Assets/textures/test/0_3.jpg;Assets/textures/0_3
+/build:Assets/textures/test/0_3.png
 
 #begin Assets/textures/white.png
 /importer:TextureImporter

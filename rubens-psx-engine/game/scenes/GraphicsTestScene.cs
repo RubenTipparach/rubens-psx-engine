@@ -2,6 +2,7 @@ using anakinsoft.system.physics;
 using Microsoft.Xna.Framework;
 using rubens_psx_engine.entities;
 using System;
+using System.Collections.Generic;
 
 namespace anakinsoft.game.scenes
 {
@@ -62,16 +63,62 @@ namespace anakinsoft.game.scenes
             vertexLitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
             
             // Baked vertex lit cube
-            var bakedLitMaterial = new UnlitMaterial("textures/prototype/gold");
+            var bakedLitMaterial = new BakedVertexLitMaterial("textures/prototype/gold");
             bakedLitMaterial.AffineAmount = 0;
             var bakedLitCube = CreateSphereWithMaterial(positions[2], bakedLitMaterial, new Vector3(2f));
             bakedLitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
 
-            // Create a test sphere with unlit material
-            //var sphereMaterial = new UnlitMaterial();
-            //sphereMaterial.VertexJitterAmount = 1.0f; // Less jitter on sphere
-            //var testSphere = CreateSphereWithMaterial(new Vector3(0, 15, -25), sphereMaterial, new Vector3(1.5f));
-            //testSphere.Color = new Vector3(0.3f, 0.7f, 1.0f); // Blue
+            // Add corridor multi-material model for testing
+            CreateCorridorWithMaterials();
+
+            // Create a simple test cube in center
+            CreateTestCube();
+        }
+
+        private void CreateCorridorWithMaterials()
+        {
+            // Create three different materials for the corridor channels using actual texture files
+            var material1 = new UnlitMaterial("textures/prototype/prototype_512x512_blue1");
+            material1.VertexJitterAmount = 1.0f;
+            material1.AffineAmount = 0.8f;
+            
+            var material2 = new VertexLitMaterial("textures/prototype/prototype_512x512_green1");  
+            material2.VertexJitterAmount = 1.2f;
+            material2.AffineAmount = 0.6f;
+            material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
+            
+            var material3 = new BakedVertexLitMaterial("textures/prototype/prototype_512x512_orange");
+            material3.VertexJitterAmount = 0.8f;
+            material3.AffineAmount = 0.9f;
+            material3.BakedLightIntensity = 1.2f;
+
+            // Create corridor entity with three material channels, offset to the side
+            var corridorEntity = new MultiMaterialRenderingEntity("models/corridor_single", 
+                new Dictionary<int, Material>
+                {
+                    { 0, material1 }, // Floor/walls
+                    { 1, material2 }, // Architectural details
+                    { 2, material3 }  // Decorative elements
+                });
+
+            corridorEntity.Position = new Vector3(100, -40, 0); // Offset to the side
+            corridorEntity.Scale = Vector3.One;
+            corridorEntity.IsVisible = true;
+            
+            // Add to rendering entities
+            AddRenderingEntity(corridorEntity);
+        }
+
+        private void CreateTestCube()
+        {
+            // Create a simple test cube with unlit material in the center
+            var testMaterial = new UnlitMaterial("textures/prototype/brick");
+            testMaterial.VertexJitterAmount = 2.0f;
+            testMaterial.AffineAmount = 1.0f;
+            
+            var testCube = CreateBoxWithMaterial(new Vector3(0, 10, 0), testMaterial, new Vector3(3f));
+            testCube.Color = new Vector3(0.2f, 1.0f, 0.5f); // Green color
+            testCube.IsVisible = true;
         }
 
         public override void Update(GameTime gameTime)
