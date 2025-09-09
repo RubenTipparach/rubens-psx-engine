@@ -8,8 +8,9 @@ using rubens_psx_engine.system.controllers;
 using System;
 using System.Collections.Generic;
 using Vector3N = System.Numerics.Vector3;
+using rubens_psx_engine;
 
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes
 {
     /// <summary>
     /// Third person scene using the same hallway geometry as the FPS scene

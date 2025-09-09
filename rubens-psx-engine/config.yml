@@ -4,14 +4,14 @@
 # Dither/Pixelation Settings
 dither:
   # Internal rendering resolution (lower = more pixelated)
-  renderWidth: 320
-  renderHeight: 180
+  renderWidth: 640
+  renderHeight: 360
   
   # Dithering strength (0.0 = no dithering, 1.0 = full dithering)
-  strength: 0.8
+  strength: 0.6
   
   # Color quantization levels (lower = fewer colors, more retro)
-  colorLevels: 4.0
+  colorLevels: 5.0
   
   # Whether to use point sampling (pixelated) or linear sampling
   usePointSampling: true

@@ -8,6 +8,10 @@ float VertexJitterAmount = 2.0; // Higher = more jitter, try 64.0 or 32.0 for st
 float AffineAmount = 0.0; // 0.0 = perspective correct, 1.0 = full affine mapping
 bool EnableAffineMapping = true;
 
+// Baked lighting parameters
+float BakedLightIntensity = 1.0; // Multiplier for baked vertex colors
+float3 TintColor = float3(1.0, 1.0, 1.0); // Additional tint color
+
 sampler TextureSampler = sampler_state
 {
     Texture = <Texture>;
@@ -22,6 +26,7 @@ struct VertexShaderInput
 {
     float4 Position : POSITION0;
     float2 TexCoord : TEXCOORD0;
+    float4 Color : COLOR0; // Baked vertex colors
 };
 
 struct VertexShaderOutput
@@ -55,19 +60,20 @@ VertexShaderOutput VS(VertexShaderInput input)
     output.AffineTexCoord = input.TexCoord * output.Position.w;
     output.InvW = 1.0 / output.Position.w;
     
-    output.Color = float4(1.0, 1.0, 1.0, 1.0); // Default white color
+    // --- Baked Vertex Lighting ---
+    // Use the vertex colors as baked lighting information
+    // Apply intensity multiplier and tint
+    output.Color = input.Color * float4(TintColor * BakedLightIntensity, 1.0);
     
     return output;
 }
 
 float4 PS(VertexShaderOutput input) : SV_Target0
 {
-    float4 TintColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
-    
     float2 texCoord;
     if (EnableAffineMapping)
     {
-        //// Affine texture mapping: reconstruct non-perspective-correct texture coordinates
+        // Affine texture mapping: reconstruct non-perspective-correct texture coordinates
         //float2 affineCoord = input.AffineTexCoord * input.InvW;
         //texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
     }
@@ -76,10 +82,12 @@ float4 PS(VertexShaderOutput input) : SV_Target0
         texCoord = input.TexCoord;
     }
 
-    return tex2D(TextureSampler, texCoord) * TintColor;
+    // Sample texture and multiply by baked vertex colors
+    float4 texColor = tex2D(TextureSampler, texCoord);
+    return texColor * input.Color;
 }
 
-technique Unlit
+technique BakedVertexLit
 {
     pass Pass1
     {

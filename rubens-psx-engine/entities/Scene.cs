@@ -203,5 +203,24 @@ namespace rubens_psx_engine.entities
             entity.Position = position;
             return AddRenderingEntity(entity);
         }
+
+        // Material-based entity creation methods
+        public virtual RenderingEntity CreateBoxWithMaterial(Vector3 position, Material material, Vector3 scale = default)
+        {
+            var entity = RenderingEntityFactory.CreateBox(position, material, scale);
+            return AddRenderingEntity(entity);
+        }
+
+        public virtual RenderingEntity CreateSphereWithMaterial(Vector3 position, Material material, Vector3 scale = default)
+        {
+            var entity = RenderingEntityFactory.CreateSphere(position, material, scale);
+            return AddRenderingEntity(entity);
+        }
+
+        public virtual RenderingEntity CreateEntityWithMaterial(Vector3 position, string modelPath, Material material)
+        {
+            var entity = RenderingEntityFactory.CreateWithMaterial(position, modelPath, material);
+            return AddRenderingEntity(entity);
+        }
     }
 }

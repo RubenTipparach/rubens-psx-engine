@@ -8,12 +8,13 @@ using BepuUtilities.Memory;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using rubens_psx_engine;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 using Vector3N = System.Numerics.Vector3;
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes
 {
     public class FPSSandboxScreen : Screen
     {
@@ -120,7 +121,7 @@ namespace rubens_psx_engine
         public override void Draw3D(GameTime gameTime)
         {
             //Render the physics sandbox
-            physicsSandbox.Draw(gameTime, this.fpsCamera);
+            physicsSandbox.Draw(gameTime, fpsCamera);
         }
     }
 }

@@ -24,6 +24,9 @@ namespace rubens_psx_engine.entities
         public Vector3 Color { get; set; }
         public bool IsShaded { get; set; }
         public bool IsVisible { get; set; }
+        
+        // Model access
+        public Model Model => model;
 
         public RenderingEntity(string modelPath, string texturePath = null, string effectPath = "shaders/surface/Unlit", bool isShaded = true)
         {

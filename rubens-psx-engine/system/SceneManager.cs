@@ -1,3 +1,4 @@
+using anakinsoft.game.scenes;
 using rubens_psx_engine.system.config;
 
 namespace rubens_psx_engine.system
@@ -18,9 +19,10 @@ namespace rubens_psx_engine.system
             {
                 "thirdPersonSandbox" => new ThirdPersonSandboxScreen(),
                 "fpsSandbox" => new FPSSandboxScreen(),
-                "basic" => new BasicScene(),
+                "basic" => new GraphicsTestSceneScreen(),
                 "cameraTest" => new CameraTestScene(),
                 "thirdPersonHallway" => new ThirdPersonHallwayScene(),
+                "graphicsTest" => new GraphicsTestSceneScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -65,7 +67,8 @@ namespace rubens_psx_engine.system
                 "fpsSandbox",
                 "basic",
                 "cameraTest",
-                "thirdPersonHallway"
+                "thirdPersonHallway",
+                "graphicsTest"
             };
         }
 
@@ -80,9 +83,10 @@ namespace rubens_psx_engine.system
             {
                 "thirdPersonSandbox" => "Third Person Sandbox",
                 "fpsSandbox" => "FPS Sandbox",
-                "basic" => "Basic Scene",
+                "basic" => "Graphics Test Scene",
                 "cameraTest" => "Camera Test Scene",
                 "thirdPersonHallway" => "Third Person Hallway",
+                "graphicsTest" => "Graphics Test Scene",
                 _ => "Unknown Scene"
             };
         }

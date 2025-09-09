@@ -10,8 +10,9 @@ using rubens_psx_engine.system.controllers;
 using System;
 using System.Collections.Generic;
 using Vector3N = System.Numerics.Vector3;
+using rubens_psx_engine;
 
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes
 {
     /// <summary>
     /// Test scene to compare FPS and Third Person camera behaviors

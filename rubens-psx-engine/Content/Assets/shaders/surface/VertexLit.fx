@@ -8,6 +8,12 @@ float VertexJitterAmount = 2.0; // Higher = more jitter, try 64.0 or 32.0 for st
 float AffineAmount = 0.0; // 0.0 = perspective correct, 1.0 = full affine mapping
 bool EnableAffineMapping = true;
 
+// Lighting parameters
+float3 LightDirection = float3(0, -1, 0); // Directional light direction
+float3 LightColor = float3(1, 1, 1); // Light color
+float3 AmbientColor = float3(0.2, 0.2, 0.2); // Ambient light color
+float LightIntensity = 1.0; // Light intensity multiplier
+
 sampler TextureSampler = sampler_state
 {
     Texture = <Texture>;
@@ -22,6 +28,7 @@ struct VertexShaderInput
 {
     float4 Position : POSITION0;
     float2 TexCoord : TEXCOORD0;
+    float3 Normal : NORMAL0;
 };
 
 struct VertexShaderOutput
@@ -55,15 +62,27 @@ VertexShaderOutput VS(VertexShaderInput input)
     output.AffineTexCoord = input.TexCoord * output.Position.w;
     output.InvW = 1.0 / output.Position.w;
     
-    output.Color = float4(1.0, 1.0, 1.0, 1.0); // Default white color
+    // --- Vertex Lighting Calculation ---
+    // Transform normal to world space
+    float3 worldNormal = normalize(mul(input.Normal, (float3x3)World));
+    
+    // Calculate directional lighting
+    float NdotL = max(0, dot(-LightDirection, worldNormal));
+    float3 diffuse = LightColor * NdotL * LightIntensity;
+    
+    // Combine ambient and diffuse lighting
+    float3 lighting = AmbientColor + diffuse;
+    
+    // Clamp lighting to reasonable values
+    lighting = saturate(lighting);
+    
+    output.Color = float4(lighting, 1.0);
     
     return output;
 }
 
 float4 PS(VertexShaderOutput input) : SV_Target0
 {
-    float4 TintColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
-    
     float2 texCoord;
     if (EnableAffineMapping)
     {
@@ -76,10 +95,12 @@ float4 PS(VertexShaderOutput input) : SV_Target0
         texCoord = input.TexCoord;
     }
 
-    return tex2D(TextureSampler, texCoord) * TintColor;
+    // Sample texture and apply vertex lighting
+    float4 texColor = tex2D(TextureSampler, texCoord);
+    return texColor * input.Color;
 }
 
-technique Unlit
+technique VertexLit
 {
     pass Pass1
     {
