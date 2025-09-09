@@ -30,7 +30,7 @@ namespace anakinsoft.game.scenes
         {
             // Create a simple ground platform with basic material
             var groundCube = CreateBox(
-                position: new Vector3(0, -10, 0), 
+                position: new Vector3(0, -50, 0), 
                 size: new Vector3(100, 2, 100), 
                 mass: 0f, // Static
                 isStatic: true,
@@ -44,34 +44,34 @@ namespace anakinsoft.game.scenes
             // Create three cubes with different PS1-style materials for shader demonstration
             var positions = new Vector3[]
             {
-                new Vector3(-10, 0, 0),  // Left - Unlit
+                new Vector3(-50, 0, 0),  // Left - Unlit
                 new Vector3(0, 0, 0),    // Center - Vertex Lit
-                new Vector3(10, 0, 0)    // Right - Baked Vertex Lit
+                new Vector3(50, 0, 0)    // Right - Baked Vertex Lit
             };
 
             // Unlit cube
             var unlitMaterial = new UnlitMaterial("textures/prototype/grass");
             unlitMaterial.AffineAmount = 0;
-            var unlitCube = CreateBoxWithMaterial(positions[0], unlitMaterial, new Vector3(2f));
+            var unlitCube = CreateSphereWithMaterial(positions[0], unlitMaterial, new Vector3(2f));
             unlitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
             
             // Vertex lit cube
             var vertexLitMaterial = new VertexLitMaterial("textures/prototype/fire");
             vertexLitMaterial.AffineAmount = 0;
-            var vertexLitCube = CreateBoxWithMaterial(positions[1], vertexLitMaterial, new Vector3(2f));
+            var vertexLitCube = CreateSphereWithMaterial(positions[1], vertexLitMaterial, new Vector3(2f));
             vertexLitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
             
             // Baked vertex lit cube
-            var bakedLitMaterial = new BakedVertexLitMaterial("textures/prototype/gold");
+            var bakedLitMaterial = new UnlitMaterial("textures/prototype/gold");
             bakedLitMaterial.AffineAmount = 0;
-            var bakedLitCube = CreateBoxWithMaterial(positions[2], bakedLitMaterial, new Vector3(2f));
+            var bakedLitCube = CreateSphereWithMaterial(positions[2], bakedLitMaterial, new Vector3(2f));
             bakedLitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
 
             // Create a test sphere with unlit material
-            var sphereMaterial = new UnlitMaterial();
-            sphereMaterial.VertexJitterAmount = 1.0f; // Less jitter on sphere
-            var testSphere = CreateSphereWithMaterial(new Vector3(0, 15, -25), sphereMaterial, new Vector3(1.5f));
-            testSphere.Color = new Vector3(0.3f, 0.7f, 1.0f); // Blue
+            //var sphereMaterial = new UnlitMaterial();
+            //sphereMaterial.VertexJitterAmount = 1.0f; // Less jitter on sphere
+            //var testSphere = CreateSphereWithMaterial(new Vector3(0, 15, -25), sphereMaterial, new Vector3(1.5f));
+            //testSphere.Color = new Vector3(0.3f, 0.7f, 1.0f); // Blue
         }
 
         public override void Update(GameTime gameTime)

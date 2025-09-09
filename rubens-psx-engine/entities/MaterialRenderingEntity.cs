@@ -28,23 +28,40 @@ namespace rubens_psx_engine.entities
             // Apply material settings
             material.Apply(camera, world);
 
+            // Draw each mesh with the material's effect
             foreach (ModelMesh mesh in model.Meshes)
             {
                 Matrix meshWorld = transforms[mesh.ParentBone.Index] * world;
+                
+                // Update the world matrix for this specific mesh
                 material.Effect.Parameters["World"]?.SetValue(meshWorld);
-
-                foreach (ModelMeshPart part in mesh.MeshParts)
+                
+                // Set the technique if available
+                if (material.Effect.Techniques.Count > 0 && material.Effect.CurrentTechnique == null)
                 {
-                    part.Effect = material.Effect;
-                    
-                    // Set the current technique if available
-                    if (material.Effect.Techniques.Count > 0)
-                    {
-                        material.Effect.CurrentTechnique = material.Effect.Techniques[0];
-                    }
+                    material.Effect.CurrentTechnique = material.Effect.Techniques[0];
                 }
 
-                mesh.Draw();
+                // Draw using the material's effect passes
+                foreach (EffectPass pass in material.Effect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    
+                    // Draw each mesh part
+                    foreach (ModelMeshPart part in mesh.MeshParts)
+                    {
+                        var graphicsDevice = Globals.screenManager.GraphicsDevice;
+                        
+                        graphicsDevice.SetVertexBuffer(part.VertexBuffer);
+                        graphicsDevice.Indices = part.IndexBuffer;
+                        
+                        graphicsDevice.DrawIndexedPrimitives(
+                            PrimitiveType.TriangleList,
+                            part.VertexOffset,
+                            part.StartIndex,
+                            part.PrimitiveCount);
+                    }
+                }
             }
         }
     }

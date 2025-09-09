@@ -40,9 +40,13 @@ namespace rubens_psx_engine
             graphicsTestButton.SetPosition(new Vector2(100, 480));
             sceneButtons.Add(graphicsTestButton);
 
+            var corridorButton = new Button("Corridor Multi-Material Scene", (sender, args) => LoadScene("corridor"));
+            corridorButton.SetPosition(new Vector2(100, 540));
+            sceneButtons.Add(corridorButton);
+
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 560));
+            backButton.SetPosition(new Vector2(100, 600));
         }
 
         private void LoadScene(string sceneType)
@@ -100,6 +104,10 @@ namespace rubens_psx_engine
             {
                 LoadScene("graphicsTest");
             }
+            else if (InputManager.GetKeyboardClick(Keys.D7))
+            {
+                LoadScene("corridor");
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -122,7 +130,7 @@ namespace rubens_psx_engine
             getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
 
             // Draw instructions
-            string instructions = "Press 1-6 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway  6=Graphics Test\nESC to go back";
+            string instructions = "Press 1-7 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway  6=Graphics Test  7=Corridor\nESC to go back";
             Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,

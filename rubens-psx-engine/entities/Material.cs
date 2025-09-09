@@ -27,7 +27,9 @@ namespace rubens_psx_engine.entities
             {
                 try
                 {
-                    effect = Globals.screenManager.Content.Load<Effect>(effectPath);
+                    var loadedEffect = Globals.screenManager.Content.Load<Effect>(effectPath);
+                    // Clone the effect to avoid sharing between materials
+                    effect = loadedEffect.Clone();
                 }
                 catch (System.Exception ex)
                 {

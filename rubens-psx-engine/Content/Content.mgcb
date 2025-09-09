@@ -70,6 +70,25 @@
 /processorParam:TextureFormat=Color
 /build:Assets/models/chair/skin.png;Assets/models/chair/skin
 
+#begin Assets/models/corridor_single.fbx
+/importer:FbxImporter
+/processor:ModelProcessor
+/processorParam:ColorKeyColor=0,0,0,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:DefaultEffect=BasicEffect
+/processorParam:GenerateMipmaps=True
+/processorParam:GenerateTangentFrames=False
+/processorParam:PremultiplyTextureAlpha=True
+/processorParam:PremultiplyVertexColors=True
+/processorParam:ResizeTexturesToPowerOfTwo=False
+/processorParam:RotationX=0
+/processorParam:RotationY=0
+/processorParam:RotationZ=0
+/processorParam:Scale=1
+/processorParam:SwapWindingOrder=False
+/processorParam:TextureFormat=Compressed
+/build:Assets/models/corridor_single.fbx;Assets/models/corridor_single
+
 #begin Assets/models/cube.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
@@ -175,23 +194,29 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/postprocess/Tint.fx
 
-#begin Assets/shaders/surface/File.fx
+#begin Assets/shaders/surface/BakedVertexLit.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
-/build:Assets/shaders/surface/File.fx
-
-#begin Assets/shaders/surface/psx.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Assets/shaders/surface/psx.fx
+/build:Assets/shaders/surface/BakedVertexLit.fx;Assets/shaders/surface/BakedVertexLit
 
 #begin Assets/shaders/surface/Unlit.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/Unlit.fx;Assets/shaders/surface/Unlit
+
+#begin Assets/shaders/surface/Unlit.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/Unlit.fx;Assets/shaders/surface/Unlit
+
+#begin Assets/shaders/surface/VertexLit.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/VertexLit.fx;Assets/shaders/surface/VertexLit
 
 #begin Assets/sound/click.wav
 /importer:WavImporter
@@ -408,6 +433,42 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Assets/textures/prototype/wood.png;Assets/textures/prototype/wood
+
+#begin Assets/textures/test/0_0.jpg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/test/0_0.jpg;Assets/textures/0_0
+
+#begin Assets/textures/test/0_1.jpg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/test/0_1.jpg;Assets/textures/0_1
+
+#begin Assets/textures/test/0_3.jpg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/test/0_3.jpg;Assets/textures/0_3
 
 #begin Assets/textures/white.png
 /importer:TextureImporter

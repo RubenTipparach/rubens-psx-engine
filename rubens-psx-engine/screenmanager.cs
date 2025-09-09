@@ -249,11 +249,14 @@ namespace rubens_psx_engine
 
         public void ResetBloom()
         {
-            Components.Remove(bloom);
-            bloom.Dispose();
-            bloom = new BloomComponent(this);
-            bloom.Settings = BloomSettings.PresetSettings[6];
-            Components.Add(bloom);
+            if (bloom != null)
+            {
+                Components.Remove(bloom);
+                bloom.Dispose();
+                bloom = new BloomComponent(this);
+                bloom.Settings = BloomSettings.PresetSettings[6];
+                Components.Add(bloom);
+            }
         }
 
         /// <summary>

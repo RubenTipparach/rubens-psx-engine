@@ -23,6 +23,7 @@ namespace rubens_psx_engine.system
                 "cameraTest" => new CameraTestScene(),
                 "thirdPersonHallway" => new ThirdPersonHallwayScene(),
                 "graphicsTest" => new GraphicsTestSceneScreen(),
+                "corridor" => new CorridorScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -68,7 +69,8 @@ namespace rubens_psx_engine.system
                 "basic",
                 "cameraTest",
                 "thirdPersonHallway",
-                "graphicsTest"
+                "graphicsTest",
+                "corridor"
             };
         }
 
@@ -87,6 +89,7 @@ namespace rubens_psx_engine.system
                 "cameraTest" => "Camera Test Scene",
                 "thirdPersonHallway" => "Third Person Hallway",
                 "graphicsTest" => "Graphics Test Scene",
+                "corridor" => "Corridor Multi-Material Scene",
                 _ => "Unknown Scene"
             };
         }
