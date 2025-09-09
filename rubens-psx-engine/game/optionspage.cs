@@ -28,7 +28,7 @@ namespace rubens_psx_engine
         {
             this.transitionOffTime = 100;
             this.transitionOnTime = 300;
-            Globals.screenManager.IsMouseVisible = true;
+            //Globals.screenManager.IsMouseVisible = true;
 
             volumeButton = new Button("Sound volume: ????", HitButton_Volume);
 
@@ -59,6 +59,7 @@ namespace rubens_psx_engine
                 return;
 
             resolutionCooldown = 0;
+            Globals.screenManager.IsMouseVisible = true;
 
             //Create all the resolution buttons.
             List<Button> rezButtons = new List<Button>();

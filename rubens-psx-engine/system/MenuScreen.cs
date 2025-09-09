@@ -48,7 +48,7 @@ namespace rubens_psx_engine.system
             config.Input.LockMouse = false;
             
             // Immediately update mouse visibility to ensure it takes effect
-            Globals.screenManager.IsMouseVisible = true;
+            Globals.screenManager.IsMouseVisible = false;
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace rubens_psx_engine.system
             config.Input.LockMouse = previousMouseLockState;
             
             // Immediately update mouse visibility based on restored state
-            Globals.screenManager.IsMouseVisible = !previousMouseLockState;
+            //Globals.screenManager.IsMouseVisible = !previousMouseLockState;
         }
 
         public override void ExitScreen()

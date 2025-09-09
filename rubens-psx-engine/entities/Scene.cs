@@ -19,6 +19,11 @@ namespace rubens_psx_engine.entities
         public IReadOnlyList<RenderingEntity> RenderingEntities => renderingEntities.AsReadOnly();
         public IReadOnlyList<PhysicsEntity> PhysicsEntities => physicsEntities.AsReadOnly();
         public PhysicsSystem Physics => physicsSystem;
+        
+        /// <summary>
+        /// Background color for this scene. If null, uses the global default.
+        /// </summary>
+        public Color? BackgroundColor { get; set; } = null;
 
         public Scene(PhysicsSystem physics = null)
         {

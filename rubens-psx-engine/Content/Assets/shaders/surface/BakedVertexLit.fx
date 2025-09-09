@@ -74,8 +74,8 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     if (EnableAffineMapping)
     {
         // Affine texture mapping: reconstruct non-perspective-correct texture coordinates
-        //float2 affineCoord = input.AffineTexCoord * input.InvW;
-        //texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
+        float2 affineCoord = input.AffineTexCoord * input.InvW;
+        texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
     }
     else
     {

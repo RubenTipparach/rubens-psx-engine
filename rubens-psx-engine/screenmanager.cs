@@ -89,7 +89,7 @@ namespace rubens_psx_engine
             this.Window.Title = Globals.WINDOWNAME;
             this.Window.AllowUserResizing = false;
             // Mouse visibility will be set based on config
-            this.IsMouseVisible = true;
+            //this.IsMouseVisible = true;
 
             soundManager = new SoundManager();
 
@@ -212,7 +212,23 @@ namespace rubens_psx_engine
             // PHASE 1: Render 3D world (always use RetroRenderer for consistent behavior)
             // The RetroRenderer handles both post-processing enabled and disabled cases
             retroRenderer.BeginScene();
-            GraphicsDevice.Clear(Globals.COLOR_BACKGROUND);
+            
+            // Check if any active screen has a custom background color
+            Color clearColor = Globals.COLOR_BACKGROUND; // Default
+            for (int i = 0; i < screens.Count; i++)
+            {
+                if (screens[i] != null)
+                {
+                    var screenBgColor = screens[i].GetBackgroundColor();
+                    if (screenBgColor.HasValue)
+                    {
+                        clearColor = screenBgColor.Value;
+                        break; // Use the first screen with a custom background color
+                    }
+                }
+            }
+            
+            GraphicsDevice.Clear(clearColor);
             
             // Render 3D world and game content
             for (int i = 0; i < screens.Count; i++)

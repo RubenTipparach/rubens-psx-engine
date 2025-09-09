@@ -46,7 +46,10 @@ namespace anakinsoft.game.scenes
             physicsSystem = new PhysicsSystem(ref characters);
             
             bullets = new List<PhysicsEntity>();
-
+            
+            // Set black background for corridor scene
+            BackgroundColor = Color.Black;
+            Globals.screenManager.IsMouseVisible = false;
             Initialize();
         }
 
@@ -55,8 +58,16 @@ namespace anakinsoft.game.scenes
             base.Initialize();
 
             // Create corridor with multiple materials
-            CreateCorridorWithMaterials();
-            
+            CreateCorridorWithMaterials(Vector3.One);
+
+            CreateCorridorWithMaterials(Vector3.Forward * 80);
+
+            CreateCorridorWithMaterials(Vector3.Forward * 80 * 2);
+
+            CreateCorridorWithMaterials(Vector3.Forward * 80 * 3);
+
+            CreateCorridorWithMaterials(Vector3.Forward * 80* 4);
+
             // Create physics ground for collision (visible for testing)
             CreatePhysicsGround();
             
@@ -67,33 +78,37 @@ namespace anakinsoft.game.scenes
             CreateCharacter(new Vector3(0, 10, 100)); // Start at back of corridor
         }
 
-        private void CreateCorridorWithMaterials()
+        private void CreateCorridorWithMaterials(Vector3 offfset)
         {
+            var affine = 0;
             // Create three different materials for the corridor channels using actual texture files
-            var material1 = new UnlitMaterial("textures/test/0_3");
-            material1.VertexJitterAmount = 1.0f;
-            material1.AffineAmount = 0.4f;
+            var cieling = new UnlitMaterial("textures/test/0_0");
+            cieling.VertexJitterAmount = 4f;
+            cieling.AffineAmount = affine;
+            cieling.Brightness = 1.2f; // Slightly darker
             
-            var material2 = new UnlitMaterial("textures/test/0_1");  
-            material2.VertexJitterAmount = 1.2f;
-            material2.AffineAmount = 0.4f;
+            var floor = new UnlitMaterial("textures/test/0_1");
+            floor.VertexJitterAmount = 4f;
+            floor.AffineAmount = affine;
+            floor.Brightness = 1.8f; // Brighter
             //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
             
             var material3 = new UnlitMaterial("textures/test/0_3");
-            material3.VertexJitterAmount = 0.8f;
-            material3.AffineAmount = 0.4f;
+            material3.VertexJitterAmount = 4f;
+            material3.AffineAmount = affine;
+            material3.Brightness = 1.2f; // Much brighter
             //material3.BakedLightIntensity = 1.2f;
 
             // Create corridor entity with three material channels
             corridorEntity = new MultiMaterialRenderingEntity("models/corridor_single", 
                 new Dictionary<int, Material>
                 {
-                    { 0, material1 }, // Floor/walls
-                    { 1, material2 }, // Architectural details
-                    { 2, material3 }  // Decorative elements
+                    { 0, floor }, // Floor/walls
+                    { 1, cieling }, // Architectural details
+                    { 2, cieling }  // Decorative elements
                 });
 
-            corridorEntity.Position = Vector3.Zero;
+            corridorEntity.Position = Vector3.Zero + offfset; 
             corridorEntity.Scale = Vector3.One * .1f;
             corridorEntity.IsVisible = true;
             
@@ -104,9 +119,9 @@ namespace anakinsoft.game.scenes
         private void CreatePhysicsGround()
         {
             // Create visible ground plane for character physics and visual reference
-            ground = CreateGround(new Vector3(0, -10f, 0), new Vector3(800, 2, 800), 
+            ground = CreateGround(new Vector3(0, -10f, 0), new Vector3(8000, 2, 8000), 
                 "models/cube", "textures/prototype/concrete");
-            ground.IsVisible = true; // Make it visible for testing
+            ground.IsVisible = false; // Make it visible for testing
             ground.Scale = new Vector3(10f, 0.1f, 20f);
             ground.Color = new Vector3(0.5f, 0.5f, 0.5f); // Gray color
         }
@@ -164,6 +179,8 @@ namespace anakinsoft.game.scenes
 
             // Handle input
             HandleInput();
+            Globals.screenManager.IsMouseVisible = false;
+
         }
 
         public void UpdateWithCamera(GameTime gameTime, Camera camera)

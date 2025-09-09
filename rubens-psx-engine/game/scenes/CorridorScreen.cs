@@ -27,6 +27,9 @@ namespace anakinsoft.game.scenes
             fpsCamera.Position = new Vector3(0, 10, 100); // Start at back of corridor
 
             corridorScene = new CorridorScene();
+            
+            // Hide mouse cursor for immersive FPS experience
+            Globals.screenManager.IsMouseVisible = false;
         }
 
         public override void Update(GameTime gameTime)
@@ -82,40 +85,37 @@ namespace anakinsoft.game.scenes
 
         public override void Draw2D(GameTime gameTime)
         {
-            // Draw corridor scene UI
-            string message = "Corridor Scene - Multi-Material Demo\n\n" +
-                           "WASD = move\n" +
-                           "Mouse = look\n" +
-                           "Left Click = shoot\n" +
-                           "ESC = menu\n" +
-                           "F1 = scene selection\n\n" +
-                           "Features:\n" +
-                           "- Multi-material corridor model\n" +
-                           "- 3 different PS1-style materials\n" +
-                           "- FPS character controller";
+            // Minimal UI for immersive corridor experience
+            // Only show essential controls briefly or on key press
             
-            Vector2 position = new Vector2(20, 20);
-            
-            // Draw text with better visibility
-            getSpriteBatch.DrawString(Globals.fontNTR, message, position + Vector2.One, Color.Black);
-            getSpriteBatch.DrawString(Globals.fontNTR, message, position, Color.White);
-
-            // Draw material info
-            string materialInfo = "Material Channels:\n" +
-                                "Channel 0: Unlit (0_0.jpg)\n" +
-                                "Channel 1: VertexLit (0_1.jpg)\n" +
-                                "Channel 2: BakedLit (0_3.jpg)";
-            
-            Vector2 materialPosition = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 120);
-            
-            getSpriteBatch.DrawString(Globals.fontNTR, materialInfo, materialPosition + Vector2.One, Color.Black);
-            getSpriteBatch.DrawString(Globals.fontNTR, materialInfo, materialPosition, Color.Yellow);
+            // Optionally, you could add a minimal crosshair or status display here
+            // For now, keeping it completely clean for maximum immersion
         }
 
         public override void Draw3D(GameTime gameTime)
         {
             // Draw the corridor scene with multi-material rendering
             corridorScene.Draw(gameTime, fpsCamera);
+        }
+
+        public override Color? GetBackgroundColor()
+        {
+            // Return the corridor scene's background color
+            return corridorScene.BackgroundColor;
+        }
+
+        public override void ExitScreen()
+        {
+            // Restore mouse visibility when exiting corridor screen
+            //Globals.screenManager.IsMouseVisible = true;
+            base.ExitScreen();
+        }
+
+        public override void KillScreen()
+        {
+            // Restore mouse visibility when killing corridor screen
+            //Globals.screenManager.IsMouseVisible = true;
+            base.KillScreen();
         }
     }
 }

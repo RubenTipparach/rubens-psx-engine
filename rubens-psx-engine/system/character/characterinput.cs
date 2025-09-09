@@ -92,7 +92,6 @@ public struct CharacterInput
     {
         var jumpWasPushed = JumpWasPushed(input, Jump);
         Vector2 movementDirection = default;
-        var speed = 100;
         if (input.IsKeyDown(MoveForward))
         {
             movementDirection = new Vector2(0, 1) * speed;

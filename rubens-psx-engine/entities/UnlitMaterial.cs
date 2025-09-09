@@ -12,6 +12,7 @@ namespace rubens_psx_engine.entities
         public float VertexJitterAmount { get; set; } = 2.0f;
         public float AffineAmount { get; set; } = 1.0f;
         public bool EnableAffineMapping { get; set; } = true;
+        public float Brightness { get; set; } = 1.0f;
         
         public UnlitMaterial(string texturePath = null) 
             : base("shaders/surface/Unlit", texturePath)
@@ -31,6 +32,7 @@ namespace rubens_psx_engine.entities
             effect.Parameters["VertexJitterAmount"]?.SetValue(VertexJitterAmount);
             effect.Parameters["AffineAmount"]?.SetValue(AffineAmount);
             effect.Parameters["EnableAffineMapping"]?.SetValue(EnableAffineMapping);
+            effect.Parameters["Brightness"]?.SetValue(Brightness);
             
             // Set texture if available
             if (texture != null)

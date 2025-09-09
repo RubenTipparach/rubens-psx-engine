@@ -7,6 +7,7 @@ Texture2D Texture;
 float VertexJitterAmount = 2.0; // Higher = more jitter, try 64.0 or 32.0 for strong PS1 effect
 float AffineAmount = 0.0; // 0.0 = perspective correct, 1.0 = full affine mapping
 bool EnableAffineMapping = true;
+float Brightness = 1.0; // Color brightness multiplier, 1.0 = normal, > 1.0 = brighter, < 1.0 = darker
 
 sampler TextureSampler = sampler_state
 {
@@ -67,16 +68,18 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float2 texCoord;
     if (EnableAffineMapping)
     {
-        //// Affine texture mapping: reconstruct non-perspective-correct texture coordinates
-        //float2 affineCoord = input.AffineTexCoord * input.InvW;
-        //texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
+        // Affine texture mapping: reconstruct non-perspective-correct texture coordinates
+        float2 affineCoord = input.AffineTexCoord * input.InvW;
+        texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
     }
     else
     {
         texCoord = input.TexCoord;
     }
 
-    return tex2D(TextureSampler, texCoord) * TintColor;
+    float4 finalColor = tex2D(TextureSampler, texCoord) * TintColor;
+    finalColor.rgb *= Brightness; // Apply brightness to RGB channels, leave alpha unchanged
+    return finalColor;
 }
 
 technique Unlit

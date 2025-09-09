@@ -97,5 +97,13 @@ namespace rubens_psx_engine
         public virtual void Draw2D(GameTime gameTime)
         {
         }
+
+        /// <summary>
+        /// Gets the background color for this screen. Override in screens that have scenes with custom background colors.
+        /// </summary>
+        public virtual Color? GetBackgroundColor()
+        {
+            return null; // Return null to use global default
+        }
     }
 }
