@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using anakinsoft.system.physics;
 using rubens_psx_engine.entities;
+using rubens_psx_engine.system.physics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +16,12 @@ namespace rubens_psx_engine.entities
         protected PhysicsSystem physicsSystem;
         protected List<RenderingEntity> renderingEntities;
         protected List<PhysicsEntity> physicsEntities;
+        protected BoundingBoxRenderer boundingBoxRenderer;
         
         public IReadOnlyList<RenderingEntity> RenderingEntities => renderingEntities.AsReadOnly();
         public IReadOnlyList<PhysicsEntity> PhysicsEntities => physicsEntities.AsReadOnly();
         public PhysicsSystem Physics => physicsSystem;
+        public BoundingBoxRenderer BoundingBoxRenderer => boundingBoxRenderer;
         
         /// <summary>
         /// Background color for this scene. If null, uses the global default.
@@ -30,6 +33,12 @@ namespace rubens_psx_engine.entities
             physicsSystem = physics;
             renderingEntities = new List<RenderingEntity>();
             physicsEntities = new List<PhysicsEntity>();
+            
+            // Initialize bounding box renderer if we have a graphics device
+            if (Globals.screenManager?.GraphicsDevice != null)
+            {
+                boundingBoxRenderer = new BoundingBoxRenderer(Globals.screenManager.GraphicsDevice);
+            }
         }
 
         public virtual void Initialize()
@@ -53,6 +62,12 @@ namespace rubens_psx_engine.entities
 
             // Update physics simulation
             physicsSystem?.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            
+            // Update bounding box renderer (extract bounding boxes from physics) - only if not disposed
+            if (!disposed && physicsSystem != null)
+            {
+                boundingBoxRenderer?.ExtractBoundingBoxes(physicsSystem);
+            }
         }
 
         public virtual void Draw(GameTime gameTime, Camera camera)
@@ -73,6 +88,12 @@ namespace rubens_psx_engine.entities
                 {
                     entity.Draw(gameTime, camera);
                 }
+            }
+            
+            // Draw bounding boxes (if enabled) - only if not disposed
+            if (!disposed)
+            {
+                boundingBoxRenderer?.Draw(camera);
             }
         }
 
@@ -246,10 +267,17 @@ namespace rubens_psx_engine.entities
                 {
                     try
                     {
-                        // Clear all entities first (this removes them from physics simulation)
+                        // Clear bounding box renderer first (stops accessing physics data)
+                        if (boundingBoxRenderer != null)
+                        {
+                            boundingBoxRenderer.ShowBoundingBoxes = false; // Stop extracting bounding boxes
+                            boundingBoxRenderer.Dispose();
+                        }
+                        
+                        // Clear all entities (this removes them from physics simulation)
                         ClearAllEntities();
                         
-                        // Dispose the physics system (this clears the buffer pool)
+                        // Dispose the physics system last (this clears the buffer pool)
                         physicsSystem?.Dispose();
                         
                         System.Console.WriteLine("Scene: Successfully disposed of scene resources");

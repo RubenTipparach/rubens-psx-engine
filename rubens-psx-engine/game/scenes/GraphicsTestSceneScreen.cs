@@ -56,12 +56,23 @@ namespace anakinsoft.game.scenes
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }
+
+            // Handle L key to toggle bounding box visualization (mimics BepuPhysics demo)
+            if (InputManager.GetKeyboardClick(Keys.L))
+            {
+                if (graphicsTestScene.BoundingBoxRenderer != null)
+                {
+                    graphicsTestScene.BoundingBoxRenderer.ShowBoundingBoxes = !graphicsTestScene.BoundingBoxRenderer.ShowBoundingBoxes;
+                    System.Console.WriteLine($"Bounding boxes: {(graphicsTestScene.BoundingBoxRenderer.ShowBoundingBoxes ? "ON" : "OFF")}");
+                }
+            }
         }
 
         public override void Draw2D(GameTime gameTime)
         {
             // Draw graphics test scene UI
-            string message = "Graphics Test Scene\n\nPS1-style shader demonstration\nESC = menu\nF1 = scene selection";
+            string bbStatus = graphicsTestScene.BoundingBoxRenderer?.ShowBoundingBoxes == true ? "ON" : "OFF";
+            string message = $"Graphics Test Scene\n\nPS1-style shader demonstration\nESC = menu\nF1 = scene selection\nL = bounding boxes ({bbStatus})";
             Vector2 position = new Vector2(20, 20);
             
             getSpriteBatch.DrawString(Globals.fontNTR, message, position + Vector2.One, Color.Black);

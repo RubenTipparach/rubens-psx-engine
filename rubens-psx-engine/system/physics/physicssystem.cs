@@ -55,14 +55,19 @@ namespace anakinsoft.system.physics
                     // Dispose managed resources
                     try
                     {
+                        System.Console.WriteLine($"PhysicsSystem: Starting disposal - BufferPool blocks before clear: {BufferPool?.GetHashCode()}");
+                        
                         // Clear the simulation (removes all bodies, constraints, etc.)
                         Simulation?.Clear();
+                        System.Console.WriteLine("PhysicsSystem: Simulation cleared");
                         
                         // Dispose the thread dispatcher
                         ThreadDispatcher?.Dispose();
+                        System.Console.WriteLine("PhysicsSystem: ThreadDispatcher disposed");
                         
                         // Clear the buffer pool (this is what fixes the memory leak warning)
                         BufferPool?.Clear();
+                        System.Console.WriteLine("PhysicsSystem: BufferPool cleared");
                         
                         System.Console.WriteLine("PhysicsSystem: Successfully disposed of physics resources");
                     }
