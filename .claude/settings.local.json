@@ -3,7 +3,13 @@
     "allow": [
       "Bash(dotnet build)",
       "Bash(dotnet build:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Read(//c/Users/santi/repos/**)",
+      "Bash(git log:*)",
+      "Bash(dir:*)",
+      "Bash(dotnet run:*)",
+      "Bash(git clone:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

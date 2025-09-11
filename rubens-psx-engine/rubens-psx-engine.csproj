@@ -38,12 +38,9 @@
     <Folder Include="Content\Assets\shaders\surface\" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="BepuPhysics">
-      <HintPath>Content\BepuPhysics.dll</HintPath>
-    </Reference>
-    <Reference Include="BepuUtilities">
-      <HintPath>Content\BepuUtilities.dll</HintPath>
-    </Reference>
+    <!-- BepuPhysics2 project references - commit hash: bfb11dc2020555b09978c473d9655509e844032c -->
+    <ProjectReference Include="..\bepuphysics2\BepuPhysics\BepuPhysics.csproj" />
+    <ProjectReference Include="..\bepuphysics2\BepuUtilities\BepuUtilities.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="config.yml">
