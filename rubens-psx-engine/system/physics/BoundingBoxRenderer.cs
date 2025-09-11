@@ -24,6 +24,7 @@ namespace rubens_psx_engine.system.physics
         public bool ShowBoundingBoxes 
         { 
             get => showBoundingBoxes; 
+
             set 
             {
                 if (showBoundingBoxes != value)
@@ -209,6 +210,7 @@ namespace rubens_psx_engine.system.physics
                 // Method 1: Try DrawUserIndexedPrimitives first
                 try
                 {
+
                     graphicsDevice.DrawUserIndexedPrimitives(
                         PrimitiveType.LineList,
                         vertices.ToArray(),
@@ -218,6 +220,7 @@ namespace rubens_psx_engine.system.physics
                         0,
                         indices.Count / 2
                     );
+
                     
                     if (showBoundingBoxes) // Only log when actually showing
                     {
@@ -256,6 +259,7 @@ namespace rubens_psx_engine.system.physics
             catch (Exception ex)
             {
                 System.Console.WriteLine($"BoundingBoxRenderer: Error during rendering setup: {ex.Message}");
+
             }
         }
 
