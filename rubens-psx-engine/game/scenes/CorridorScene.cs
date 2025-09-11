@@ -148,7 +148,7 @@ namespace anakinsoft.game.scenes
                 // Use consistent scaling approach: visual scale * physics scale factor
                 // Corridor uses visual scale of 0.1f, so physics scale = 0.1f * 10 = 1.0f
                 var visualScale = Vector3.One * 0.1f; // Same scale as rendering entity
-                var physicsScale = visualScale * 100; // Apply our learned scaling factor
+                var physicsScale = visualScale * 10; // Apply our learned scaling factor
 
                 // Extract triangles and wireframe vertices for rendering
                 var (triangles, wireframeVertices) = BepuMeshExtractor.ExtractTrianglesFromModel(corridorModel, physicsScale, physicsSystem);
