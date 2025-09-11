@@ -11,11 +11,12 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
+using rubens_psx_engine.system.config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vector3N = System.Numerics.Vector3;
 using Matrix = Microsoft.Xna.Framework.Matrix;
+using Vector3N = System.Numerics.Vector3;
 
 namespace anakinsoft.game.scenes
 {
@@ -41,6 +42,10 @@ namespace anakinsoft.game.scenes
 
         // Input handling
         bool mouseClick = false;
+        
+        // Collision mesh wireframe data
+        List<List<Vector3>> meshTriangleVertices; // Store triangle vertices for wireframe
+        List<(Vector3 position, Quaternion rotation)> staticMeshTransforms; // Store mesh transforms
 
         public CorridorScene() : base()
         {
@@ -50,16 +55,25 @@ namespace anakinsoft.game.scenes
             
             bullets = new List<PhysicsEntity>();
             corridorBepuMeshes = new List<Mesh>();
+            meshTriangleVertices = new List<List<Vector3>>();
+            staticMeshTransforms = new List<(Vector3 position, Quaternion rotation)>();
             
             // Set black background for corridor scene
             BackgroundColor = Color.Black;
             Globals.screenManager.IsMouseVisible = false;
             Initialize();
+
         }
 
         public override void Initialize()
         {
             base.Initialize();
+
+            // Initialize debug rendering based on config
+            if (boundingBoxRenderer != null)
+            {
+                boundingBoxRenderer.ShowBoundingBoxes = RenderingConfigManager.Config.Development.ShowStaticMeshDebug;
+            }
 
             // Create corridor with multiple materials and physics
             CreateCorridorWithMaterialsAndPhysics(Vector3.One);
@@ -86,7 +100,7 @@ namespace anakinsoft.game.scenes
         {
             var affine = 0;
             // Create three different materials for the corridor channels using actual texture files
-            var cieling = new UnlitMaterial("textures/test/0_0");
+            var cieling = new UnlitMaterial("textures/corridor_wall");
             cieling.VertexJitterAmount = 4f;
             cieling.AffineAmount = affine;
             cieling.Brightness = 1.2f; // Slightly darker
@@ -97,7 +111,7 @@ namespace anakinsoft.game.scenes
             floor.Brightness = 1.8f; // Brighter
             //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
             
-            var material3 = new UnlitMaterial("textures/test/0_3");
+            var material3 = new UnlitMaterial("textures/corridor_wall");
             material3.VertexJitterAmount = 4f;
             material3.AffineAmount = affine;
             material3.Brightness = 1.2f; // Much brighter
@@ -123,63 +137,6 @@ namespace anakinsoft.game.scenes
             CreateCorridorPhysicsMesh(offset);
         }
 
-        private Buffer<Triangle> ExtractTrianglesFromModel(Model model, Vector3 scale)
-        {
-            var trianglesList = new List<Triangle>();
-            var scaleMatrix = Matrix.CreateScale(scale);
-            
-            foreach (var mesh in model.Meshes)
-            {
-                foreach (var meshPart in mesh.MeshParts)
-                {
-                    // Get vertex and index data
-                    var vertexBuffer = meshPart.VertexBuffer;
-                    var indexBuffer = meshPart.IndexBuffer;
-                    var vertexDeclaration = meshPart.VertexBuffer.VertexDeclaration;
-                    
-                    // Extract vertices (assuming VertexPositionNormalTexture)
-                    var vertexCount = meshPart.NumVertices;
-                    var vertices = new VertexPositionNormalTexture[vertexCount];
-                    vertexBuffer.GetData(meshPart.VertexOffset * vertexDeclaration.VertexStride, 
-                        vertices, 0, vertexCount, vertexDeclaration.VertexStride);
-                    
-                    // Extract indices
-                    var indexCount = meshPart.PrimitiveCount * 3;
-                    var indices = new int[indexCount];
-                    
-                    if (indexBuffer.IndexElementSize == IndexElementSize.SixteenBits)
-                    {
-                        var shortIndices = new short[indexCount];
-                        indexBuffer.GetData<short>(shortIndices, meshPart.StartIndex, indexCount);
-                        for (int i = 0; i < shortIndices.Length; i++)
-                            indices[i] = shortIndices[i];
-                    }
-                    else
-                    {
-                        indexBuffer.GetData<int>(indices, meshPart.StartIndex, indexCount);
-                    }
-                    
-                    // Create triangles
-                    for (int i = 0; i < indices.Length; i += 3)
-                    {
-                        var v1 = Vector3.Transform(vertices[indices[i]].Position, scaleMatrix);
-                        var v2 = Vector3.Transform(vertices[indices[i + 1]].Position, scaleMatrix);
-                        var v3 = Vector3.Transform(vertices[indices[i + 2]].Position, scaleMatrix);
-                        
-                        trianglesList.Add(new Triangle(v1.ToVector3N(), v2.ToVector3N(), v3.ToVector3N()));
-                    }
-                }
-            }
-            
-            // Create buffer and copy triangles
-            physicsSystem.BufferPool.Take<Triangle>(trianglesList.Count, out var triangleBuffer);
-            for (int i = 0; i < trianglesList.Count; i++)
-            {
-                triangleBuffer[i] = trianglesList[i];
-            }
-            
-            return triangleBuffer;
-        }
 
         private void CreateCorridorPhysicsMesh(Vector3 offset)
         {
@@ -191,10 +148,10 @@ namespace anakinsoft.game.scenes
                 // Use consistent scaling approach: visual scale * physics scale factor
                 // Corridor uses visual scale of 0.1f, so physics scale = 0.1f * 10 = 1.0f
                 var visualScale = Vector3.One * 0.1f; // Same scale as rendering entity
-                var physicsScale = visualScale * 10f; // Apply our learned scaling factor
-                
-                // Extract triangles directly and create BepuPhysics Mesh
-                var triangles = ExtractTrianglesFromModel(corridorModel, physicsScale);
+                var physicsScale = visualScale * 100; // Apply our learned scaling factor
+
+                // Extract triangles and wireframe vertices for rendering
+                var (triangles, wireframeVertices) = BepuMeshExtractor.ExtractTrianglesFromModel(corridorModel, physicsScale, physicsSystem);
                 var bepuMesh = new Mesh(triangles, physicsScale.ToVector3N(), physicsSystem.BufferPool);
                 
                 // Add the mesh shape to the simulation's shape collection
@@ -206,9 +163,12 @@ namespace anakinsoft.game.scenes
                     Quaternion.Identity.ToQuaternionN(), 
                     shapeIndex));
                 
-                // Keep reference for cleanup
+                // Keep references for cleanup and wireframe rendering
                 corridorBepuMeshes.Add(bepuMesh);
-                
+                meshTriangleVertices.Add(wireframeVertices);
+                staticMeshTransforms.Add((offset, Quaternion.Identity));
+
+
                 Console.WriteLine($"Created corridor physics mesh at position: {offset} with physics scale: {physicsScale}");
             }
             catch (Exception ex)
@@ -325,7 +285,89 @@ namespace anakinsoft.game.scenes
 
             // The corridor entity will be drawn with its multi-material system
             // Character is not drawn in FPS mode
+            
+            // Draw wireframe visualization of static mesh collision geometry if enabled
+            if (RenderingConfigManager.Config.Development.ShowStaticMeshDebug)
+            {
+                DrawStaticMeshWireframes(gameTime, camera);
+            }
         }
+
+        private void DrawStaticMeshWireframes(GameTime gameTime, Camera camera)
+        {
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+
+            // Create a basic effect for wireframe rendering
+            var basicEffect = new BasicEffect(graphicsDevice);
+            basicEffect.VertexColorEnabled = true;
+            basicEffect.View = camera.View;
+            basicEffect.Projection = camera.Projection;
+            basicEffect.World = Matrix.Identity;
+
+            // Draw wireframes for each static mesh
+            for (int meshIndex = 0; meshIndex < corridorBepuMeshes.Count; meshIndex++)
+            {
+                if (meshIndex < meshTriangleVertices.Count && meshIndex < staticMeshTransforms.Count)
+                {
+                    var triangleVertices = meshTriangleVertices[meshIndex];
+                    var (position, rotation) = staticMeshTransforms[meshIndex];
+
+                    if (triangleVertices != null && triangleVertices.Count > 0)
+                    {
+                        // Create transform matrix for this static mesh
+                        var worldMatrix = Matrix.CreateFromQuaternion(rotation) * Matrix.CreateTranslation(position);
+
+                        // Create wireframe edges from triangles
+                        var wireframeVertices = new List<VertexPositionColor>();
+
+                        for (int i = 0; i < triangleVertices.Count; i += 3)
+                        {
+                            if (i + 2 < triangleVertices.Count)
+                            {
+                                // Apply world transform to vertices
+                                var v1 = Vector3.Transform(triangleVertices[i], worldMatrix);
+                                var v2 = Vector3.Transform(triangleVertices[i + 1], worldMatrix);
+                                var v3 = Vector3.Transform(triangleVertices[i + 2], worldMatrix);
+
+                                // Create the three edges of the triangle
+                                // Edge 1: v1 to v2
+                                wireframeVertices.Add(new VertexPositionColor(v1, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v2, Color.Yellow));
+
+                                // Edge 2: v2 to v3
+                                wireframeVertices.Add(new VertexPositionColor(v2, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v3, Color.Yellow));
+
+                                // Edge 3: v3 to v1
+                                wireframeVertices.Add(new VertexPositionColor(v3, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v1, Color.Yellow));
+                            }
+                        }
+
+                        if (wireframeVertices.Count > 0)
+                        {
+                            try
+                            {
+                                // Apply the effect and draw the wireframe lines
+                                basicEffect.CurrentTechnique.Passes[0].Apply();
+                                graphicsDevice.DrawUserPrimitives(
+                                    PrimitiveType.LineList,
+                                    wireframeVertices.ToArray(),
+                                    0,
+                                    wireframeVertices.Count / 2);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error drawing wireframe: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            basicEffect.Dispose();
+        }
+
 
         // Utility methods for external access
         public List<PhysicsEntity> GetBullets() => bullets;

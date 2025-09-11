@@ -80,3 +80,6 @@ development:
   
   # Screenshot directory (relative to executable)
   screenshotDirectory: "screenshots"
+  
+  # Show debug bounding boxes for static meshes globally
+  showStaticMeshDebug: true

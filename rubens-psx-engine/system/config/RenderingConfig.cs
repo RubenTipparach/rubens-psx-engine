@@ -134,6 +134,7 @@ namespace rubens_psx_engine.system.config
     {
         public bool EnableScreenshots { get; set; } = true;
         public string ScreenshotDirectory { get; set; } = "screenshots";
+        public bool ShowStaticMeshDebug { get; set; } = false;
     }
 
     /// <summary>
