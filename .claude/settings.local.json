@@ -10,7 +10,9 @@
       "Bash(dotnet run:*)",
       "Bash(git clone:*)",
       "Bash(git checkout:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(start /B dotnet run:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

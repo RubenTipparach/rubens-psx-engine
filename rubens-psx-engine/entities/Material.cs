@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using rubens_psx_engine;
+using System.Linq;
 
 namespace rubens_psx_engine.entities
 {
@@ -65,5 +66,30 @@ namespace rubens_psx_engine.entities
         /// Override in concrete materials to expose shader parameters
         /// </summary>
         public virtual void SetProperties() { }
+        
+        /// <summary>
+        /// Check if this material is compatible with the given vertex declaration
+        /// Override in concrete materials to specify vertex requirements
+        /// </summary>
+        /// <param name="vertexDeclaration">Vertex declaration to check</param>
+        /// <returns>True if compatible, false otherwise</returns>
+        public virtual bool IsCompatibleWithVertexDeclaration(VertexDeclaration vertexDeclaration)
+        {
+            // Default implementation: compatible with any vertex declaration
+            return true;
+        }
+        
+        /// <summary>
+        /// Check if this material can be applied to the given model mesh part
+        /// </summary>
+        /// <param name="meshPart">The mesh part to check</param>
+        /// <returns>True if compatible, false otherwise</returns>
+        public virtual bool CanApplyToMeshPart(ModelMeshPart meshPart)
+        {
+            if (meshPart?.VertexBuffer?.VertexDeclaration == null)
+                return false;
+                
+            return IsCompatibleWithVertexDeclaration(meshPart.VertexBuffer.VertexDeclaration);
+        }
     }
 }

@@ -10,7 +10,7 @@ namespace rubens_psx_engine.entities
     /// <summary>
     /// Generic scene manager that handles collections of rendering and physics entities
     /// </summary>
-    public class Scene
+    public class Scene : IDisposable
     {
         protected PhysicsSystem physicsSystem;
         protected List<RenderingEntity> renderingEntities;
@@ -227,5 +227,47 @@ namespace rubens_psx_engine.entities
             var entity = RenderingEntityFactory.CreateWithMaterial(position, modelPath, material);
             return AddRenderingEntity(entity);
         }
+
+        #region IDisposable Implementation
+        
+        private bool disposed = false;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    try
+                    {
+                        // Clear all entities first (this removes them from physics simulation)
+                        ClearAllEntities();
+                        
+                        // Dispose the physics system (this clears the buffer pool)
+                        physicsSystem?.Dispose();
+                        
+                        System.Console.WriteLine("Scene: Successfully disposed of scene resources");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine($"Scene: Error during disposal: {ex.Message}");
+                    }
+                }
+                disposed = true;
+            }
+        }
+
+        ~Scene()
+        {
+            Dispose(false);
+        }
+        
+        #endregion
     }
 }

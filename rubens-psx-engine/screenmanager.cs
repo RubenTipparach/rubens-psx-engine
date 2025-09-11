@@ -158,6 +158,10 @@ namespace rubens_psx_engine
 
         protected override void UnloadContent()
         {
+            // Dispose all screens first (this will clean up physics resources)
+            ExitAllScreens();
+            
+            // Then dispose other manager resources
             retroRenderer?.Dispose();
         }
 
@@ -178,7 +182,19 @@ namespace rubens_psx_engine
                 //remove any screens waiting to be removed.
                 if (screens[i].getState == ScreenState.Deactivated)
                 {
+                    var screenToRemove = screens[i];
                     screens.RemoveAt(i);
+                    
+                    // Dispose the screen to clean up its resources (including physics)
+                    try
+                    {
+                        screenToRemove.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine($"ScreenManager: Error disposing screen: {ex.Message}");
+                    }
+                    
                     continue;
                 }
 
@@ -287,6 +303,19 @@ namespace rubens_psx_engine
         //Delete all screens from the stack.
         public void ExitAllScreens()
         {
+            // Dispose all screens before clearing
+            foreach (var screen in screens)
+            {
+                try
+                {
+                    screen?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine($"ScreenManager: Error disposing screen during ExitAllScreens: {ex.Message}");
+                }
+            }
+            
             screens.Clear();
         }
 

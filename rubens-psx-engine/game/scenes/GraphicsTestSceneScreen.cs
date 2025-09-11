@@ -73,5 +73,15 @@ namespace anakinsoft.game.scenes
             // Draw the scene
             graphicsTestScene.Draw(gameTime, camera);
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose the scene to clean up physics resources
+                graphicsTestScene?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
     }
 }

@@ -69,7 +69,7 @@ namespace anakinsoft.game.scenes
             bakedLitCube.Color = new Vector3(1.0f, 1.0f, 1.0f);
 
             // Add corridor multi-material model for testing
-            CreateCorridorWithMaterials();
+            //CreateCorridorWithMaterials();
 
             // Create a simple test cube in center
             CreateTestCube();

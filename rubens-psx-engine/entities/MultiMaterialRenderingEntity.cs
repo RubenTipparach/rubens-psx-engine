@@ -56,13 +56,28 @@ namespace rubens_psx_engine.entities
                         material.Effect.CurrentTechnique = material.Effect.Techniques[0];
                     }
 
-                    // Apply the material's effect to all mesh parts
+                    // Check vertex declaration compatibility using material's logic
+                    bool canApplyMaterial = true;
                     foreach (ModelMeshPart part in mesh.MeshParts)
                     {
-                        part.Effect = material.Effect;
+                        // Use material's compatibility check
+                        if (!material.CanApplyToMeshPart(part))
+                        {
+                            canApplyMaterial = false;
+                            break;
+                        }
+                    }
+                    
+                    if (canApplyMaterial)
+                    {
+                        // Apply the material's effect to all mesh parts
+                        foreach (ModelMeshPart part in mesh.MeshParts)
+                        {
+                            part.Effect = material.Effect;
+                        }
                     }
 
-                    // Draw the mesh using its assigned material
+                    // Draw the mesh using its assigned material or fallback
                     mesh.Draw();
                 }
                 else

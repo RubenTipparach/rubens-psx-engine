@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
 
 namespace rubens_psx_engine.entities
 {
@@ -42,26 +43,30 @@ namespace rubens_psx_engine.entities
                     material.Effect.CurrentTechnique = material.Effect.Techniques[0];
                 }
 
-                // Draw using the material's effect passes
-                foreach (EffectPass pass in material.Effect.CurrentTechnique.Passes)
+                // Check vertex declaration compatibility using material's logic
+                bool canApplyMaterial = true;
+                foreach (ModelMeshPart part in mesh.MeshParts)
                 {
-                    pass.Apply();
-                    
-                    // Draw each mesh part
-                    foreach (ModelMeshPart part in mesh.MeshParts)
+                    // Use material's compatibility check
+                    if (!material.CanApplyToMeshPart(part))
                     {
-                        var graphicsDevice = Globals.screenManager.GraphicsDevice;
-                        
-                        graphicsDevice.SetVertexBuffer(part.VertexBuffer);
-                        graphicsDevice.Indices = part.IndexBuffer;
-                        
-                        graphicsDevice.DrawIndexedPrimitives(
-                            PrimitiveType.TriangleList,
-                            part.VertexOffset,
-                            part.StartIndex,
-                            part.PrimitiveCount);
+                        canApplyMaterial = false;
+                        break;
                     }
                 }
+                
+                if (canApplyMaterial)
+                {
+                    // Apply material effect to mesh parts
+                    foreach (ModelMeshPart part in mesh.MeshParts)
+                    {
+                        part.Effect = material.Effect;
+                    }
+                }
+                // If not compatible, keep original effects as fallback
+                
+                // Draw the mesh - this preserves vertex declarations and handles everything properly
+                mesh.Draw();
             }
         }
     }

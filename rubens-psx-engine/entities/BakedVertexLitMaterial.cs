@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
 
 namespace rubens_psx_engine.entities
 {
@@ -45,6 +46,25 @@ namespace rubens_psx_engine.entities
             {
                 effect.Parameters["Texture"]?.SetValue(texture);
             }
+        }
+        
+        /// <summary>
+        /// BakedVertexLit shader requires vertex colors (COLOR0) for baked lighting
+        /// </summary>
+        public override bool IsCompatibleWithVertexDeclaration(VertexDeclaration vertexDeclaration)
+        {
+            var vertexElements = vertexDeclaration.GetVertexElements();
+            
+            // Check if vertex declaration includes COLOR0 for baked lighting
+            bool hasVertexColors = vertexElements.Any(e => e.VertexElementUsage == VertexElementUsage.Color);
+            
+            if (!hasVertexColors)
+            {
+                System.Console.WriteLine($"BakedVertexLitMaterial: Vertex declaration missing required COLOR0 element for baked lighting");
+                return false;
+            }
+            
+            return true;
         }
     }
 }
