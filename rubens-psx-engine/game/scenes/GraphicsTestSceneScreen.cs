@@ -56,12 +56,34 @@ namespace anakinsoft.game.scenes
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }
+
+            // Handle L key to toggle bounding box visualization (mimics BepuPhysics demo)
+            if (InputManager.GetKeyboardClick(Keys.L))
+            {
+                if (graphicsTestScene.BoundingBoxRenderer != null)
+                {
+                    System.Console.WriteLine("GraphicsTestSceneScreen: L key pressed - toggling bounding boxes");
+                    graphicsTestScene.BoundingBoxRenderer.ToggleBoundingBoxes();
+                    
+                    if (graphicsTestScene.Physics?.Simulation?.BroadPhase != null)
+                    {
+                        var activeCount = graphicsTestScene.Physics.Simulation.BroadPhase.ActiveTree.LeafCount;
+                        var staticCount = graphicsTestScene.Physics.Simulation.BroadPhase.StaticTree.LeafCount;
+                        System.Console.WriteLine($"GraphicsTestSceneScreen: Physics bodies - Active: {activeCount}, Static: {staticCount}");
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("GraphicsTestSceneScreen: No BoundingBoxRenderer available");
+                }
+            }
         }
 
         public override void Draw2D(GameTime gameTime)
         {
             // Draw graphics test scene UI
-            string message = "Graphics Test Scene\n\nPS1-style shader demonstration\nESC = menu\nF1 = scene selection";
+            string bbStatus = graphicsTestScene.BoundingBoxRenderer?.ShowBoundingBoxes == true ? "ON" : "OFF";
+            string message = $"Graphics Test Scene\n\nPS1-style shader demonstration\nESC = menu\nF1 = scene selection\nL = bounding boxes ({bbStatus})";
             Vector2 position = new Vector2(20, 20);
             
             getSpriteBatch.DrawString(Globals.fontNTR, message, position + Vector2.One, Color.Black);

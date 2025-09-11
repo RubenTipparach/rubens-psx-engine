@@ -23,6 +23,7 @@ public class FPSPhysicsSandbox
 {
     // Use the new scene-based system
     FPSPhysicsSandboxScene scene;
+    public FPSPhysicsSandboxScene Scene { get { return scene; } }
 
     public FPSPhysicsSandbox()
     {

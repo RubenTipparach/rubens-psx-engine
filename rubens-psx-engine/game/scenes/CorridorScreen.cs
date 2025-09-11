@@ -81,6 +81,27 @@ namespace anakinsoft.game.scenes
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }
+
+            // Handle L key to toggle bounding box visualization
+            if (InputManager.GetKeyboardClick(Keys.L))
+            {
+                if (corridorScene.BoundingBoxRenderer != null)
+                {
+                    System.Console.WriteLine("CorridorScreen: L key pressed - toggling bounding boxes");
+                    corridorScene.BoundingBoxRenderer.ToggleBoundingBoxes();
+                    
+                    if (corridorScene.Physics?.Simulation?.BroadPhase != null)
+                    {
+                        var activeCount = corridorScene.Physics.Simulation.BroadPhase.ActiveTree.LeafCount;
+                        var staticCount = corridorScene.Physics.Simulation.BroadPhase.StaticTree.LeafCount;
+                        System.Console.WriteLine($"CorridorScreen: Physics bodies - Active: {activeCount}, Static: {staticCount}");
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("CorridorScreen: No BoundingBoxRenderer available");
+                }
+            }
         }
 
         public override void Draw2D(GameTime gameTime)

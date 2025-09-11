@@ -94,13 +94,34 @@ namespace anakinsoft.game.scenes
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }
+
+            // Handle L key to toggle bounding box visualization
+            if (InputManager.GetKeyboardClick(Keys.L))
+            {
+                if (physicsSandbox?.Scene?.BoundingBoxRenderer != null)
+                {
+                    System.Console.WriteLine("FPSSandboxScreen: L key pressed - toggling bounding boxes");
+                    physicsSandbox.Scene.BoundingBoxRenderer.ToggleBoundingBoxes();
+                    
+                    if (physicsSandbox.Scene.Physics?.Simulation?.BroadPhase != null)
+                    {
+                        var activeCount = physicsSandbox.Scene.Physics.Simulation.BroadPhase.ActiveTree.LeafCount;
+                        var staticCount = physicsSandbox.Scene.Physics.Simulation.BroadPhase.StaticTree.LeafCount;
+                        System.Console.WriteLine($"FPSSandboxScreen: Physics bodies - Active: {activeCount}, Static: {staticCount}");
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("FPSSandboxScreen: No BoundingBoxRenderer available");
+                }
+            }
         }      
         
 
         public override void Draw2D(GameTime gameTime)
         {
             // Draw FPS sandbox UI
-            string message = "FPS Sandbox Scene\n\nWASD = move\nMouse = look\nESC = menu\nF1 = scene selection\nLeft Click = shoot\nB = spawn box";
+            string message = "FPS Sandbox Scene\n\nWASD = move\nMouse = look\nESC = menu\nF1 = scene selection\nLeft Click = shoot\nB = spawn box\nL = bounding boxes";
             Vector2 messageSize = Globals.fontNTR.MeasureString(message);
             
             // Position message in top-left corner

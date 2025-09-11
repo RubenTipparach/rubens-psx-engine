@@ -1,5 +1,6 @@
 using anakinsoft.game.scenes;
 using rubens_psx_engine.system.config;
+using rubens_psx_engine.game.scenes;
 
 namespace rubens_psx_engine.system
 {
@@ -24,6 +25,7 @@ namespace rubens_psx_engine.system
                 "thirdPersonHallway" => new ThirdPersonHallwayScene(),
                 "graphicsTest" => new GraphicsTestSceneScreen(),
                 "corridor" => new CorridorScreen(),
+                "wireframeTest" => new WireframeCubeTestScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -70,7 +72,8 @@ namespace rubens_psx_engine.system
                 "cameraTest",
                 "thirdPersonHallway",
                 "graphicsTest",
-                "corridor"
+                "corridor",
+                "wireframeTest"
             };
         }
 
@@ -90,6 +93,7 @@ namespace rubens_psx_engine.system
                 "thirdPersonHallway" => "Third Person Hallway",
                 "graphicsTest" => "Graphics Test Scene",
                 "corridor" => "Corridor Multi-Material Scene",
+                "wireframeTest" => "Wireframe Cube Test",
                 _ => "Unknown Scene"
             };
         }

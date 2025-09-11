@@ -24,6 +24,7 @@ public class PhysicsSandbox {
 
     // Use the new scene-based system
     PhysicsSandboxScene scene;
+    public PhysicsSandboxScene Scene { get { return scene; } }
 
     public PhysicsSandbox()
     {

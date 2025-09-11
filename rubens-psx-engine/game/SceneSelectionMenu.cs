@@ -44,9 +44,13 @@ namespace rubens_psx_engine
             corridorButton.SetPosition(new Vector2(100, 540));
             sceneButtons.Add(corridorButton);
 
+            var wireframeTestButton = new Button("Wireframe Cube Test", (sender, args) => LoadScene("wireframeTest"));
+            wireframeTestButton.SetPosition(new Vector2(100, 600));
+            sceneButtons.Add(wireframeTestButton);
+
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 600));
+            backButton.SetPosition(new Vector2(100, 660));
         }
 
         private void LoadScene(string sceneType)
