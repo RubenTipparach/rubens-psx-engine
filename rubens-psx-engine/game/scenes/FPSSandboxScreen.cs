@@ -25,10 +25,6 @@ namespace anakinsoft.game.scenes
         Entity chair;
 
         //adding physics for test
-        Simulation simulation;
-        Dictionary<BodyHandle, Matrix> bodyTransforms = new();
-        Model cubeModel;
-        Model bulletModel;
         FPSPhysicsSandbox physicsSandbox;
 
         // Camera offset configuration - adjustable variables for tweaking

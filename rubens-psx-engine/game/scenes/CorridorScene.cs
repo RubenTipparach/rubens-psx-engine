@@ -32,8 +32,8 @@ namespace anakinsoft.game.scenes
         // Multi-material corridor entity
         MultiMaterialRenderingEntity corridorEntity;
         
-        // Static physics meshes for corridors
-        List<StaticMesh> corridorPhysicsMeshes;
+        // Direct BepuPhysics meshes for corridors
+        List<Mesh> corridorBepuMeshes;
         
         // Entity collections
         List<PhysicsEntity> bullets;
@@ -49,7 +49,7 @@ namespace anakinsoft.game.scenes
             physicsSystem = new PhysicsSystem(ref characters);
             
             bullets = new List<PhysicsEntity>();
-            corridorPhysicsMeshes = new List<StaticMesh>();
+            corridorBepuMeshes = new List<Mesh>();
             
             // Set black background for corridor scene
             BackgroundColor = Color.Black;
@@ -123,6 +123,64 @@ namespace anakinsoft.game.scenes
             CreateCorridorPhysicsMesh(offset);
         }
 
+        private Buffer<Triangle> ExtractTrianglesFromModel(Model model, Vector3 scale)
+        {
+            var trianglesList = new List<Triangle>();
+            var scaleMatrix = Matrix.CreateScale(scale);
+            
+            foreach (var mesh in model.Meshes)
+            {
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    // Get vertex and index data
+                    var vertexBuffer = meshPart.VertexBuffer;
+                    var indexBuffer = meshPart.IndexBuffer;
+                    var vertexDeclaration = meshPart.VertexBuffer.VertexDeclaration;
+                    
+                    // Extract vertices (assuming VertexPositionNormalTexture)
+                    var vertexCount = meshPart.NumVertices;
+                    var vertices = new VertexPositionNormalTexture[vertexCount];
+                    vertexBuffer.GetData(meshPart.VertexOffset * vertexDeclaration.VertexStride, 
+                        vertices, 0, vertexCount, vertexDeclaration.VertexStride);
+                    
+                    // Extract indices
+                    var indexCount = meshPart.PrimitiveCount * 3;
+                    var indices = new int[indexCount];
+                    
+                    if (indexBuffer.IndexElementSize == IndexElementSize.SixteenBits)
+                    {
+                        var shortIndices = new short[indexCount];
+                        indexBuffer.GetData<short>(shortIndices, meshPart.StartIndex, indexCount);
+                        for (int i = 0; i < shortIndices.Length; i++)
+                            indices[i] = shortIndices[i];
+                    }
+                    else
+                    {
+                        indexBuffer.GetData<int>(indices, meshPart.StartIndex, indexCount);
+                    }
+                    
+                    // Create triangles
+                    for (int i = 0; i < indices.Length; i += 3)
+                    {
+                        var v1 = Vector3.Transform(vertices[indices[i]].Position, scaleMatrix);
+                        var v2 = Vector3.Transform(vertices[indices[i + 1]].Position, scaleMatrix);
+                        var v3 = Vector3.Transform(vertices[indices[i + 2]].Position, scaleMatrix);
+                        
+                        trianglesList.Add(new Triangle(v1.ToVector3N(), v2.ToVector3N(), v3.ToVector3N()));
+                    }
+                }
+            }
+            
+            // Create buffer and copy triangles
+            physicsSystem.BufferPool.Take<Triangle>(trianglesList.Count, out var triangleBuffer);
+            for (int i = 0; i < trianglesList.Count; i++)
+            {
+                triangleBuffer[i] = trianglesList[i];
+            }
+            
+            return triangleBuffer;
+        }
+
         private void CreateCorridorPhysicsMesh(Vector3 offset)
         {
             try
@@ -130,18 +188,28 @@ namespace anakinsoft.game.scenes
                 // Load the same model used for rendering
                 var corridorModel = Globals.screenManager.Content.Load<Model>("models/corridor_single");
                 
-                // Create static mesh with the same scale as the rendering entity
-                var corridorScale = Vector3.One * 0.1f; // Same scale as visual
-                var staticMesh = new StaticMesh(corridorModel, corridorScale, 
-                    physicsSystem.Simulation, physicsSystem.BufferPool);
+                // Use consistent scaling approach: visual scale * physics scale factor
+                // Corridor uses visual scale of 0.1f, so physics scale = 0.1f * 10 = 1.0f
+                var visualScale = Vector3.One * 0.1f; // Same scale as rendering entity
+                var physicsScale = visualScale * 10f; // Apply our learned scaling factor
                 
-                // Add to simulation at the same position as the visual
-                staticMesh.AddToSimulation(physicsSystem.Simulation, offset, Quaternion.Identity);
+                // Extract triangles directly and create BepuPhysics Mesh
+                var triangles = ExtractTrianglesFromModel(corridorModel, physicsScale);
+                var bepuMesh = new Mesh(triangles, physicsScale.ToVector3N(), physicsSystem.BufferPool);
+                
+                // Add the mesh shape to the simulation's shape collection
+                var shapeIndex = physicsSystem.Simulation.Shapes.Add(bepuMesh);
+                
+                // Create static body with the mesh shape
+                var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
+                    offset.ToVector3N(), 
+                    Quaternion.Identity.ToQuaternionN(), 
+                    shapeIndex));
                 
                 // Keep reference for cleanup
-                corridorPhysicsMeshes.Add(staticMesh);
+                corridorBepuMeshes.Add(bepuMesh);
                 
-                Console.WriteLine($"Created corridor physics mesh at position: {offset}");
+                Console.WriteLine($"Created corridor physics mesh at position: {offset} with physics scale: {physicsScale}");
             }
             catch (Exception ex)
             {
@@ -269,12 +337,8 @@ namespace anakinsoft.game.scenes
         {
             if (disposing)
             {
-                // Clean up static meshes
-                foreach (var staticMesh in corridorPhysicsMeshes)
-                {
-                    staticMesh?.Dispose();
-                }
-                corridorPhysicsMeshes.Clear();
+                // BepuPhysics meshes are cleaned up by the physics system
+                corridorBepuMeshes.Clear();
             }
             base.Dispose(disposing);
         }

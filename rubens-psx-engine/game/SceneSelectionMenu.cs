@@ -48,9 +48,13 @@ namespace rubens_psx_engine
             wireframeTestButton.SetPosition(new Vector2(100, 600));
             sceneButtons.Add(wireframeTestButton);
 
+            var staticMeshDemoButton = new Button("Static Mesh Demo", (sender, args) => LoadScene("staticMeshDemo"));
+            staticMeshDemoButton.SetPosition(new Vector2(100, 660));
+            sceneButtons.Add(staticMeshDemoButton);
+
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 660));
+            backButton.SetPosition(new Vector2(100, 720));
         }
 
         private void LoadScene(string sceneType)
@@ -112,6 +116,14 @@ namespace rubens_psx_engine
             {
                 LoadScene("corridor");
             }
+            else if (InputManager.GetKeyboardClick(Keys.D8))
+            {
+                LoadScene("wireframeTest");
+            }
+            else if (InputManager.GetKeyboardClick(Keys.D9))
+            {
+                LoadScene("staticMeshDemo");
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -134,7 +146,7 @@ namespace rubens_psx_engine
             getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
 
             // Draw instructions
-            string instructions = "Press 1-7 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway  6=Graphics Test  7=Corridor\nESC to go back";
+            string instructions = "Press 1-9 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway\n6=Graphics Test  7=Corridor  8=Wireframe Test  9=Static Mesh Demo\nESC to go back";
             Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,

@@ -30,14 +30,14 @@ namespace rubens_psx_engine.system.physics
                 if (showBoundingBoxes != value)
                 {
                     showBoundingBoxes = value;
-                    System.Console.WriteLine($"BoundingBoxRenderer: Bounding boxes {(showBoundingBoxes ? "ENABLED" : "DISABLED")}");
+                    //System.Console.WriteLine($"BoundingBoxRenderer: Bounding boxes {(showBoundingBoxes ? "ENABLED" : "DISABLED")}");
                     
                     if (!showBoundingBoxes)
                     {
                         // Clear vertices when disabled to save memory
                         vertices.Clear();
                         indices.Clear();
-                        System.Console.WriteLine("BoundingBoxRenderer: Cleared bounding box data");
+                        //System.Console.WriteLine("BoundingBoxRenderer: Cleared bounding box data");
                     }
                 }
             }
@@ -224,7 +224,7 @@ namespace rubens_psx_engine.system.physics
                     
                     if (showBoundingBoxes) // Only log when actually showing
                     {
-                        System.Console.WriteLine($"BoundingBoxRenderer: Drew {indices.Count / 2} bounding box lines for {vertices.Count / 8} boxes");
+                        //System.Console.WriteLine($"BoundingBoxRenderer: Drew {indices.Count / 2} bounding box lines for {vertices.Count / 8} boxes");
                     }
                 }
                 catch (Exception ex)

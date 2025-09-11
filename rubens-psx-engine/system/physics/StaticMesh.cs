@@ -20,6 +20,9 @@ namespace anakinsoft.system.physics
         private TypedIndex shapeIndex;
         private BufferPool bufferPool;
         private bool disposed = false;
+        
+        // Store triangle data for wireframe visualization
+        private List<Vector3> triangleVertices;
 
         /// <summary>
         /// Gets the BepuPhysics mesh shape index for use in simulation.
@@ -30,6 +33,12 @@ namespace anakinsoft.system.physics
         /// Gets the underlying BepuPhysics mesh.
         /// </summary>
         public Mesh BepuMesh => bepuMesh;
+        
+        /// <summary>
+        /// Gets the triangle vertices for wireframe visualization.
+        /// Each group of 3 vertices represents one triangle.
+        /// </summary>
+        public IReadOnlyList<Vector3> TriangleVertices => triangleVertices;
 
         /// <summary>
         /// Creates a static mesh from XNA Model data.
@@ -41,6 +50,7 @@ namespace anakinsoft.system.physics
         public StaticMesh(Model model, Vector3 scale, Simulation simulation, BufferPool bufferPool)
         {
             this.bufferPool = bufferPool;
+            triangleVertices = new List<Vector3>();
             var triangles = ExtractTrianglesFromModel(model, scale, bufferPool);
             CreateBepuMesh(triangles, scale.ToVector3N(), simulation, bufferPool);
         }
@@ -56,6 +66,7 @@ namespace anakinsoft.system.physics
         public StaticMesh(Vector3[] vertices, int[] indices, Vector3 scale, Simulation simulation, BufferPool bufferPool)
         {
             this.bufferPool = bufferPool;
+            triangleVertices = new List<Vector3>();
             var triangles = ExtractTrianglesFromArrays(vertices, indices, scale, bufferPool);
             CreateBepuMesh(triangles, scale.ToVector3N(), simulation, bufferPool);
         }
@@ -70,6 +81,7 @@ namespace anakinsoft.system.physics
         public StaticMesh(ModelMesh modelMesh, Vector3 scale, Simulation simulation, BufferPool bufferPool)
         {
             this.bufferPool = bufferPool;
+            triangleVertices = new List<Vector3>();
             var triangles = ExtractTrianglesFromModelMesh(modelMesh, scale, bufferPool);
             CreateBepuMesh(triangles, scale.ToVector3N(), simulation, bufferPool);
         }
@@ -163,11 +175,16 @@ namespace anakinsoft.system.physics
                 // Create triangles
                 for (int i = 0; i < indices.Length; i += 3)
                 {
-                    var v1 = Vector3.Transform(vertices[indices[i]], Matrix.CreateScale(scale)).ToVector3N();
-                    var v2 = Vector3.Transform(vertices[indices[i + 1]], Matrix.CreateScale(scale)).ToVector3N();
-                    var v3 = Vector3.Transform(vertices[indices[i + 2]], Matrix.CreateScale(scale)).ToVector3N();
+                    var v1 = Vector3.Transform(vertices[indices[i]], Matrix.CreateScale(scale));
+                    var v2 = Vector3.Transform(vertices[indices[i + 1]], Matrix.CreateScale(scale));
+                    var v3 = Vector3.Transform(vertices[indices[i + 2]], Matrix.CreateScale(scale));
 
-                    triangles.Add(new Triangle(v1, v2, v3));
+                    // Store vertices for wireframe visualization
+                    triangleVertices.Add(v1);
+                    triangleVertices.Add(v2);
+                    triangleVertices.Add(v3);
+
+                    triangles.Add(new Triangle(v1.ToVector3N(), v2.ToVector3N(), v3.ToVector3N()));
                 }
             }
 
@@ -190,11 +207,16 @@ namespace anakinsoft.system.physics
                 var i2 = indices[i * 3 + 1];
                 var i3 = indices[i * 3 + 2];
 
-                var v1 = Vector3.Transform(vertices[i1], scaleMatrix).ToVector3N();
-                var v2 = Vector3.Transform(vertices[i2], scaleMatrix).ToVector3N();
-                var v3 = Vector3.Transform(vertices[i3], scaleMatrix).ToVector3N();
+                var v1 = Vector3.Transform(vertices[i1], scaleMatrix);
+                var v2 = Vector3.Transform(vertices[i2], scaleMatrix);
+                var v3 = Vector3.Transform(vertices[i3], scaleMatrix);
 
-                triangleBuffer[i] = new Triangle(v1, v2, v3);
+                // Store vertices for wireframe visualization
+                triangleVertices.Add(v1);
+                triangleVertices.Add(v2);
+                triangleVertices.Add(v3);
+
+                triangleBuffer[i] = new Triangle(v1.ToVector3N(), v2.ToVector3N(), v3.ToVector3N());
             }
 
             return triangleBuffer;

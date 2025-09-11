@@ -6,7 +6,8 @@
       "Bash(dotnet test)",
       "Bash(dotnet test:*)",
       "Bash(dotnet run:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

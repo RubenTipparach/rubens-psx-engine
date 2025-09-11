@@ -23,12 +23,7 @@ namespace rubens_psx_engine
         Entity chair;
 
         //adding physics for test
-        Simulation simulation;
-        Dictionary<BodyHandle, Matrix> bodyTransforms = new();
-        Model cubeModel;
-        Model bulletModel;
         PhysicsSandbox physicsSandbox;
-        //BufferPool bufferPool;
 
         public ThirdPersonSandboxScreen()
         {

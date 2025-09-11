@@ -88,6 +88,8 @@ public class PhysicsSandboxScene : Scene
             boxes.Add(box);
         }
 
+        // Static mesh functionality moved to dedicated StaticMeshDemo scene
+
         // Create character
         CreateCharacter(new Vector3(0, 2, 40));
     }
@@ -103,6 +105,8 @@ public class PhysicsSandboxScene : Scene
         
         return box;
     }
+
+    // Static mesh functionality moved to dedicated StaticMeshDemo scene
 
     private PhysicsEntity CreateBulletEntity(Vector3 position, Vector3N direction)
     {
@@ -241,4 +245,14 @@ public class PhysicsSandboxScene : Scene
     public List<PhysicsEntity> GetBoxes() => boxes;
     public bool IsCharacterActive() => characterActive;
     public CharacterInput? GetCharacter() => character;
+    // Static mesh functionality moved to dedicated StaticMeshDemo scene
+    
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Physics entities are cleaned up by base Scene class
+        }
+        base.Dispose(disposing);
+    }
 }

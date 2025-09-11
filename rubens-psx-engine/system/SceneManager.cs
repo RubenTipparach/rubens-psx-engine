@@ -26,6 +26,7 @@ namespace rubens_psx_engine.system
                 "graphicsTest" => new GraphicsTestSceneScreen(),
                 "corridor" => new CorridorScreen(),
                 "wireframeTest" => new WireframeCubeTestScreen(),
+                "staticMeshDemo" => new StaticMeshDemoScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -73,7 +74,8 @@ namespace rubens_psx_engine.system
                 "thirdPersonHallway",
                 "graphicsTest",
                 "corridor",
-                "wireframeTest"
+                "wireframeTest",
+                "staticMeshDemo"
             };
         }
 
@@ -94,6 +96,7 @@ namespace rubens_psx_engine.system
                 "graphicsTest" => "Graphics Test Scene",
                 "corridor" => "Corridor Multi-Material Scene",
                 "wireframeTest" => "Wireframe Cube Test",
+                "staticMeshDemo" => "Static Mesh Demo",
                 _ => "Unknown Scene"
             };
         }
