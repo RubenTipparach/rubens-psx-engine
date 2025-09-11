@@ -32,6 +32,9 @@ namespace anakinsoft.game.scenes
         // Multi-material corridor entity
         MultiMaterialRenderingEntity corridorEntity;
         
+        // Static physics meshes for corridors
+        List<StaticMesh> corridorPhysicsMeshes;
+        
         // Entity collections
         List<PhysicsEntity> bullets;
         PhysicsEntity ground;
@@ -46,6 +49,7 @@ namespace anakinsoft.game.scenes
             physicsSystem = new PhysicsSystem(ref characters);
             
             bullets = new List<PhysicsEntity>();
+            corridorPhysicsMeshes = new List<StaticMesh>();
             
             // Set black background for corridor scene
             BackgroundColor = Color.Black;
@@ -57,16 +61,16 @@ namespace anakinsoft.game.scenes
         {
             base.Initialize();
 
-            // Create corridor with multiple materials
-            CreateCorridorWithMaterials(Vector3.One);
+            // Create corridor with multiple materials and physics
+            CreateCorridorWithMaterialsAndPhysics(Vector3.One);
 
-            CreateCorridorWithMaterials(Vector3.Forward * 80);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80);
 
-            CreateCorridorWithMaterials(Vector3.Forward * 80 * 2);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80 * 2);
 
-            CreateCorridorWithMaterials(Vector3.Forward * 80 * 3);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80 * 3);
 
-            CreateCorridorWithMaterials(Vector3.Forward * 80* 4);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80* 4);
 
             // Create physics ground for collision (visible for testing)
             CreatePhysicsGround();
@@ -78,7 +82,7 @@ namespace anakinsoft.game.scenes
             CreateCharacter(new Vector3(0, 10, 100)); // Start at back of corridor
         }
 
-        private void CreateCorridorWithMaterials(Vector3 offfset)
+        private void CreateCorridorWithMaterialsAndPhysics(Vector3 offset)
         {
             var affine = 0;
             // Create three different materials for the corridor channels using actual texture files
@@ -108,12 +112,42 @@ namespace anakinsoft.game.scenes
                     { 2, cieling }  // Decorative elements
                 });
 
-            corridorEntity.Position = Vector3.Zero + offfset; 
+            corridorEntity.Position = Vector3.Zero + offset; 
             corridorEntity.Scale = Vector3.One * .1f;
             corridorEntity.IsVisible = true;
             
             // Add to rendering entities
             AddRenderingEntity(corridorEntity);
+
+            // Create physics mesh for the corridor
+            CreateCorridorPhysicsMesh(offset);
+        }
+
+        private void CreateCorridorPhysicsMesh(Vector3 offset)
+        {
+            try
+            {
+                // Load the same model used for rendering
+                var corridorModel = Globals.screenManager.Content.Load<Model>("models/corridor_single");
+                
+                // Create static mesh with the same scale as the rendering entity
+                var corridorScale = Vector3.One * 0.1f; // Same scale as visual
+                var staticMesh = new StaticMesh(corridorModel, corridorScale, 
+                    physicsSystem.Simulation, physicsSystem.BufferPool);
+                
+                // Add to simulation at the same position as the visual
+                staticMesh.AddToSimulation(physicsSystem.Simulation, offset, Quaternion.Identity);
+                
+                // Keep reference for cleanup
+                corridorPhysicsMeshes.Add(staticMesh);
+                
+                Console.WriteLine($"Created corridor physics mesh at position: {offset}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to create corridor physics mesh: {ex.Message}");
+                // Continue without physics mesh for this corridor
+            }
         }
 
         private void CreatePhysicsGround()
@@ -230,5 +264,19 @@ namespace anakinsoft.game.scenes
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
         public MultiMaterialRenderingEntity GetCorridor() => corridorEntity;
+        
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Clean up static meshes
+                foreach (var staticMesh in corridorPhysicsMeshes)
+                {
+                    staticMesh?.Dispose();
+                }
+                corridorPhysicsMeshes.Clear();
+            }
+            base.Dispose(disposing);
+        }
     }
 }

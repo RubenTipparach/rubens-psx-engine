@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
+using rubens_psx_engine.system;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +17,7 @@ using System.IO;
 using Vector3N = System.Numerics.Vector3;
 namespace anakinsoft.game.scenes
 {
-    public class FPSSandboxScreen : Screen
+    public class FPSSandboxScreen : PhysicsScreen
     {
         FPSCamera fpsCamera;
         public Camera GetCamera { get { return fpsCamera; } }
@@ -44,6 +45,7 @@ namespace anakinsoft.game.scenes
             chair.SetPosition(new Vector3(0, 0, 50));
 
             physicsSandbox = new FPSPhysicsSandbox();
+            SetScene(physicsSandbox.Scene); // Register scene with physics screen for automatic disposal
         }
 
         public override void Update(GameTime gameTime)

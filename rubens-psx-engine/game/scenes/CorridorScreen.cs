@@ -3,13 +3,14 @@ using anakinsoft.utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
+using rubens_psx_engine.system;
 
 namespace anakinsoft.game.scenes
 {
     /// <summary>
     /// Screen for the corridor scene with FPS camera and multi-material rendering
     /// </summary>
-    public class CorridorScreen : Screen
+    public class CorridorScreen : PhysicsScreen
     {
         FPSCamera fpsCamera;
         public Camera GetCamera { get { return fpsCamera; } }
@@ -27,6 +28,7 @@ namespace anakinsoft.game.scenes
             fpsCamera.Position = new Vector3(0, 10, 100); // Start at back of corridor
 
             corridorScene = new CorridorScene();
+            SetScene(corridorScene); // Register scene with physics screen for automatic disposal
             
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
@@ -129,6 +131,8 @@ namespace anakinsoft.game.scenes
         {
             // Restore mouse visibility when exiting corridor screen
             //Globals.screenManager.IsMouseVisible = true;
+            
+            // PhysicsScreen base class will automatically dispose physics resources
             base.ExitScreen();
         }
 
@@ -136,6 +140,8 @@ namespace anakinsoft.game.scenes
         {
             // Restore mouse visibility when killing corridor screen
             //Globals.screenManager.IsMouseVisible = true;
+            
+            // PhysicsScreen base class will automatically dispose physics resources
             base.KillScreen();
         }
     }

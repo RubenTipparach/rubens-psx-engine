@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
+using rubens_psx_engine.system;
 using System;
 
 namespace anakinsoft.game.scenes
@@ -11,7 +12,7 @@ namespace anakinsoft.game.scenes
     /// <summary>
     /// Screen that displays the GraphicsTestScene
     /// </summary>
-    public class GraphicsTestSceneScreen : Screen
+    public class GraphicsTestSceneScreen : PhysicsScreen
     {
         Camera camera;
         public Camera GetCamera { get { return camera; } }
@@ -27,6 +28,7 @@ namespace anakinsoft.game.scenes
 
             // Create and initialize the graphics test scene
             graphicsTestScene = new GraphicsTestScene();
+            SetScene(graphicsTestScene); // Register scene with physics screen for automatic disposal
         }
 
         public override void Update(GameTime gameTime)
@@ -96,14 +98,6 @@ namespace anakinsoft.game.scenes
             graphicsTestScene.Draw(gameTime, camera);
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Dispose the scene to clean up physics resources
-                graphicsTestScene?.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+        // PhysicsScreen base class automatically handles disposal
     }
 }

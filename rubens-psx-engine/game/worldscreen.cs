@@ -10,11 +10,12 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using rubens_psx_engine.system;
 
 using Vector3N = System.Numerics.Vector3;
 namespace rubens_psx_engine
 {
-    public class ThirdPersonSandboxScreen : Screen
+    public class ThirdPersonSandboxScreen : PhysicsScreen
     {
         Camera camera;
         public Camera GetCamera { get { return camera; } }
@@ -49,6 +50,7 @@ namespace rubens_psx_engine
 
             //        groundDesc));
             physicsSandbox = new();
+            SetScene(physicsSandbox.Scene); // Register scene with physics screen for automatic disposal
         }
 
         public override void Update(GameTime gameTime)
