@@ -87,7 +87,7 @@ namespace rubens_psx_engine
             Globals.screenManager.getSpriteBatch.Draw(Globals.white, new Rectangle(0, 0, Globals.screenManager.Window.ClientBounds.Width, Globals.screenManager.Window.ClientBounds.Height), (Color.PaleVioletRed * .8f) * this.getTransition);
 
             //header title.
-            Globals.screenManager.getSpriteBatch.DrawString(Globals.fontNTR, "FNA Starter Kit", new Vector2(100,100), Color.White * this.getTransition);
+            Globals.screenManager.getSpriteBatch.DrawString(Globals.fontNTR, "SOPHON ENGINE", new Vector2(100,100), Color.White * this.getTransition);
 
             //Buttons.            
             for (int i = 0; i < buttons.Length; i++)

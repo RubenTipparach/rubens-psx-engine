@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
 using rubens_psx_engine.system.config;
+using rubens_psx_engine.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,16 +76,17 @@ namespace anakinsoft.game.scenes
                 boundingBoxRenderer.ShowBoundingBoxes = RenderingConfigManager.Config.Development.ShowStaticMeshDebug;
             }
 
+            float intervals = 160;
             // Create corridor with multiple materials and physics
-            CreateCorridorWithMaterialsAndPhysics(Vector3.One);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80 * 2);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 2);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80 * 3);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 3);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * 80* 4);
+            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 4);
 
             // Create physics ground for collision (visible for testing)
             CreatePhysicsGround();
@@ -127,7 +129,7 @@ namespace anakinsoft.game.scenes
                 });
 
             corridorEntity.Position = Vector3.Zero + offset; 
-            corridorEntity.Scale = Vector3.One * .1f;
+            corridorEntity.Scale = Vector3.One * .2f;
             corridorEntity.IsVisible = true;
             
             // Add to rendering entities
@@ -147,26 +149,26 @@ namespace anakinsoft.game.scenes
                 
                 // Use consistent scaling approach: visual scale * physics scale factor
                 // Corridor uses visual scale of 0.1f, so physics scale = 0.1f * 10 = 1.0f
-                var visualScale = Vector3.One * 0.1f; // Same scale as rendering entity
-                var physicsScale = visualScale * 10; // Apply our learned scaling factor
+                var visualScale = Vector3.One * 0.2f; // Same scale as rendering entity
+                var physicsScale = visualScale * 100; // Apply our learned scaling factor
 
                 // Extract triangles and wireframe vertices for rendering
                 var (triangles, wireframeVertices) = BepuMeshExtractor.ExtractTrianglesFromModel(corridorModel, physicsScale, physicsSystem);
-                var bepuMesh = new Mesh(triangles, physicsScale.ToVector3N(), physicsSystem.BufferPool);
+                var bepuMesh = new Mesh(triangles, Vector3.One.ToVector3N(), physicsSystem.BufferPool);
                 
                 // Add the mesh shape to the simulation's shape collection
                 var shapeIndex = physicsSystem.Simulation.Shapes.Add(bepuMesh);
-                
+                var rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0);
                 // Create static body with the mesh shape
                 var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
-                    offset.ToVector3N(), 
-                    Quaternion.Identity.ToQuaternionN(), 
+                    offset.ToVector3N(),
+                    rotation.ToQuaternionN(), 
                     shapeIndex));
                 
                 // Keep references for cleanup and wireframe rendering
                 corridorBepuMeshes.Add(bepuMesh);
                 meshTriangleVertices.Add(wireframeVertices);
-                staticMeshTransforms.Add((offset, Quaternion.Identity));
+                staticMeshTransforms.Add((offset, rotation));
 
 
                 Console.WriteLine($"Created corridor physics mesh at position: {offset} with physics scale: {physicsScale}");
@@ -181,7 +183,7 @@ namespace anakinsoft.game.scenes
         private void CreatePhysicsGround()
         {
             // Create visible ground plane for character physics and visual reference
-            ground = CreateGround(new Vector3(0, -10f, 0), new Vector3(8000, 2, 8000), 
+            ground = CreateGround(new Vector3(0, 0, 0), new Vector3(8000, 2, 8000), 
                 "models/cube", "textures/prototype/concrete");
             ground.IsVisible = false; // Make it visible for testing
             ground.Scale = new Vector3(10f, 0.1f, 20f);
@@ -210,8 +212,8 @@ namespace anakinsoft.game.scenes
                 maximumHorizontalForce: 200,
                 maximumVerticalGlueForce: 10000,
                 jumpVelocity: 100,
-                speed: 40,
-                maximumSlope: MathF.PI * 0.4f);
+                speed: 80,
+                maximumSlope: 45f.ToRadians());
         }
 
         private PhysicsEntity CreateBulletEntity(Vector3 position, Vector3N direction)
