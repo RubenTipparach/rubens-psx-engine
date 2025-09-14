@@ -24,17 +24,17 @@ namespace rubens_psx_engine
             fpsButton.SetPosition(new Vector2(100, 240));
             sceneButtons.Add(fpsButton);
 
-            var basicButton = new Button("Basic Scene", (sender, args) => LoadScene("basic"));
-            basicButton.SetPosition(new Vector2(100, 300));
-            sceneButtons.Add(basicButton);
+            //var basicButton = new Button("Basic Scene", (sender, args) => LoadScene("basic"));
+            //basicButton.SetPosition(new Vector2(100, 300));
+            //sceneButtons.Add(basicButton);
 
-            var cameraTestButton = new Button("Camera Test Scene", (sender, args) => LoadScene("cameraTest"));
-            cameraTestButton.SetPosition(new Vector2(100, 360));
-            sceneButtons.Add(cameraTestButton);
+            //var cameraTestButton = new Button("Camera Test Scene", (sender, args) => LoadScene("cameraTest"));
+            //cameraTestButton.SetPosition(new Vector2(100, 360));
+            //sceneButtons.Add(cameraTestButton);
 
-            var thirdPersonHallwayButton = new Button("Third Person Hallway", (sender, args) => LoadScene("thirdPersonHallway"));
-            thirdPersonHallwayButton.SetPosition(new Vector2(100, 420));
-            sceneButtons.Add(thirdPersonHallwayButton);
+            //var thirdPersonHallwayButton = new Button("Third Person Hallway", (sender, args) => LoadScene("thirdPersonHallway"));
+            //thirdPersonHallwayButton.SetPosition(new Vector2(100, 420));
+            //sceneButtons.Add(thirdPersonHallwayButton);
 
             var graphicsTestButton = new Button("Graphics Test Scene", (sender, args) => LoadScene("graphicsTest"));
             graphicsTestButton.SetPosition(new Vector2(100, 480));
