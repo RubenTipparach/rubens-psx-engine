@@ -28,6 +28,7 @@ namespace rubens_psx_engine.system
                 "wireframeTest" => new WireframeCubeTestScreen(),
                 "staticMeshDemo" => new StaticMeshDemoScreen(),
                 "interactiveTest" => new InteractiveTestSceneScreen(),
+                "bepuInteraction" => new BepuInteractionScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -77,7 +78,8 @@ namespace rubens_psx_engine.system
                 "corridor",
                 "wireframeTest",
                 "staticMeshDemo",
-                "interactiveTest"
+                "interactiveTest",
+                "bepuInteraction"
             };
         }
 
@@ -99,6 +101,8 @@ namespace rubens_psx_engine.system
                 "corridor" => "Corridor Multi-Material Scene",
                 "wireframeTest" => "Wireframe Cube Test",
                 "staticMeshDemo" => "Static Mesh Demo",
+                "interactiveTest" => "Interactive Test Scene",
+                "bepuInteraction" => "BEPU Physics Interaction",
                 _ => "Unknown Scene"
             };
         }

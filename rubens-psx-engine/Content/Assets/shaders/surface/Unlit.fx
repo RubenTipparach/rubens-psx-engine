@@ -4,7 +4,7 @@ matrix Projection;
 Texture2D Texture;
 
 // PS1-style parameters
-float VertexJitterAmount = 2.0; // Higher = more jitter, try 64.0 or 32.0 for strong PS1 effect
+float VertexJitterAmount = 30.0; // Higher = more jitter, try 64.0 or 32.0 for strong PS1 effect
 float AffineAmount = 0.0; // 0.0 = perspective correct, 1.0 = full affine mapping
 bool EnableAffineMapping = true;
 float Brightness = 1.0; // Color brightness multiplier, 1.0 = normal, > 1.0 = brighter, < 1.0 = darker

@@ -11,8 +11,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
-using rubens_psx_engine.system.config;
 using rubens_psx_engine.Extensions;
+using rubens_psx_engine.system.config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,29 +79,77 @@ namespace anakinsoft.game.scenes
 
             float intervals = 160;
             // Create corridor with multiple materials and physics
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward);
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 320), Quaternion.Identity);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals);
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 160), Quaternion.Identity);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 2);
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 0), Quaternion.Identity);
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 3);
+            CreateCorridorSlope(new Vector3(0, -80, -160),
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0));
 
-            CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 4);
+            CreateCorridorSlope(new Vector3(0, -40, -320),
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0));
+
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, 0, -480), Quaternion.Identity);
+
+            //CreateCorridorSlope(new Vector3(0, 0, -160), QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0));
+
+            //CreateCorridorWithMaterialsAndPhysics(new Vector3(0, 160, -40) + Vector3.Forward * intervals * 3);
+
+            //CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 4);
 
             // Create physics ground for collision (visible for testing)
-            CreatePhysicsGround();
-            
+            //CreatePhysicsGround();
+
             // Create test cube in the middle of the scene
             //CreateTestCube();
 
             // Create character
-            CreateCharacter(new Vector3(0, 10, 100)); // Start at back of corridor
+            CreateCharacter(new Vector3(0, -70, 160)); // Start at back of corridor
         }
 
-        private void CreateCorridorWithMaterialsAndPhysics(Vector3 offset)
+        private void CreateCorridorSlope(Vector3 offset, Quaternion rotation)
         {
             var affine = 0;
+            var mesh = "models/level/corridor_slope";
+            // Create three different materials for the corridor channels using actual texture files
+            var wall = new UnlitMaterial("textures/corridor_wall");
+            wall.VertexJitterAmount = 4f;
+            wall.Brightness = 1.0f; // Slightly darker
+            wall.AffineAmount = affine;
+
+            var floor = new UnlitMaterial("textures/floor_1");
+            floor.VertexJitterAmount = 4f;
+            floor.AffineAmount = affine;
+            floor.Brightness = 1.0f; // Brighter
+
+            // Create corridor entity with three material channels
+            corridorEntity = new MultiMaterialRenderingEntity(mesh,
+                new Dictionary<int, Material>
+                {
+                    { 0, wall }, // Floor/walls
+                    { 1, floor }, // Architectural details
+                    { 2, wall }  // Decorative elements
+                });
+
+            corridorEntity.Position = Vector3.Zero + offset;
+            corridorEntity.Scale = Vector3.One * .2f;
+            corridorEntity.Rotation = rotation;
+            corridorEntity.IsVisible = true;
+
+            // Add to rendering entities
+            AddRenderingEntity(corridorEntity);
+
+            // Create physics mesh for the corridor
+            CreatePhysicsMesh(mesh, offset, rotation, QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 90, 0), Vector3.Zero);
+        }
+
+
+        private void CreateCorridorWithMaterialsAndPhysics(Vector3 offset, Quaternion rotation)
+        {
+            var affine = 0;
+            var mesh = "models/corridor_single";
             // Create three different materials for the corridor channels using actual texture files
             var cieling = new UnlitMaterial("textures/corridor_wall");
             cieling.VertexJitterAmount = 4f;
@@ -113,15 +161,10 @@ namespace anakinsoft.game.scenes
             floor.AffineAmount = affine;
             floor.Brightness = 1.0f; // Brighter
             //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
-            
-            var material3 = new UnlitMaterial("textures/corridor_wall");
-            material3.VertexJitterAmount = 4f;
-            material3.AffineAmount = affine;
-            material3.Brightness = 1.0f; // Much brighter
-            //material3.BakedLightIntensity = 1.2f;
+
 
             // Create corridor entity with three material channels
-            corridorEntity = new MultiMaterialRenderingEntity("models/corridor_single", 
+            corridorEntity = new MultiMaterialRenderingEntity(mesh, 
                 new Dictionary<int, Material>
                 {
                     { 0, floor }, // Floor/walls
@@ -137,16 +180,17 @@ namespace anakinsoft.game.scenes
             AddRenderingEntity(corridorEntity);
 
             // Create physics mesh for the corridor
-            CreateCorridorPhysicsMesh(offset);
+            CreatePhysicsMesh(mesh, offset, rotation, QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
         }
 
 
-        private void CreateCorridorPhysicsMesh(Vector3 offset)
+        private void CreatePhysicsMesh(string mesh, Vector3 offset, Quaternion rotation,
+            Quaternion rotationOffset, Vector3 physicsMeshOffset)
         {
             try
             {
                 // Load the same model used for rendering
-                var corridorModel = Globals.screenManager.Content.Load<Model>("models/corridor_single");
+                var corridorModel = Globals.screenManager.Content.Load<Model>(mesh);
                 
                 // Use consistent scaling approach: visual scale * physics scale factor
                 // Corridor uses visual scale of 0.1f, so physics scale = 0.1f * 10 = 1.0f
@@ -159,17 +203,18 @@ namespace anakinsoft.game.scenes
                 
                 // Add the mesh shape to the simulation's shape collection
                 var shapeIndex = physicsSystem.Simulation.Shapes.Add(bepuMesh);
-                var rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0);
+                //rotate the rotation by this.
+                var rotation2 = rotationOffset * rotation;
                 // Create static body with the mesh shape
                 var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
                     offset.ToVector3N(),
-                    rotation.ToQuaternionN(), 
+                    rotation2.ToQuaternionN(), 
                     shapeIndex));
                 
                 // Keep references for cleanup and wireframe rendering
                 corridorBepuMeshes.Add(bepuMesh);
                 meshTriangleVertices.Add(wireframeVertices);
-                staticMeshTransforms.Add((offset, rotation));
+                staticMeshTransforms.Add((offset, rotation2));
 
 
                 Console.WriteLine($"Created corridor physics mesh at position: {offset} with physics scale: {physicsScale}");
@@ -184,7 +229,7 @@ namespace anakinsoft.game.scenes
         private void CreatePhysicsGround()
         {
             // Create visible ground plane for character physics and visual reference
-            ground = CreateGround(new Vector3(0, 0, 0), new Vector3(8000, 2, 8000), 
+            ground = CreateGround(new Vector3(0, -50, 0), new Vector3(8000, 2, 8000), 
                 "models/cube", "textures/prototype/concrete");
             ground.IsVisible = false; // Make it visible for testing
             ground.Scale = new Vector3(10f, 0.1f, 20f);
@@ -210,11 +255,11 @@ namespace anakinsoft.game.scenes
                 new Capsule(0.5f * 10, 1 * 10),
                 minimumSpeculativeMargin: 0.1f, 
                 mass: 0.1f, 
-                maximumHorizontalForce: 200,
-                maximumVerticalGlueForce: 10000,
-                jumpVelocity: 100,
+                maximumHorizontalForce: 100,
+                maximumVerticalGlueForce: 500,
+                jumpVelocity: 0,
                 speed: 80,
-                maximumSlope: 45f.ToRadians());
+                maximumSlope: 30f.ToRadians());
         }
 
         private PhysicsEntity CreateBulletEntity(Vector3 position, Vector3N direction)

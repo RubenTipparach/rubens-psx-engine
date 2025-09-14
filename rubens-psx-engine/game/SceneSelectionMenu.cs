@@ -56,9 +56,13 @@ namespace rubens_psx_engine
             interactiveTestButton.SetPosition(new Vector2(100, 720));
             sceneButtons.Add(interactiveTestButton);
 
+            var bepuInteractionButton = new Button("BEPU Physics Interaction", (sender, args) => LoadScene("bepuInteraction"));
+            bepuInteractionButton.SetPosition(new Vector2(100, 780));
+            sceneButtons.Add(bepuInteractionButton);
+
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 780));
+            backButton.SetPosition(new Vector2(100, 840));
         }
 
         private void LoadScene(string sceneType)
@@ -128,6 +132,10 @@ namespace rubens_psx_engine
             {
                 LoadScene("staticMeshDemo");
             }
+            else if (InputManager.GetKeyboardClick(Keys.D0))
+            {
+                LoadScene("bepuInteraction");
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -150,7 +158,7 @@ namespace rubens_psx_engine
             getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
 
             // Draw instructions
-            string instructions = "Press 1-9 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway\n6=Graphics Test  7=Corridor  8=Wireframe Test  9=Static Mesh Demo\nESC to go back";
+            string instructions = "Press 1-9,0 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway\n6=Graphics Test  7=Corridor  8=Wireframe Test  9=Static Mesh Demo  0=BEPU Physics\nESC to go back";
             Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,
