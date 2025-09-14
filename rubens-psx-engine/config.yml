@@ -4,7 +4,7 @@
 # Dither/Pixelation Settings
 dither:
   # Internal rendering resolution (lower = more pixelated)
-  renderWidth: 640
+  renderWidth: 640  
   renderHeight: 360
   
   # Dithering strength (0.0 = no dithering, 1.0 = full dithering)
@@ -82,4 +82,4 @@ development:
   screenshotDirectory: "screenshots"
   
   # Show debug bounding boxes for static meshes globally
-  showStaticMeshDebug: true
+  showStaticMeshDebug: false

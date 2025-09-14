@@ -236,6 +236,18 @@
 /processorParam:TextureFormat=Color
 /build:Assets/textures/corridor_wall.png;Assets/textures/corridor_wall
 
+#begin Assets/textures/floor_1.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/floor_1.png;Assets/textures/floor_1
+
 #begin Assets/textures/orange.png
 /importer:TextureImporter
 /processor:TextureProcessor

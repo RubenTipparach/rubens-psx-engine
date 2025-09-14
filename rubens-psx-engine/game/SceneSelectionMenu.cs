@@ -52,9 +52,13 @@ namespace rubens_psx_engine
             staticMeshDemoButton.SetPosition(new Vector2(100, 660));
             sceneButtons.Add(staticMeshDemoButton);
 
+            var interactiveTestButton = new Button("Interactive Test Scene", (sender, args) => LoadScene("interactiveTest"));
+            interactiveTestButton.SetPosition(new Vector2(100, 720));
+            sceneButtons.Add(interactiveTestButton);
+
             // Back button
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 720));
+            backButton.SetPosition(new Vector2(100, 780));
         }
 
         private void LoadScene(string sceneType)

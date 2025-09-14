@@ -43,6 +43,7 @@ namespace anakinsoft.game.scenes
 
         // Input handling
         bool mouseClick = false;
+        KeyboardState previousKeyboard;
         
         // Collision mesh wireframe data
         List<List<Vector3>> meshTriangleVertices; // Store triangle vertices for wireframe
@@ -70,10 +71,10 @@ namespace anakinsoft.game.scenes
         {
             base.Initialize();
 
-            // Initialize debug rendering based on config
+            // Initialize debug rendering (off by default)
             if (boundingBoxRenderer != null)
             {
-                boundingBoxRenderer.ShowBoundingBoxes = RenderingConfigManager.Config.Development.ShowStaticMeshDebug;
+                boundingBoxRenderer.ShowBoundingBoxes = false;
             }
 
             float intervals = 160;
@@ -105,18 +106,18 @@ namespace anakinsoft.game.scenes
             var cieling = new UnlitMaterial("textures/corridor_wall");
             cieling.VertexJitterAmount = 4f;
             cieling.AffineAmount = affine;
-            cieling.Brightness = 1.2f; // Slightly darker
+            cieling.Brightness = 1.0f; // Slightly darker
             
-            var floor = new UnlitMaterial("textures/test/0_1");
+            var floor = new UnlitMaterial("textures/floor_1");
             floor.VertexJitterAmount = 4f;
             floor.AffineAmount = affine;
-            floor.Brightness = 1.8f; // Brighter
+            floor.Brightness = 1.0f; // Brighter
             //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
             
             var material3 = new UnlitMaterial("textures/corridor_wall");
             material3.VertexJitterAmount = 4f;
             material3.AffineAmount = affine;
-            material3.Brightness = 1.2f; // Much brighter
+            material3.Brightness = 1.0f; // Much brighter
             //material3.BakedLightIntensity = 1.2f;
 
             // Create corridor entity with three material channels
@@ -261,6 +262,21 @@ namespace anakinsoft.game.scenes
 
         private void HandleInput()
         {
+            var keyboard = Keyboard.GetState();
+            
+            // Toggle physics wireframe rendering with L key
+            if (keyboard.IsKeyDown(Keys.L) && !previousKeyboard.IsKeyDown(Keys.L))
+            {
+                // Toggle the bounding box renderer (which controls both bounding boxes and wireframes)
+                if (boundingBoxRenderer != null)
+                {
+                   // boundingBoxRenderer.ShowBoundingBoxes = !boundingBoxRenderer.ShowBoundingBoxes;
+                    Console.WriteLine($"Physics debug rendering: {(boundingBoxRenderer.ShowBoundingBoxes ? "ON" : "OFF")}");
+                }
+            }
+            
+            previousKeyboard = keyboard;
+            
             // Mouse shooting - use camera direction
             if (Mouse.GetState().LeftButton == ButtonState.Pressed && !mouseClick)
             {
@@ -289,7 +305,7 @@ namespace anakinsoft.game.scenes
             // Character is not drawn in FPS mode
             
             // Draw wireframe visualization of static mesh collision geometry if enabled
-            if (RenderingConfigManager.Config.Development.ShowStaticMeshDebug)
+            if (boundingBoxRenderer != null && boundingBoxRenderer.ShowBoundingBoxes)
             {
                 DrawStaticMeshWireframes(gameTime, camera);
             }
