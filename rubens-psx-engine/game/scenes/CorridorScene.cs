@@ -205,6 +205,12 @@ namespace anakinsoft.game.scenes
             CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
                 rotateLevel, [placeholder], "models/level/EngineRoom_1");
 
+            CreatePhysicsMesh("models/level/EngineRoom_Railing", new Vector3(0, -4, 28) * intervals, rotateLevel,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+
+            CreatePhysicsMesh("models/level/EngineRoom_Railing_2", new Vector3(0, -4, 28) * intervals, rotateLevel,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+
             CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
                 rotateLevel, [placeholder], "models/level/EngineRoom_2");
 
@@ -227,8 +233,11 @@ namespace anakinsoft.game.scenes
             CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
                 rotateLevel, [placeholder], "models/level/arborium");
 
-            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
-                rotateLevel, [placeholder], "models/level/arborium");
+            CreatePhysicsMesh("models/level/arborium_railing", new Vector3(-16, -2, -48) * intervals, rotateLevel,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+
+            //CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+            //    rotateLevel, [placeholder], "models/level/arborium");
 
             CreateStaticRoom(new Vector3(-24, 0, -78) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
@@ -515,7 +524,9 @@ namespace anakinsoft.game.scenes
             }
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Failed to create corridor physics mesh: {ex.Message}");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 // Continue without physics mesh for this corridor
             }
         }
@@ -547,7 +558,7 @@ namespace anakinsoft.game.scenes
             characterActive = true;
             character = new CharacterInput(characters, position.ToVector3N(),
                 new Capsule(0.5f * 10, 1 * 10),
-                minimumSpeculativeMargin: 0.5f,
+                minimumSpeculativeMargin: 1f,
                 mass: 0.1f,
                 maximumHorizontalForce: 100,
                 maximumVerticalGlueForce: 1500,
@@ -975,8 +986,8 @@ namespace anakinsoft.game.scenes
             foreach (var interactiveDoor in interactiveDoors)
             {
                 // Use the exact same physics parameters as the InteractableDoorEntity
-                var physicsOffset = new Vector3(0, 20, 0);
-                var boxDimensions = new Vector3(40f, 40f, 25f);
+                var physicsOffset = new Vector3(0, 15, 0);
+                var boxDimensions = new Vector3(20f, 30f, 10f);
 
                 // Apply the door's scale to the box dimensions
                 var scaledBoxDimensions = boxDimensions;// * interactiveDoor.Scale;

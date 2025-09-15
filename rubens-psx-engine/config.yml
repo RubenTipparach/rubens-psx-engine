@@ -10,8 +10,8 @@ game:
 # Dither/Pixelation Settings
 dither:
   # Internal rendering resolution (lower = more pixelated)
-  renderWidth: 640  
-  renderHeight: 360
+  renderWidth: 480  
+  renderHeight: 270
   
   # Dithering strength (0.0 = no dithering, 1.0 = full dithering)
   strength: 1.0
