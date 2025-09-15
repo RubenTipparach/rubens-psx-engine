@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using NUnit.Framework.Constraints;
 using rubens_psx_engine;
+using rubens_psx_engine.chain;
 using rubens_psx_engine.entities;
 using rubens_psx_engine.Extensions;
 using rubens_psx_engine.system.config;
@@ -20,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using static rubens_psx_engine.chain.ChainUtilities;
 using Matrix = Microsoft.Xna.Framework.Matrix;
 using Vector3N = System.Numerics.Vector3;
 
@@ -244,10 +246,6 @@ namespace anakinsoft.game.scenes
             // Create test cube in the middle of the scene
             //CreateTestCube();
 
-            // Create character
-            CreateCharacter(new Vector3(0, -3.5f, 36) * intervals); // Start at back of corridor
-
-                
             // Door between first and second corridor sections
             CreateDoor(new Vector3(0, -4, 20) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
@@ -346,6 +344,29 @@ namespace anakinsoft.game.scenes
             CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
                 "Door teleport to AA1", doorMat_2B, frameMat_2);//green
+
+
+            // Load CHAIN stuff
+
+            List<DoorMapping> doorMappings = new List<DoorMapping>()
+            {
+                new(doorId: "AC1",
+                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
+                    startRotation: Quaternion.Identity),
+                new(doorId: "AC2",
+                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
+                    startRotation: Quaternion.CreateFromYawPitchRoll(-86,0,0)),
+                new(doorId: "AA1",
+                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
+                    startRotation: Quaternion.CreateFromYawPitchRoll(-257.41f,0,0)),
+            };
+
+            ChainUtilities.GetSceneFromDoorFile(doorMappings, "AC1");
+
+            // Create character
+            CreateCharacter(new Vector3(0, -3.5f, 36) * intervals); // Start at back of corridor
+
+
         }
 
         private DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Material doorMat, Material frameMat)

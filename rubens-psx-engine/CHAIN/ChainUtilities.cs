@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,12 +25,14 @@ namespace rubens_psx_engine.chain
         public class DoorMapping
         {
             public string DoorID { get; set; }
-            public string SceneName { get; set; }
+            public Vector3 startlocation{ get; set; }
+            public Quaternion startRotation { get; set; }
 
-            public DoorMapping(string doorId, string sceneName)
+            public DoorMapping(string doorId, Vector3 startLocaion, Quaternion startRotation)
             {
                 DoorID = doorId;
-                SceneName = sceneName;
+                this.startRotation = startRotation;
+                this.startlocation = startLocaion;
             }
         }
 
@@ -39,7 +42,7 @@ namespace rubens_psx_engine.chain
         /// <param name="doorMappings">List of door ID to scene name mappings</param>
         /// <param name="defaultScene">Scene to load if no door file exists or no mapping found</param>
         /// <returns>Scene name to load</returns>
-        public static string GetSceneFromDoorFile(List<DoorMapping> doorMappings, string defaultScene)
+        public static DoorMapping GetSceneFromDoorFile(List<DoorMapping> doorMappings, string defaultScene)
         {
             try
             {
@@ -51,11 +54,13 @@ namespace rubens_psx_engine.chain
                     Console.WriteLine($"Door ID found: {doorID}");
 
                     var matchingDoor = doorMappings?.FirstOrDefault(d => d.DoorID == doorID);
-                    if (matchingDoor != null)
-                    {
-                        Console.WriteLine($"Loading scene: {matchingDoor.SceneName}");
-                        return matchingDoor.SceneName;
-                    }
+                    //if (matchingDoor != null)
+                    //{
+                    //    Console.WriteLine($"Loading scene: {matchingDoor.SceneName}");
+                    //    return matchingDoor.SceneName;
+                    //}
+
+                    return matchingDoor;
                 }
             }
             catch (Exception ex)
@@ -63,7 +68,7 @@ namespace rubens_psx_engine.chain
                 Console.WriteLine($"Error reading door file: {ex.Message}");
             }
 
-            return defaultScene;
+            return doorMappings[0];
         }
 
         /// <summary>
@@ -227,37 +232,5 @@ namespace rubens_psx_engine.chain
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// Example usage of the CHAIN utilities
-    /// </summary>
-    public static class ChainUsageExample
-    {
-        public static void ExampleUsage()
-        {
-            // Example 1: Scene selection based on door file
-            var doorMappings = new List<ChainUtilities.DoorMapping>
-            {
-                new ChainUtilities.DoorMapping("START", "mainMenu"),
-                new ChainUtilities.DoorMapping("A1", "laboratory"),
-                new ChainUtilities.DoorMapping("B2", "corridor")
-            };
-
-            string sceneToLoad = ChainUtilities.GetSceneFromDoorFile(doorMappings, "defaultScene");
-            Console.WriteLine($"Load scene: {sceneToLoad}");
-
-            // Example 2: Working with shared flags
-            if (ChainUtilities.DoesFlagExist("A1_mysteriousButton"))
-            {
-                Console.WriteLine("Mysterious button was pressed!");
-            }
-
-            ChainUtilities.CreateFlag("DERILICT_foundKey");
-            ChainUtilities.DeleteFlag("A1_mysteriousButton");
-
-            // Example 3: Exit to another game
-            // ChainUtilities.ExitGame("A1");  // This will quit the application
-        }
     }
 }
