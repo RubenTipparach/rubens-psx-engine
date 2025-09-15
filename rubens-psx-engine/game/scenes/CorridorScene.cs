@@ -34,6 +34,8 @@ namespace anakinsoft.game.scenes
         CharacterControllers characters;
         CharacterInput? character;
         bool characterActive;
+        float characterLoadDelay = 1.0f; // Delay in seconds before character physics activate
+        float timeSinceLoad = 0f;
 
         // Multi-material corridor entity
         //MultiMaterialRenderingEntity corridorEntity;
@@ -243,7 +245,7 @@ namespace anakinsoft.game.scenes
             //CreateTestCube();
 
             // Create character
-            CreateCharacter(new Vector3(0, -3, 36) * intervals); // Start at back of corridor
+            CreateCharacter(new Vector3(0, -3.5f, 36) * intervals); // Start at back of corridor
 
                 
             // Door between first and second corridor sections
@@ -636,7 +638,25 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            base.Update(gameTime);
+            // Update load timer first
+            timeSinceLoad += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            // During load delay, don't update base (which updates physics)
+            // This prevents character from falling through floor while level loads
+            if (timeSinceLoad <= characterLoadDelay)
+            {
+                // Skip physics update during load delay
+                // Just update rendering entities
+                foreach (var entity in renderingEntities)
+                {
+                    entity.Update(gameTime);
+                }
+            }
+            else
+            {
+                // After load delay, update normally (includes physics)
+                base.Update(gameTime);
+            }
 
             // Apply global mouse visibility state
             Globals.screenManager.IsMouseVisible = Globals.shouldShowMouse;
@@ -648,8 +668,8 @@ namespace anakinsoft.game.scenes
                 HandleInput();
             }
 
-            // Update doors with character position
-            if (characterActive && character.HasValue)
+            // Update doors with character position (only after load delay)
+            if (characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
             {
                 var characterPos = character.Value.Body.Pose.Position.ToVector3();
                 foreach (var door in doors)
@@ -711,7 +731,8 @@ namespace anakinsoft.game.scenes
                 interactionSystem.Update(gameTime, camera);
 
                 // Update character with camera (for movement direction based on camera look)
-                if (characterActive && character.HasValue)
+                // Only allow character movement after load delay to prevent falling through floor
+                if (characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
                 {
                     character.Value.UpdateCharacterGoals(Keyboard.GetState(), camera, (float)gameTime.ElapsedGameTime.TotalSeconds);
                 }
@@ -798,10 +819,27 @@ namespace anakinsoft.game.scenes
         /// </summary>
         public void DrawUI(GameTime gameTime, Camera camera, SpriteBatch spriteBatch)
         {
-            // Draw interaction UI
             var font = Globals.fontNTR;
             if (font != null)
             {
+                // Show loading indicator during character load delay
+                if (timeSinceLoad <= characterLoadDelay)
+                {
+                    string loadingText = "Stabilizing environment...";
+                    var textSize = font.MeasureString(loadingText);
+                    var screenCenter = new Vector2(
+                        Globals.screenManager.GraphicsDevice.Viewport.Width / 2f,
+                        Globals.screenManager.GraphicsDevice.Viewport.Height / 2f
+                    );
+
+                    // Draw loading text with fade effect
+                    float fadeAlpha = 1.0f - (timeSinceLoad / characterLoadDelay);
+                    spriteBatch.DrawString(font, loadingText,
+                        screenCenter - textSize / 2f,
+                        Color.White * fadeAlpha);
+                }
+
+                // Draw interaction UI
                 interactionSystem.DrawUI(spriteBatch, font);
             }
         }

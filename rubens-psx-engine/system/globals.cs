@@ -42,7 +42,10 @@ namespace rubens_psx_engine
             var screens = screenManager.GetScreens();
             foreach (var screen in screens)
             {
-                if (screen is rubens_psx_engine.system.MenuScreen && screen.getState == ScreenState.Active)
+                if (screen is rubens_psx_engine.system.MenuScreen &&
+                    (screen.getState == ScreenState.Active ||
+                     screen.getState == ScreenState.TransitionOn ||
+                     screen.getState == ScreenState.TransitionOff))
                 {
                     return true;
                 }
