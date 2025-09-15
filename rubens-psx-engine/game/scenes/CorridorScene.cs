@@ -1,3 +1,4 @@
+using anakinsoft.entities;
 using anakinsoft.system.character;
 using anakinsoft.system.physics;
 using anakinsoft.utilities;
@@ -9,6 +10,7 @@ using Demos.Demos.Characters;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using NUnit.Framework.Constraints;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
 using rubens_psx_engine.Extensions;
@@ -41,6 +43,7 @@ namespace anakinsoft.game.scenes
         // Entity collections
         List<PhysicsEntity> bullets;
         PhysicsEntity ground;
+        List<DoorEntity> doors;
 
         // Input handling
         bool mouseClick = false;
@@ -57,6 +60,7 @@ namespace anakinsoft.game.scenes
             physicsSystem = new PhysicsSystem(ref characters);
             
             bullets = new List<PhysicsEntity>();
+            doors = new List<DoorEntity>();
             corridorBepuMeshes = new List<Mesh>();
             meshTriangleVertices = new List<List<Vector3>>();
             staticMeshTransforms = new List<(Vector3 position, Quaternion rotation)>();
@@ -83,13 +87,13 @@ namespace anakinsoft.game.scenes
             var affine = 0;
             var wall = new UnlitMaterial("textures/corridor_wall");
             wall.VertexJitterAmount = jitter;
-            wall.Brightness = 1.0f; // Slightly darker
+            wall.Brightness = 1.2f; // Slightly darker
             wall.AffineAmount = affine;
 
             var floor = new UnlitMaterial("textures/floor_1");
             floor.VertexJitterAmount = jitter;
             floor.AffineAmount = affine;
-            floor.Brightness = 1.0f; // Brighter
+            floor.Brightness = 1.2f; // Brighter
             //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
 
             var placeholder = new VertexLitMaterial("textures/prototype/wood");
@@ -200,7 +204,107 @@ namespace anakinsoft.game.scenes
             //CreateTestCube();
 
             // Create character
-            CreateCharacter(new Vector3(0, -70, 160)); // Start at back of corridor
+            CreateCharacter(new Vector3(0, -3, 36) * intervals); // Start at back of corridor
+
+            // Add example doors to the corridors
+            // Create door materials
+            var doorMat = new UnlitMaterial("textures/door");
+            doorMat.Brightness = 1.0f;
+            doorMat.AffineAmount = 0;
+            doorMat.VertexJitterAmount = 3;
+
+            var frameMat = new UnlitMaterial("textures/door_frame");
+            frameMat.Brightness = 1.0f;
+            frameMat.AffineAmount = 0;
+            frameMat.VertexJitterAmount = 3;
+
+            // Door between first and second corridor sections
+            CreateDoor(new Vector3(0, -4, 20) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(0, -4, 4) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(0, 0, -28) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            // main area doors
+            CreateDoor(new Vector3(8, 0, -36) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(-8, 0, -36) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            // Create a locked door as an example
+            var lockedDoor = CreateDoor(new Vector3(-16, 0, -36) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat); // well the AI says I should add a puzzle here, maybe I will lol
+            //lockedDoor.Lock(); // This door starts locked
+
+            CreateDoor(new Vector3(-16, 0, -28) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(-20, 0, -32) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(12, 0, -32) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+
+            // airlock area
+            CreateDoor(new Vector3(-16, 0, -74) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            var b2 = CreateDoor(new Vector3(-16, 0, -82) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+            b2.Lock();
+
+            var b3 = CreateDoor(new Vector3(-36, 0, -78) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+            b3.Lock();
+
+             CreateDoor(new Vector3(-4, 0, -78) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+            CreateDoor(new Vector3(16, 0, -98) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            // bridge doors
+            CreateDoor(new Vector3(16, 4, -122) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            CreateDoor(new Vector3(16, 4, -129) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                doorMat, frameMat);
+
+            CreateDoor(new Vector3(20, 4, -126) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+
+            CreateDoor(new Vector3(12, 4, -126) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                doorMat, frameMat);
+        }
+
+        private DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Material doorMat, Material frameMat)
+        {
+            return CreateDoorWithParameters(
+                position, rotation,
+                openSpeed: 1f,
+                openHeight: 300f,
+                triggerDistance: 60f,
+                closeDelay: 2f,
+                scale: new Vector3(0.2f),
+                doorMaterial: doorMat,
+                frameMaterial: frameMat
+            );
         }
 
         private void CreateStaticRoom(Vector3 offset, Quaternion rotation, Material[] mats, string mesh, bool  flipPhys = false)
@@ -349,15 +453,97 @@ namespace anakinsoft.game.scenes
         void CreateCharacter(Vector3 position)
         {
             characterActive = true;
-            character = new CharacterInput(characters, position.ToVector3N(), 
+            character = new CharacterInput(characters, position.ToVector3N(),
                 new Capsule(0.5f * 10, 1 * 10),
-                minimumSpeculativeMargin: 0.5f, 
-                mass: 0.1f, 
+                minimumSpeculativeMargin: 0.5f,
+                mass: 0.1f,
                 maximumHorizontalForce: 100,
                 maximumVerticalGlueForce: 1500,
                 jumpVelocity: 0,
                 speed: 80,
                 maximumSlope: 40f.ToRadians());
+        }
+
+                    //      "models/level/door", "models/level/door_frame",
+                  //"textures/door", "textures/door_frame",
+        /// <summary>
+        /// Creates an automatic sliding door at the specified position
+        /// </summary>
+        /// <param name="position">World position for the door</param>
+        /// <param name="rotation">Rotation of the door</param>
+        /// <param name="scale">Scale of the door (default is 0.2f to match corridor scale)</param>
+        /// <param name="doorModel">Path to door model (optional)</param>
+        /// <param name="frameModel">Path to doorframe model (optional)</param>
+        /// <param name="doorMaterial">Material for the door (optional)</param>
+        /// <param name="frameMaterial">Material for the door frame (optional)</param>
+        /// <returns>The created door entity</returns>
+        public DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Vector3? scale = null,
+            string doorModel = "models/level/door", string frameModel = "models/level/door_frame",
+            Material doorMaterial = null, Material frameMaterial = null)
+        {
+            // Use default scale to match corridor if not specified
+            var doorScale = scale ?? new Vector3(0.2f);
+
+            // Create the door entity with materials
+            var door = new DoorEntity(position, rotation, doorScale,
+                doorModel, frameModel, doorMaterial, frameMaterial, physicsSystem);
+
+            // Add door's rendering entities to the scene
+            AddRenderingEntity(door.DoorModel);
+            AddRenderingEntity(door.DoorFrameModel);
+
+            // Add to doors list for updating
+            doors.Add(door);
+
+            CreatePhysicsMesh(frameModel, position, rotation,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+
+
+            Console.WriteLine($"Created door at position: {position}");
+            return door;
+        }
+
+        /// <summary>
+        /// Creates an automatic sliding door with multi-material support
+        /// </summary>
+        public DoorEntity CreateDoorWithMaterials(Vector3 position, Quaternion rotation,
+            Dictionary<int, Material> doorMaterials, Dictionary<int, Material> frameMaterials,
+            Vector3? scale = null,
+            string doorModel = "models/level/door", string frameModel = "models/level/door_frame")
+        {
+            // Use default scale to match corridor if not specified
+            var doorScale = scale ?? new Vector3(0.2f);
+
+            // Create the door entity with material dictionaries
+            var door = new DoorEntity(position, rotation, doorScale,
+                doorModel, frameModel, doorMaterials, frameMaterials, physicsSystem);
+
+            // Add door's rendering entities to the scene
+            AddRenderingEntity(door.DoorModel);
+            AddRenderingEntity(door.DoorFrameModel);
+
+            // Add to doors list for updating
+            doors.Add(door);
+
+            Console.WriteLine($"Created door with materials at position: {position}");
+            return door;
+        }
+
+        /// <summary>
+        /// Creates a door with custom opening parameters
+        /// </summary>
+        public DoorEntity CreateDoorWithParameters(Vector3 position, Quaternion rotation,
+            float openSpeed = 3f, float openHeight = 30f, float triggerDistance = 50f,
+            float closeDelay = 2f, Vector3? scale = null,
+            Material doorMaterial = null, Material frameMaterial = null)
+        {
+            var door = CreateDoor(position, rotation, scale,
+                "models/level/door", "models/level/door_frame",
+                doorMaterial, frameMaterial);
+
+            //physicsEntities.Add(door.doo
+            door.SetOpeningParameters(openSpeed, openHeight, triggerDistance, closeDelay);
+            return door;
         }
 
         public override void Update(GameTime gameTime)
@@ -368,6 +554,55 @@ namespace anakinsoft.game.scenes
             HandleInput();
             Globals.screenManager.IsMouseVisible = false;
 
+            // Update doors with character position
+            if (characterActive && character.HasValue)
+            {
+                var characterPos = character.Value.Body.Pose.Position.ToVector3();
+                foreach (var door in doors)
+                {
+                    door.Update(gameTime, characterPos);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Locks all doors in the scene
+        /// </summary>
+        public void LockAllDoors()
+        {
+            foreach (var door in doors)
+            {
+                door.Lock();
+            }
+        }
+
+        /// <summary>
+        /// Unlocks all doors in the scene
+        /// </summary>
+        public void UnlockAllDoors()
+        {
+            foreach (var door in doors)
+            {
+                door.Unlock();
+            }
+        }
+
+        /// <summary>
+        /// Gets a door at the specified position (within a tolerance)
+        /// </summary>
+        public DoorEntity GetDoorNear(Vector3 position, float tolerance = 10f)
+        {
+            return doors.FirstOrDefault(door =>
+                Vector3.Distance(door.Position, position) <= tolerance);
+        }
+
+        /// <summary>
+        /// Gets all doors in the scene
+        /// </summary>
+        public List<DoorEntity> GetAllDoors()
+        {
+            return new List<DoorEntity>(doors);
         }
 
         public void UpdateWithCamera(GameTime gameTime, Camera camera)
@@ -385,7 +620,28 @@ namespace anakinsoft.game.scenes
         private void HandleInput()
         {
             var keyboard = Keyboard.GetState();
-            
+
+            // Test door locking functionality with O and P keys
+            if (keyboard.IsKeyDown(Keys.O) && !previousKeyboard.IsKeyDown(Keys.O))
+            {
+                // Lock all doors
+                foreach (var door in doors)
+                {
+                    door.Lock();
+                }
+                Console.WriteLine("All doors locked!");
+            }
+
+            if (keyboard.IsKeyDown(Keys.P) && !previousKeyboard.IsKeyDown(Keys.P))
+            {
+                // Unlock all doors
+                foreach (var door in doors)
+                {
+                    door.Unlock();
+                }
+                Console.WriteLine("All doors unlocked!");
+            }
+
             // Toggle physics wireframe rendering with L key
             if (keyboard.IsKeyDown(Keys.L) && !previousKeyboard.IsKeyDown(Keys.L))
             {
@@ -519,6 +775,13 @@ namespace anakinsoft.game.scenes
         {
             if (disposing)
             {
+                // Dispose all doors
+                foreach (var door in doors)
+                {
+                    door?.Dispose();
+                }
+                doors.Clear();
+
                 // BepuPhysics meshes are cleaned up by the physics system
                 corridorBepuMeshes.Clear();
             }
