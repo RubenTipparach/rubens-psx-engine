@@ -108,11 +108,14 @@ namespace anakinsoft.game.scenes
 
         public override void Draw2D(GameTime gameTime)
         {
+            // Draw interaction UI for doors and objects
+            var spriteBatch = Globals.screenManager.getSpriteBatch;
+            corridorScene.DrawUI(gameTime, fpsCamera, spriteBatch);
+
             // Minimal UI for immersive corridor experience
             // Only show essential controls briefly or on key press
-            
+
             // Optionally, you could add a minimal crosshair or status display here
-            // For now, keeping it completely clean for maximum immersion
         }
 
         public override void Draw3D(GameTime gameTime)

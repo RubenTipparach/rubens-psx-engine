@@ -1,4 +1,5 @@
 using anakinsoft.entities;
+using anakinsoft.system;
 using anakinsoft.system.character;
 using anakinsoft.system.physics;
 using anakinsoft.utilities;
@@ -44,6 +45,10 @@ namespace anakinsoft.game.scenes
         List<PhysicsEntity> bullets;
         PhysicsEntity ground;
         List<DoorEntity> doors;
+        List<InteractableDoorEntity> interactiveDoors;
+
+        // Interaction system
+        InteractionSystem interactionSystem;
 
         // Input handling
         bool mouseClick = false;
@@ -61,9 +66,13 @@ namespace anakinsoft.game.scenes
             
             bullets = new List<PhysicsEntity>();
             doors = new List<DoorEntity>();
+            interactiveDoors = new List<InteractableDoorEntity>();
             corridorBepuMeshes = new List<Mesh>();
             meshTriangleVertices = new List<List<Vector3>>();
             staticMeshTransforms = new List<(Vector3 position, Quaternion rotation)>();
+
+            // Initialize interaction system
+            interactionSystem = new InteractionSystem(physicsSystem);
             
             // Set black background for corridor scene
             BackgroundColor = Color.Black;
@@ -291,6 +300,23 @@ namespace anakinsoft.game.scenes
             CreateDoor(new Vector3(12, 4, -126) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
                 doorMat, frameMat);
+
+            // Create interactive doors for teleportation/special actions
+            //CreateInteractiveDoor(new Vector3(16, 0, -28) * intervals,
+            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+            //    "Medical Bay", doorMat, frameMat);
+
+            //CreateInteractiveDoor(new Vector3(-20, 0, -24) * intervals,
+            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+            //    "Laboratory", doorMat, frameMat);
+
+            //CreateInteractiveDoor(new Vector3(8, 0, -47) * intervals,
+            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+            //    "Crew Quarters", doorMat, frameMat);
+
+            CreateInteractiveDoor(new Vector3(0, -4, 40) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
+                "Door teleport to AC1", doorMat, frameMat);
         }
 
         private DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Material doorMat, Material frameMat)
@@ -546,6 +572,41 @@ namespace anakinsoft.game.scenes
             return door;
         }
 
+        /// <summary>
+        /// Creates an interactive door that doesn't open automatically but can trigger custom actions
+        /// </summary>
+        public InteractableDoorEntity CreateInteractiveDoor(Vector3 position, Quaternion rotation,
+            string destinationName, Material doorMaterial, Material frameMaterial,
+            Vector3? scale = null)
+        {
+            var doorScale = scale ?? new Vector3(0.2f);
+
+            // Create interactive door entity
+            var interactiveDoor = new InteractableDoorEntity(position, rotation, doorScale,
+                destinationName, "models/level/door", "models/level/door_frame",
+                doorMaterial, frameMaterial, physicsSystem);
+
+            // Add door's rendering entities to the scene
+            AddRenderingEntity(interactiveDoor.DoorModel);
+            AddRenderingEntity(interactiveDoor.DoorFrameModel);
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(interactiveDoor);
+
+            // Add to interactive doors list
+            interactiveDoors.Add(interactiveDoor);
+
+            // Set up custom action for demonstration
+            interactiveDoor.SetCustomAction((door) =>
+            {
+                Console.WriteLine($"Teleporting to {door.DestinationName}!");
+                // Here you could implement actual teleportation, scene switching, etc.
+            });
+
+            Console.WriteLine($"Created interactive door to {destinationName} at position: {position}");
+            return interactiveDoor;
+        }
+
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
@@ -609,6 +670,9 @@ namespace anakinsoft.game.scenes
         {
             // Update the scene normally first
             Update(gameTime);
+
+            // Update interaction system with camera for raycasting
+            interactionSystem.Update(gameTime, camera);
 
             // Update character with camera (for movement direction based on camera look)
             if (characterActive && character.HasValue)
@@ -681,11 +745,27 @@ namespace anakinsoft.game.scenes
 
             // The corridor entity will be drawn with its multi-material system
             // Character is not drawn in FPS mode
-            
+
+            // Always draw wireframes around interactive objects
+            DrawInteractiveObjectWireframes(gameTime, camera);
+
             // Draw wireframe visualization of static mesh collision geometry if enabled
             if (boundingBoxRenderer != null && boundingBoxRenderer.ShowBoundingBoxes)
             {
                 DrawStaticMeshWireframes(gameTime, camera);
+            }
+        }
+
+        /// <summary>
+        /// Draws the UI elements including interaction prompts
+        /// </summary>
+        public void DrawUI(GameTime gameTime, Camera camera, SpriteBatch spriteBatch)
+        {
+            // Draw interaction UI
+            var font = Globals.fontNTR;
+            if (font != null)
+            {
+                interactionSystem.DrawUI(spriteBatch, font);
             }
         }
 
@@ -764,6 +844,104 @@ namespace anakinsoft.game.scenes
             basicEffect.Dispose();
         }
 
+        private void DrawInteractiveObjectWireframes(GameTime gameTime, Camera camera)
+        {
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+
+            // Create a basic effect for wireframe rendering
+            var basicEffect = new BasicEffect(graphicsDevice);
+            basicEffect.VertexColorEnabled = true;
+            basicEffect.View = camera.View;
+            basicEffect.Projection = camera.Projection;
+            basicEffect.World = Matrix.Identity;
+
+            // Draw wireframes for interactive doors using exact box collider dimensions and orientation
+            foreach (var interactiveDoor in interactiveDoors)
+            {
+                // Use the exact same physics parameters as the InteractableDoorEntity
+                var physicsOffset = new Vector3(0, 20, 0);
+                var boxDimensions = new Vector3(40f, 40f, 25f);
+
+                // Apply the door's scale to the box dimensions
+                var scaledBoxDimensions = boxDimensions;// * interactiveDoor.Scale;
+
+                if (interactiveDoor.IsTargeted)
+                {
+                    DrawBoxWireframe(basicEffect,
+                    interactiveDoor.Position,
+                    physicsOffset,
+                    scaledBoxDimensions,
+                    interactiveDoor.Rotation,
+                    Color.Cyan);
+                }
+            }
+
+            basicEffect.Dispose();
+        }
+
+        private void DrawBoxWireframe(BasicEffect effect, Vector3 position, Vector3 offset, Vector3 size, Quaternion rotation, Color color)
+        {
+            // Calculate half extents
+            var halfSize = size * 0.5f;
+
+            // Define the 8 corners of the box in local space
+            var corners = new Vector3[]
+            {
+                new Vector3(-halfSize.X, -halfSize.Y, -halfSize.Z), // 0: left-bottom-back
+                new Vector3( halfSize.X, -halfSize.Y, -halfSize.Z), // 1: right-bottom-back
+                new Vector3( halfSize.X,  halfSize.Y, -halfSize.Z), // 2: right-top-back
+                new Vector3(-halfSize.X,  halfSize.Y, -halfSize.Z), // 3: left-top-back
+                new Vector3(-halfSize.X, -halfSize.Y,  halfSize.Z), // 4: left-bottom-front
+                new Vector3( halfSize.X, -halfSize.Y,  halfSize.Z), // 5: right-bottom-front
+                new Vector3( halfSize.X,  halfSize.Y,  halfSize.Z), // 6: right-top-front
+                new Vector3(-halfSize.X,  halfSize.Y,  halfSize.Z)  // 7: left-top-front
+            };
+
+            // Transform corners to world space
+            var worldMatrix = Matrix.CreateFromQuaternion(rotation) * Matrix.CreateTranslation(position + offset);
+            for (int i = 0; i < corners.Length; i++)
+            {
+                corners[i] = Vector3.Transform(corners[i], worldMatrix);
+            }
+
+            // Define the 12 edges of the box
+            var edges = new (int start, int end)[]
+            {
+                // Back face
+                (0, 1), (1, 2), (2, 3), (3, 0),
+                // Front face
+                (4, 5), (5, 6), (6, 7), (7, 4),
+                // Connecting edges
+                (0, 4), (1, 5), (2, 6), (3, 7)
+            };
+
+            // Create vertices for all edges
+            var wireframeVertices = new List<VertexPositionColor>();
+            foreach (var (start, end) in edges)
+            {
+                wireframeVertices.Add(new VertexPositionColor(corners[start], color));
+                wireframeVertices.Add(new VertexPositionColor(corners[end], color));
+            }
+
+            if (wireframeVertices.Count > 0)
+            {
+                try
+                {
+                    // Apply the effect and draw the wireframe lines
+                    effect.CurrentTechnique.Passes[0].Apply();
+                    Globals.screenManager.GraphicsDevice.DrawUserPrimitives(
+                        PrimitiveType.LineList,
+                        wireframeVertices.ToArray(),
+                        0,
+                        wireframeVertices.Count / 2);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error drawing interactive object wireframe: {ex.Message}");
+                }
+            }
+        }
+
 
         // Utility methods for external access
         public List<PhysicsEntity> GetBullets() => bullets;
@@ -781,6 +959,16 @@ namespace anakinsoft.game.scenes
                     door?.Dispose();
                 }
                 doors.Clear();
+
+                // Dispose all interactive doors
+                foreach (var interactiveDoor in interactiveDoors)
+                {
+                    interactiveDoor?.Dispose();
+                }
+                interactiveDoors.Clear();
+
+                // Clear interaction system
+                interactionSystem?.Clear();
 
                 // BepuPhysics meshes are cleaned up by the physics system
                 corridorBepuMeshes.Clear();
