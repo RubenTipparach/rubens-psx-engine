@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch rubens-psx-engine",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/rubens-psx-engine/bin/Debug/net9.0-windows7.0/rubens-psx-engine.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/rubens-psx-engine",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Attach to rubens-psx-engine",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

@@ -10,11 +10,12 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using rubens_psx_engine.system;
 
 using Vector3N = System.Numerics.Vector3;
 namespace rubens_psx_engine
 {
-    public class Worldscreen : Screen
+    public class ThirdPersonSandboxScreen : PhysicsScreen
     {
         Camera camera;
         public Camera GetCamera { get { return camera; } }
@@ -22,14 +23,9 @@ namespace rubens_psx_engine
         Entity chair;
 
         //adding physics for test
-        Simulation simulation;
-        Dictionary<BodyHandle, Matrix> bodyTransforms = new();
-        Model cubeModel;
-        Model bulletModel;
         PhysicsSandbox physicsSandbox;
-        //BufferPool bufferPool;
 
-        public Worldscreen()
+        public ThirdPersonSandboxScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
             camera = new FPSCamera(gd, new Vector3(0,0,0));
@@ -49,6 +45,7 @@ namespace rubens_psx_engine
 
             //        groundDesc));
             physicsSandbox = new();
+            SetScene(physicsSandbox.Scene); // Register scene with physics screen for automatic disposal
         }
 
         public override void Update(GameTime gameTime)
@@ -71,18 +68,48 @@ namespace rubens_psx_engine
             {
                 Globals.screenManager.AddScreen(new PauseMenu());
             }
+
+            // Add F1 key to switch to scene selection (only if enabled in config)
+            if (InputManager.GetKeyboardClick(Keys.F1) && rubens_psx_engine.system.SceneManager.IsSceneMenuEnabled())
+            {
+                Globals.screenManager.AddScreen(new SceneSelectionMenu());
+            }
+
+            // Handle L key to toggle bounding box visualization
+            if (InputManager.GetKeyboardClick(Keys.L))
+            {
+                if (physicsSandbox?.Scene?.BoundingBoxRenderer != null)
+                {
+                    System.Console.WriteLine("ThirdPersonSandboxScreen: L key pressed - toggling bounding boxes");
+                    physicsSandbox.Scene.BoundingBoxRenderer.ToggleBoundingBoxes();
+                    
+                    if (physicsSandbox.Scene.Physics?.Simulation?.BroadPhase != null)
+                    {
+                        var activeCount = physicsSandbox.Scene.Physics.Simulation.BroadPhase.ActiveTree.LeafCount;
+                        var staticCount = physicsSandbox.Scene.Physics.Simulation.BroadPhase.StaticTree.LeafCount;
+                        System.Console.WriteLine($"ThirdPersonSandboxScreen: Physics bodies - Active: {activeCount}, Static: {staticCount}");
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("ThirdPersonSandboxScreen: No BoundingBoxRenderer available");
+                }
+            }
         }      
         
 
         public override void Draw2D(GameTime gameTime)
         {
-            //Draw a message in center of screen.
-            string message = "FNA Starter Kit\n\nWASD = move chair\nESC = menu";
+            // Draw third person sandbox UI
+            string message = "Third Person Sandbox Scene\n\nWASD = move\nESC = menu\nF1 = scene selection\nL = bounding boxes";
             Vector2 messageSize = Globals.fontNTR.MeasureString(message);
-            //Globals.screenManager.getSpriteBatch.DrawString(Globals.fontNTR, message, new Vector2(Globals.screenManager.Window.ClientBounds.Width / 2 - messageSize.X / 2, 20 ), Color.White);
             
-            //Draw image of an orange.
-            //Globals.screenManager.getSpriteBatch.Draw(Globals.orange, new Rectangle(20, 20, 200, 200), Color.White);
+            // Position message in top-left corner
+            Vector2 position = new Vector2(20, 20);
+            
+            // Draw text with better visibility
+            getSpriteBatch.DrawString(Globals.fontNTR, message, position + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, message, position, Color.White);
         }
 
         public override void Draw3D(GameTime gameTime)

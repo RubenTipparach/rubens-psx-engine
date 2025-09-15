@@ -17,7 +17,9 @@ sampler2D SpriteTextureSampler = sampler_state
     MipFilter = NONE;
 
 };
-float2 ScreenSize = float2(320, 180); // Optional: can be set from C#
+float2 ScreenSize = float2(320, 180); // Set from C#
+float DitherStrength = 1.0; // Set from C#
+float ColorLevels = 6.0; // Set from C#
 
 struct VertexShaderOutput
 {
@@ -54,9 +56,8 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 
     float threshold = bayer4x4[y * 4 + x];
 
-    // Quantize to fixed levels
-    float levels = 6.0;
-    color.rgb = floor(color.rgb * levels + threshold) / (levels - 1.0);
+    // Quantize to fixed levels (use ColorLevels from C#)
+    color.rgb = floor(color.rgb * ColorLevels + threshold * DitherStrength) / (ColorLevels - 1.0);
 
 
 	//	And we return the value

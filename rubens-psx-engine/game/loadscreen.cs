@@ -3,6 +3,7 @@
 using System;
 
 using Microsoft.Xna.Framework;
+using rubens_psx_engine.system;
 
 
 
@@ -33,9 +34,9 @@ namespace rubens_psx_engine
             
                 ExitScreen();
             
-                //Load game world.
-                Worldscreen worldscreen = new Worldscreen();
-                Globals.screenManager.AddScreen(worldscreen);                
+                // Load the appropriate scene based on configuration
+                Screen startupScene = SceneManager.LoadStartupScene();
+                Globals.screenManager.AddScreen(startupScene);                
             }
 
             base.Update(gameTime);

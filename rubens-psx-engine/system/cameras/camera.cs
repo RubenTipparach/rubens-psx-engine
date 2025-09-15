@@ -21,7 +21,7 @@ namespace rubens_psx_engine
         public Camera(GraphicsDevice graphicsDevice)
         {
             float aspectRatio = graphicsDevice.Viewport.AspectRatio;
-            Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 0.1f, 1000f);
+            Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 1f, 10000f);
         }
 
         public virtual void Update(GameTime gameTime)

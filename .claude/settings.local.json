@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build)",
+      "Bash(dotnet build:*)",
+      "Bash(findstr:*)",
+      "Read(//c/Users/santi/repos/**)",
+      "Bash(git log:*)",
+      "Bash(dir:*)",
+      "Bash(dotnet run:*)",
+      "Bash(git clone:*)",
+      "Bash(git checkout:*)",
+      "Bash(timeout:*)",
+      "Bash(start /B dotnet run:*)",
+      "Bash(powershell:*)",
+      "Bash(taskkill /F /IM rubens-psx-engine.exe)",
+      "Bash(taskkill:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

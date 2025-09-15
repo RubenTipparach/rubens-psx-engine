@@ -15,7 +15,7 @@ namespace rubens_psx_engine
     }
 
     //A screen. i.e. options menu, title screen, game screen, etc. All of the screens are handled through ScreenManager.
-    public abstract class Screen
+    public abstract class Screen : IDisposable
     {
         public SpriteBatch getSpriteBatch { get { return Globals.screenManager.getSpriteBatch; } }
         public ContentManager getContentManager { get { return Globals.screenManager.Content; } }
@@ -97,5 +97,43 @@ namespace rubens_psx_engine
         public virtual void Draw2D(GameTime gameTime)
         {
         }
+
+        /// <summary>
+        /// Gets the background color for this screen. Override in screens that have scenes with custom background colors.
+        /// </summary>
+        public virtual Color? GetBackgroundColor()
+        {
+            return null; // Return null to use global default
+        }
+
+        #region IDisposable Implementation
+        
+        private bool disposed = false;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    // Override in derived classes to dispose screen-specific resources
+                    // This will be called when the screen is removed from the screen stack
+                }
+                disposed = true;
+            }
+        }
+
+        ~Screen()
+        {
+            Dispose(false);
+        }
+        
+        #endregion
     }
 }
