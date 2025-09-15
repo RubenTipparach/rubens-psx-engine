@@ -1,0 +1,86 @@
+# Rubens PSX Engine Configuration File
+# This is an example configuration file showing all available options
+
+# Dithering/Pixelation effects configuration
+dither:
+  renderWidth: 320      # Render resolution width (160-1920)
+  renderHeight: 180     # Render resolution height (90-1080)
+  strength: 0.8         # Dither strength (0.0-1.0)
+  colorLevels: 6.0      # Color quantization levels (2.0-256.0)
+  usePointSampling: true # Use point sampling for pixelated look
+
+# Bloom effect configuration
+bloom:
+  preset: 6             # Bloom preset (0-7), 6 = Blendo preset
+  # Optional overrides (uncomment to use):
+  # threshold: 0.5
+  # intensity: 1.5
+  # blurAmount: 2.0
+
+# Color tint effects
+tint:
+  enabled: false        # Enable color tinting
+  color: [1.0, 1.0, 1.0, 1.0]  # RGBA color values (0.0-1.0)
+  intensity: 1.0        # Tint intensity
+
+# Rendering pipeline settings
+rendering:
+  enablePostProcessing: true    # Enable post-processing effects
+  scaleMode: "nearest"         # Scaling mode: "nearest" or "linear"
+  maintainAspectRatio: true    # Maintain aspect ratio when scaling
+
+  # Anti-aliasing settings
+  antialiasing:
+    enabled: false      # Enable MSAA
+    sampleCount: 4      # MSAA sample count (1, 2, 4, 8, 16)
+
+  # UI rendering settings
+  ui:
+    useNativeResolution: true   # Render UI at native resolution
+    scaleFactor: 1.0           # UI scale factor (0.5-4.0)
+
+# Input configuration
+input:
+  lockMouse: false      # Lock mouse cursor to window
+
+# Scene/Level configuration
+scene:
+  defaultScene: "thirdPersonSandbox"  # Default scene when not using DirectLevel
+  showSceneMenu: false                # Show scene selection menu on startup
+
+  # DIRECT LEVEL LOADING - Set to bypass scene selection completely
+  # Available options:
+  # - "default" (use DefaultScene and ShowSceneMenu settings)
+  # - "thirdPersonSandbox" (Third Person Sandbox)
+  # - "fpsSandbox" (FPS Sandbox)
+  # - "basic" (Graphics Test Scene)
+  # - "cameraTest" (Camera Test Scene)
+  # - "thirdPersonHallway" (Third Person Hallway)
+  # - "graphicsTest" (Graphics Test Scene)
+  # - "corridor" (Corridor Multi-Material Scene with interaction system)
+  # - "wireframeTest" (Wireframe Cube Test)
+  # - "staticMeshDemo" (Static Mesh Demo)
+  # - "interactiveTest" (Interactive Test Scene)
+  # - "bepuInteraction" (BEPU Physics Interaction)
+  directLevel: "default"
+
+# Development and debugging options
+development:
+  enableScreenshots: true           # Enable screenshot functionality
+  screenshotDirectory: "screenshots" # Screenshot save directory
+  showStaticMeshDebug: false        # Show static mesh debug info
+
+# QUICK SETUP EXAMPLES:
+#
+# To load directly into the corridor scene with interaction system:
+# scene:
+#   directLevel: "corridor"
+#
+# To load directly into FPS sandbox:
+# scene:
+#   directLevel: "fpsSandbox"
+#
+# To show scene selection menu:
+# scene:
+#   directLevel: "default"
+#   showSceneMenu: true

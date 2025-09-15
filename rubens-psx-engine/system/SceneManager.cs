@@ -50,7 +50,13 @@ namespace rubens_psx_engine.system
         public static Screen LoadStartupScene()
         {
             var config = RenderingConfigManager.Config.Scene;
-            
+
+            // Check for direct level loading first
+            //if (config.DirectLevel != "default")
+            //{
+            //    return CreateScene(config.DirectLevel);
+            //}
+
             if (config.ShowSceneMenu)
             {
                 return new SceneSelectionMenu();

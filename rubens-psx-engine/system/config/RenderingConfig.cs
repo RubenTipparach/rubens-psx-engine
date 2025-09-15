@@ -125,6 +125,24 @@ namespace rubens_psx_engine.system.config
     {
         public string DefaultScene { get; set; } = "thirdPersonSandbox";
         public bool ShowSceneMenu { get; set; } = false;
+
+        /// <summary>
+        /// Direct level loading - if not "default", game will load directly into this level bypassing scene selection
+        /// Available options:
+        /// - "default" (use DefaultScene and ShowSceneMenu settings)
+        /// - "thirdPersonSandbox" (Third Person Sandbox)
+        /// - "fpsSandbox" (FPS Sandbox)
+        /// - "basic" (Graphics Test Scene)
+        /// - "cameraTest" (Camera Test Scene)
+        /// - "thirdPersonHallway" (Third Person Hallway)
+        /// - "graphicsTest" (Graphics Test Scene)
+        /// - "corridor" (Corridor Multi-Material Scene with interaction system)
+        /// - "wireframeTest" (Wireframe Cube Test)
+        /// - "staticMeshDemo" (Static Mesh Demo)
+        /// - "interactiveTest" (Interactive Test Scene)
+        /// - "bepuInteraction" (BEPU Physics Interaction)
+        /// </summary>
+        public string DirectLevel { get; set; } = "default";
     }
 
     /// <summary>

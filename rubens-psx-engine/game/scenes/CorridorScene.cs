@@ -111,6 +111,27 @@ namespace anakinsoft.game.scenes
             placeholder.AmbientColor = new Vector3(.7f, .7f, .7f);
             //placeholder.Brightness = 1.0f; // Brighter
 
+            // Create door materials
+            var doorMat = new UnlitMaterial("textures/door");
+            doorMat.Brightness = 1.0f;
+            doorMat.AffineAmount = 0;
+            doorMat.VertexJitterAmount = 3;
+
+            var frameMat = new UnlitMaterial("textures/door_frame");
+            frameMat.Brightness = 1.0f;
+            frameMat.AffineAmount = 0;
+            frameMat.VertexJitterAmount = 3;
+
+            var doorMat_2 = new UnlitMaterial("textures/prototype/prototype_512x512_orange");
+            doorMat.Brightness = 1.0f;
+            doorMat.AffineAmount = 0;
+            doorMat.VertexJitterAmount = 3;
+
+            var frameMat_2 = new VertexLitMaterial("textures/prototype/concrete");
+            frameMat.Brightness = .9f;
+            frameMat.AffineAmount = 0;
+            frameMat.VertexJitterAmount = 3;
+
             var rotateLevel = QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0);
 
             // Lower Corridors
@@ -215,18 +236,7 @@ namespace anakinsoft.game.scenes
             // Create character
             CreateCharacter(new Vector3(0, -3, 36) * intervals); // Start at back of corridor
 
-            // Add example doors to the corridors
-            // Create door materials
-            var doorMat = new UnlitMaterial("textures/door");
-            doorMat.Brightness = 1.0f;
-            doorMat.AffineAmount = 0;
-            doorMat.VertexJitterAmount = 3;
-
-            var frameMat = new UnlitMaterial("textures/door_frame");
-            frameMat.Brightness = 1.0f;
-            frameMat.AffineAmount = 0;
-            frameMat.VertexJitterAmount = 3;
-
+                
             // Door between first and second corridor sections
             CreateDoor(new Vector3(0, -4, 20) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
@@ -314,9 +324,17 @@ namespace anakinsoft.game.scenes
             //    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
             //    "Crew Quarters", doorMat, frameMat);
 
-            CreateInteractiveDoor(new Vector3(0, -4, 40) * intervals,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
-                "Door teleport to AC1", doorMat, frameMat);
+            CreateInteractiveDoor(new Vector3(0, -4, 49) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0),
+                "Door teleport to AC1", doorMat_2, frameMat_2);
+
+            CreateInteractiveDoor(new Vector3(4.7042f, 2.3f, -140.06f) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 97.559f, 0, 0),
+                "Door teleport to AC2", doorMat_2, frameMat_2);
+
+            CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
+                "Door teleport to AA1", doorMat_2, frameMat_2);
         }
 
         private DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Material doorMat, Material frameMat)
@@ -583,7 +601,7 @@ namespace anakinsoft.game.scenes
 
             // Create interactive door entity
             var interactiveDoor = new InteractableDoorEntity(position, rotation, doorScale,
-                destinationName, "models/level/door", "models/level/door_frame",
+                destinationName, "models/level/door_2", "models/level/door_frame_2",
                 doorMaterial, frameMaterial, physicsSystem);
 
             // Add door's rendering entities to the scene

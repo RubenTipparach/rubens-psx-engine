@@ -62,11 +62,24 @@ rendering:
 # Scene Settings
 scene:
   # Default scene to load on startup
-  # Available scenes: "thirdPersonSandbox", "fpsSandbox", "cameraTest", "thirdPersonHallway"
-  defaultScene: "cameraTest"
+  # DIRECT LEVEL LOADING - Set to bypass scene selection completely
+  # Available options:
+  # - "default" (use DefaultScene and ShowSceneMenu settings)
+  # - "thirdPersonSandbox" (Third Person Sandbox)
+  # - "fpsSandbox" (FPS Sandbox)
+  # - "basic" (Graphics Test Scene)
+  # - "cameraTest" (Camera Test Scene)
+  # - "thirdPersonHallway" (Third Person Hallway)
+  # - "graphicsTest" (Graphics Test Scene)
+  # - "corridor" (Corridor Multi-Material Scene with interaction system)
+  # - "wireframeTest" (Wireframe Cube Test)
+  # - "staticMeshDemo" (Static Mesh Demo)
+  # - "interactiveTest" (Interactive Test Scene)
+  # - "bepuInteraction" (BEPU Physics Interaction)
+  defaultScene: "corridor"
   
   # Whether to show scene selection menu on startup
-  showSceneMenu: true
+  showSceneMenu: false
 
 # Input Settings
 input:
