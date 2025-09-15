@@ -146,6 +146,16 @@ namespace rubens_psx_engine.system.config
     }
 
     /// <summary>
+    /// Game information configuration
+    /// </summary>
+    public class GameConfig
+    {
+        public string Name { get; set; } = "DERILICT";
+        public string Version { get; set; } = "1.0.0";
+        public string Developer { get; set; } = "Rubens Studio";
+    }
+
+    /// <summary>
     /// Development and debugging configuration
     /// </summary>
     public class DevelopmentConfig
@@ -160,6 +170,7 @@ namespace rubens_psx_engine.system.config
     /// </summary>
     public class RenderingConfig
     {
+        public GameConfig Game { get; set; } = new GameConfig();
         public DitherConfig Dither { get; set; } = new DitherConfig();
         public BloomConfig Bloom { get; set; } = new BloomConfig();
         public TintConfig Tint { get; set; } = new TintConfig();
@@ -259,9 +270,25 @@ namespace rubens_psx_engine.system.config
         /// </summary>
         public static Microsoft.Xna.Framework.Graphics.SamplerState GetSamplerState()
         {
-            return Config.Dither.UsePointSampling 
-                ? Microsoft.Xna.Framework.Graphics.SamplerState.PointClamp 
+            return Config.Dither.UsePointSampling
+                ? Microsoft.Xna.Framework.Graphics.SamplerState.PointClamp
                 : Microsoft.Xna.Framework.Graphics.SamplerState.LinearClamp;
+        }
+
+        /// <summary>
+        /// Get the game name from configuration
+        /// </summary>
+        public static string GetGameName()
+        {
+            return Config.Game.Name;
+        }
+
+        /// <summary>
+        /// Get the full game title with version
+        /// </summary>
+        public static string GetGameTitleWithVersion()
+        {
+            return $"{Config.Game.Name} v{Config.Game.Version}";
         }
 
         /// <summary>

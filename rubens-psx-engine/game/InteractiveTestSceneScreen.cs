@@ -45,8 +45,8 @@ namespace rubens_psx_engine.game.scenes
                 Globals.screenManager.AddScreen(new PauseMenu());
             }
             
-            // Handle F1 for scene selection
-            if (InputManager.GetKeyboardClick(Keys.F1))
+            // Handle F1 for scene selection (only if enabled in config)
+            if (InputManager.GetKeyboardClick(Keys.F1) && rubens_psx_engine.system.SceneManager.IsSceneMenuEnabled())
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }

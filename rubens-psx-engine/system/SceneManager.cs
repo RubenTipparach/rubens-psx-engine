@@ -51,7 +51,7 @@ namespace rubens_psx_engine.system
         {
             var config = RenderingConfigManager.Config.Scene;
 
-            // Check for direct level loading first
+            // Check for direct level loading
             //if (config.DirectLevel != "default")
             //{
             //    return CreateScene(config.DirectLevel);
@@ -111,6 +111,15 @@ namespace rubens_psx_engine.system
                 "bepuInteraction" => "BEPU Physics Interaction",
                 _ => "Unknown Scene"
             };
+        }
+
+        /// <summary>
+        /// Check if scene menu access is enabled in configuration
+        /// </summary>
+        /// <returns>True if scene menu can be accessed, false if disabled</returns>
+        public static bool IsSceneMenuEnabled()
+        {
+            return RenderingConfigManager.Config.Scene.ShowSceneMenu;
         }
     }
 }

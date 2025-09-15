@@ -179,7 +179,8 @@ namespace anakinsoft.game.scenes
                 Globals.screenManager.AddScreen(new PauseMenu());
             }
 
-            if (InputManager.GetKeyboardClick(Keys.F1))
+            // Add F1 key to switch to scene selection (only if enabled in config)
+            if (InputManager.GetKeyboardClick(Keys.F1) && rubens_psx_engine.system.SceneManager.IsSceneMenuEnabled())
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }

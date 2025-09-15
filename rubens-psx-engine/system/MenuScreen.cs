@@ -47,8 +47,8 @@ namespace rubens_psx_engine.system
             // Temporarily unlock mouse while in menu
             config.Input.LockMouse = false;
             
-            // Immediately update mouse visibility to ensure it takes effect
-            Globals.screenManager.IsMouseVisible = false;
+            // Show mouse cursor for menu interaction
+            Globals.shouldShowMouse = true;
         }
 
         /// <summary>
@@ -59,8 +59,8 @@ namespace rubens_psx_engine.system
             var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
             config.Input.LockMouse = previousMouseLockState;
             
-            // Immediately update mouse visibility based on restored state
-            //Globals.screenManager.IsMouseVisible = !previousMouseLockState;
+            // Hide mouse cursor when returning to game
+            Globals.shouldShowMouse = false;
         }
 
         public override void ExitScreen()

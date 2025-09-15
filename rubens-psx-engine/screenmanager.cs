@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Input;
+using rubens_psx_engine.system.config;
 
 
 
@@ -86,7 +87,7 @@ namespace rubens_psx_engine
             graphics.SynchronizeWithVerticalRetrace = true; //vsync
             graphics.PreferMultiSampling = true;
             this.IsFixedTimeStep = false;
-            this.Window.Title = Globals.WINDOWNAME;
+            this.Window.Title = RenderingConfigManager.Config.Game.Name;
             this.Window.AllowUserResizing = false;
             // Mouse visibility will be set based on config
             //this.IsMouseVisible = true;

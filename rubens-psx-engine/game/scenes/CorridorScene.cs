@@ -126,6 +126,15 @@ namespace anakinsoft.game.scenes
             doorMat.Brightness = 1.0f;
             doorMat.AffineAmount = 0;
             doorMat.VertexJitterAmount = 3;
+            var doorMat_2A = new UnlitMaterial("textures/prototype/prototype_512x512_cyan");
+            doorMat.Brightness = 1.0f;
+            doorMat.AffineAmount = 0;
+            doorMat.VertexJitterAmount = 3;
+
+            var doorMat_2B = new UnlitMaterial("textures/prototype/prototype_512x512_green1");
+            doorMat.Brightness = 1.0f;
+            doorMat.AffineAmount = 0;
+            doorMat.VertexJitterAmount = 3;
 
             var frameMat_2 = new VertexLitMaterial("textures/prototype/concrete");
             frameMat.Brightness = .9f;
@@ -330,11 +339,11 @@ namespace anakinsoft.game.scenes
 
             CreateInteractiveDoor(new Vector3(4.7042f, 2.3f, -140.06f) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 97.559f, 0, 0),
-                "Door teleport to AC2", doorMat_2, frameMat_2);
+                "Door teleport to AC2", doorMat_2A, frameMat_2); //cyan
 
             CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
-                "Door teleport to AA1", doorMat_2, frameMat_2);
+                "Door teleport to AA1", doorMat_2B, frameMat_2);//green
         }
 
         private DoorEntity CreateDoor(Vector3 position, Quaternion rotation, Material doorMat, Material frameMat)
@@ -629,9 +638,15 @@ namespace anakinsoft.game.scenes
         {
             base.Update(gameTime);
 
-            // Handle input
-            HandleInput();
-            Globals.screenManager.IsMouseVisible = false;
+            // Apply global mouse visibility state
+            Globals.screenManager.IsMouseVisible = Globals.shouldShowMouse;
+
+            // Only handle input and movement if not in menu
+            if (!Globals.IsInMenuState())
+            {
+                // Handle input
+                HandleInput();
+            }
 
             // Update doors with character position
             if (characterActive && character.HasValue)
@@ -689,13 +704,17 @@ namespace anakinsoft.game.scenes
             // Update the scene normally first
             Update(gameTime);
 
-            // Update interaction system with camera for raycasting
-            interactionSystem.Update(gameTime, camera);
-
-            // Update character with camera (for movement direction based on camera look)
-            if (characterActive && character.HasValue)
+            // Only update interactions and character movement if not in menu
+            if (!Globals.IsInMenuState())
             {
-                character.Value.UpdateCharacterGoals(Keyboard.GetState(), camera, (float)gameTime.ElapsedGameTime.TotalSeconds);
+                // Update interaction system with camera for raycasting
+                interactionSystem.Update(gameTime, camera);
+
+                // Update character with camera (for movement direction based on camera look)
+                if (characterActive && character.HasValue)
+                {
+                    character.Value.UpdateCharacterGoals(Keyboard.GetState(), camera, (float)gameTime.ElapsedGameTime.TotalSeconds);
+                }
             }
         }
 

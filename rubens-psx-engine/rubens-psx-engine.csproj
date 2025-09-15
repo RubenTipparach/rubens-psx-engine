@@ -14,10 +14,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="CHAIN\**" />
     <Compile Remove="Content\bin\**" />
     <Compile Remove="Content\obj\**" />
+    <EmbeddedResource Remove="CHAIN\**" />
     <EmbeddedResource Remove="Content\bin\**" />
     <EmbeddedResource Remove="Content\obj\**" />
+    <None Remove="CHAIN\**" />
     <None Remove="Content\bin\**" />
     <None Remove="Content\obj\**" />
   </ItemGroup>

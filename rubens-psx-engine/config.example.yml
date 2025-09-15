@@ -1,6 +1,12 @@
 # Rubens PSX Engine Configuration File
 # This is an example configuration file showing all available options
 
+# Game information
+game:
+  name: "DERILICT"          # Game title displayed in pause menu and UI
+  version: "1.0.0"          # Game version
+  developer: "Rubens Studio" # Developer name
+
 # Dithering/Pixelation effects configuration
 dither:
   renderWidth: 320      # Render resolution width (160-1920)
@@ -46,7 +52,7 @@ input:
 # Scene/Level configuration
 scene:
   defaultScene: "thirdPersonSandbox"  # Default scene when not using DirectLevel
-  showSceneMenu: false                # Show scene selection menu on startup
+  showSceneMenu: false                # IMPORTANT: When false, completely disables scene menu access (F1 key + pause menu button)
 
   # DIRECT LEVEL LOADING - Set to bypass scene selection completely
   # Available options:
@@ -72,6 +78,12 @@ development:
 
 # QUICK SETUP EXAMPLES:
 #
+# To change game name:
+# game:
+#   name: "MY AWESOME GAME"
+#   version: "2.0.0"
+#   developer: "My Studio"
+#
 # To load directly into the corridor scene with interaction system:
 # scene:
 #   directLevel: "corridor"
@@ -84,3 +96,7 @@ development:
 # scene:
 #   directLevel: "default"
 #   showSceneMenu: true
+#
+# To disable scene menu completely (production build):
+# scene:
+#   showSceneMenu: false

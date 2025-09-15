@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using rubens_psx_engine.system;
+using rubens_psx_engine.system.config;
 
 namespace rubens_psx_engine
 {
@@ -22,14 +26,21 @@ namespace rubens_psx_engine
 
         public override void Reinitialize()
         {
-            buttons = new Button[]
+            var buttonList = new List<Button>
             {
-            new Button("Resume", HitButton_Resume),
-            new Button("Scene Selection", HitButton_SceneSelection),
-            new Button("Options", HitButton_Settings),            
-            new Button("Exit to desktop", HitButton_Quit)
+                new Button("Resume", HitButton_Resume)
             };
 
+            // Only add Scene Selection button if scene menu is enabled in config
+            if (SceneManager.IsSceneMenuEnabled())
+            {
+                buttonList.Add(new Button("Scene Selection", HitButton_SceneSelection));
+            }
+
+            buttonList.Add(new Button("Options", HitButton_Settings));
+            buttonList.Add(new Button("Exit to desktop", HitButton_Quit));
+
+            buttons = buttonList.ToArray();
 
             for (int i = 0; i < buttons.Length; i++)
             {
@@ -83,11 +94,12 @@ namespace rubens_psx_engine
 
         public override void Draw2D(GameTime gameTime)
         {
-            //Dark BG.
-            Globals.screenManager.getSpriteBatch.Draw(Globals.white, new Rectangle(0, 0, Globals.screenManager.Window.ClientBounds.Width, Globals.screenManager.Window.ClientBounds.Height), (Color.PaleVioletRed * .8f) * this.getTransition);
+            //Dark red background.
+            Globals.screenManager.getSpriteBatch.Draw(Globals.white, new Rectangle(0, 0, Globals.screenManager.Window.ClientBounds.Width, Globals.screenManager.Window.ClientBounds.Height), (Color.DarkRed * .8f) * this.getTransition);
 
             //header title.
-            Globals.screenManager.getSpriteBatch.DrawString(Globals.fontNTR, "SOPHON ENGINE", new Vector2(100,100), Color.White * this.getTransition);
+            var gameName = RenderingConfigManager.Config.Game.Name;
+            Globals.screenManager.getSpriteBatch.DrawString(Globals.fontNTR, gameName, new Vector2(100,100), Color.White * this.getTransition);
 
             //Buttons.            
             for (int i = 0; i < buttons.Length; i++)

@@ -78,8 +78,8 @@ namespace anakinsoft.game.scenes
                 Globals.screenManager.AddScreen(new PauseMenu());
             }
 
-            // Add F1 key to switch to scene selection
-            if (InputManager.GetKeyboardClick(Keys.F1))
+            // Add F1 key to switch to scene selection (only if enabled in config)
+            if (InputManager.GetKeyboardClick(Keys.F1) && SceneManager.IsSceneMenuEnabled())
             {
                 Globals.screenManager.AddScreen(new SceneSelectionMenu());
             }
