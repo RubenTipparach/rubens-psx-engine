@@ -84,16 +84,17 @@ VertexShaderOutput VS(VertexShaderInput input)
 float4 PS(VertexShaderOutput input) : SV_Target0
 {
     float2 texCoord;
-    if (EnableAffineMapping)
-    {
-        // Affine texture mapping: reconstruct non-perspective-correct texture coordinates
-        float2 affineCoord = input.AffineTexCoord * input.InvW;
-        texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
-    }
-    else
-    {
+    
+    // Affine texture mapping: reconstruct non-perspective-correct texture coordinates
+    //if (EnableAffineMapping)
+    //{
+    //    float2 affineCoord = input.AffineTexCoord * input.InvW;
+    //    texCoord = lerp(input.TexCoord, affineCoord, AffineAmount);
+    //}
+    //else
+    //{
         texCoord = input.TexCoord;
-    }
+    //}
 
     // Sample texture and apply vertex lighting
     float4 texColor = tex2D(TextureSampler, texCoord);

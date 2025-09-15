@@ -16,6 +16,7 @@ using rubens_psx_engine.system.config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using Matrix = Microsoft.Xna.Framework.Matrix;
 using Vector3N = System.Numerics.Vector3;
 
@@ -32,7 +33,7 @@ namespace anakinsoft.game.scenes
         bool characterActive;
 
         // Multi-material corridor entity
-        MultiMaterialRenderingEntity corridorEntity;
+        //MultiMaterialRenderingEntity corridorEntity;
         
         // Direct BepuPhysics meshes for corridors
         List<Mesh> corridorBepuMeshes;
@@ -77,28 +78,121 @@ namespace anakinsoft.game.scenes
                 boundingBoxRenderer.ShowBoundingBoxes = false;
             }
 
-            float intervals = 160;
-            // Create corridor with multiple materials and physics
-            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 320), Quaternion.Identity);
+            float intervals = 20;
+            float jitter = 3;
+            var affine = 0;
+            var wall = new UnlitMaterial("textures/corridor_wall");
+            wall.VertexJitterAmount = jitter;
+            wall.Brightness = 1.0f; // Slightly darker
+            wall.AffineAmount = affine;
 
-            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 160), Quaternion.Identity);
+            var floor = new UnlitMaterial("textures/floor_1");
+            floor.VertexJitterAmount = jitter;
+            floor.AffineAmount = affine;
+            floor.Brightness = 1.0f; // Brighter
+            //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
 
-            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -80, 0), Quaternion.Identity);
+            var placeholder = new VertexLitMaterial("textures/prototype/wood");
+            placeholder.VertexJitterAmount = jitter;
+            placeholder.AffineAmount = affine;
+            placeholder.AmbientColor = new Vector3(.7f, .7f, .7f);
+            //placeholder.Brightness = 1.0f; // Brighter
 
-            CreateCorridorSlope(new Vector3(0, -80, -160),
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0));
+            var rotateLevel = QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0);
 
-            CreateCorridorSlope(new Vector3(0, -40, -320),
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0));
+            // Lower Corridors
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -4, 16) * intervals,
+                Quaternion.Identity, wall, floor);
 
-            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, 0, -480), Quaternion.Identity);
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -4, 8) * intervals,
+                Quaternion.Identity, wall, floor);
 
-            //CreateCorridorSlope(new Vector3(0, 0, -160), QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0));
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, -4, 0) * intervals,
+                Quaternion.Identity, wall, floor);
 
-            //CreateCorridorWithMaterialsAndPhysics(new Vector3(0, 160, -40) + Vector3.Forward * intervals * 3);
+            CreateCorridorSlope(new Vector3(0, -4, -8) * intervals,
+                rotateLevel, wall, floor);
 
-            //CreateCorridorWithMaterialsAndPhysics(Vector3.Forward * intervals * 4);
+            CreateCorridorSlope(new Vector3(0, -2, -16) * intervals,
+                rotateLevel, wall, floor);
 
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(0, 0, -24) * intervals,
+                Quaternion.Identity, wall, floor);
+
+            // Upper corridors
+            CreateStaticRoom(new Vector3(0, 0, -32) * intervals,
+                rotateLevel, [wall, floor], "models/level/corridor_T_shape");
+            CreateStaticRoom(new Vector3(-8, 0, -32) * intervals,
+                Quaternion.Identity, [wall, floor], "models/level/corridor_T_shape");
+            CreateStaticRoom(new Vector3(8, 0, -32) * intervals,
+                Quaternion.Identity, [wall, floor], "models/level/corridor_T_shape");
+
+            CreateStaticRoom(new Vector3(-16, 0, -32) * intervals,
+                Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
+
+
+            // Main Engines
+            CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
+                rotateLevel, [placeholder], "models/level/EngineRoom_1");
+
+            CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
+                rotateLevel, [placeholder], "models/level/EngineRoom_2");
+
+            // Main Facilities
+            CreateStaticRoom(new Vector3(16, 0, -28) * intervals,
+                rotateLevel, [placeholder], "models/level/medical_room");
+            CreateStaticRoom(new Vector3(8, 0, -43) * intervals,
+                rotateLevel, [placeholder], "models/level/crew_quarters");
+            CreateStaticRoom(new Vector3(-9, 0, -54) * intervals,
+                rotateLevel, [placeholder], "models/level/bathroom");
+            CreateStaticRoom(new Vector3(-20, 0, -28) * intervals,
+                rotateLevel, [placeholder], "models/level/lab");
+            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+                rotateLevel, [placeholder], "models/level/arborium");
+
+            //bridge corridor
+            CreateStaticRoom(new Vector3(-16, 0, -78) * intervals,
+                Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
+
+            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+                rotateLevel, [placeholder], "models/level/arborium");
+
+            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+                rotateLevel, [placeholder], "models/level/arborium");
+
+            CreateStaticRoom(new Vector3(-24, 0, -78) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                [wall, floor, wall], "models/level/corridor");
+            CreateStaticRoom(new Vector3(-32, 0, -78) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                [wall, floor, wall], "models/level/corridor");
+            CreateStaticRoom(new Vector3(-8, 0, -78) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+                [wall, floor, wall],  "models/level/corridor");
+
+            //CreateCorridorWithMaterialsAndPhysics(new Vector3(-24, 0, -78) * intervals,
+            //    Quaternion.CreateFromYawPitchRoll(0, 0, 0), wall, floor);
+            //CreateCorridorWithMaterialsAndPhysics(new Vector3(-32, 0, -78) * intervals,
+            //    Quaternion.CreateFromYawPitchRoll(0, 0, 0), wall, floor);
+            //CreateCorridorWithMaterialsAndPhysics(new Vector3(-8, 0, -78) * intervals,
+            //    Quaternion.CreateFromYawPitchRoll(0, 0, 0), wall, floor);
+
+            CreateStaticRoom(new Vector3(-4, 0, -78) * intervals,
+                rotateLevel, [placeholder], "models/level/curved_hall");
+            CreateCorridorWithMaterialsAndPhysics(new Vector3(16, 0, -102) * intervals,
+                Quaternion.Identity, wall, floor);
+            CreateCorridorSlope(new Vector3(16, 0, -110) * intervals,
+                rotateLevel, wall, floor);
+            CreateCorridorSlope(new Vector3(16, 2, -118) * intervals,
+                rotateLevel, wall, floor);
+
+            // bridge
+            CreateStaticRoom(new Vector3(16, 4, -139) * intervals,
+                rotateLevel, [placeholder], "models/level/bridge_prep_rooms");
+            CreateStaticRoom(new Vector3(16, 4, -139) * intervals,
+                rotateLevel, [placeholder], "models/level/bridge");
+            CreateStaticRoom(new Vector3(16, 4, -126) * intervals,
+                Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
             // Create physics ground for collision (visible for testing)
             //CreatePhysicsGround();
 
@@ -109,23 +203,40 @@ namespace anakinsoft.game.scenes
             CreateCharacter(new Vector3(0, -70, 160)); // Start at back of corridor
         }
 
-        private void CreateCorridorSlope(Vector3 offset, Quaternion rotation)
+        private void CreateStaticRoom(Vector3 offset, Quaternion rotation, Material[] mats, string mesh, bool  flipPhys = false)
         {
-            var affine = 0;
-            var mesh = "models/level/corridor_slope";
             // Create three different materials for the corridor channels using actual texture files
-            var wall = new UnlitMaterial("textures/corridor_wall");
-            wall.VertexJitterAmount = 4f;
-            wall.Brightness = 1.0f; // Slightly darker
-            wall.AffineAmount = affine;
-
-            var floor = new UnlitMaterial("textures/floor_1");
-            floor.VertexJitterAmount = 4f;
-            floor.AffineAmount = affine;
-            floor.Brightness = 1.0f; // Brighter
 
             // Create corridor entity with three material channels
-            corridorEntity = new MultiMaterialRenderingEntity(mesh,
+            var loadedMats = new Dictionary<int, Material>();
+            for(int i = 0; i < mats.Length; i++)
+            {
+                loadedMats.Add(i, mats[i]);
+            }
+            var entity = new MultiMaterialRenderingEntity(mesh, loadedMats);
+
+            entity.Position = Vector3.Zero + offset;
+            entity.Scale = Vector3.One * .2f;
+            entity.Rotation = rotation;
+            entity.IsVisible = true;
+
+            // Add to rendering entities
+            AddRenderingEntity(entity);
+
+            // Create physics mesh for the corridor
+            CreatePhysicsMesh(mesh, offset, rotation, 
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+        }
+
+
+        private void CreateCorridorSlope(Vector3 offset, Quaternion rotation, Material wall, Material floor)
+        {
+            var mesh = "models/level/corridor_slope";
+            // Create three different materials for the corridor channels using actual texture files
+    
+
+            // Create corridor entity with three material channels
+             var corridorEntity = new MultiMaterialRenderingEntity(mesh,
                 new Dictionary<int, Material>
                 {
                     { 0, wall }, // Floor/walls
@@ -142,34 +253,21 @@ namespace anakinsoft.game.scenes
             AddRenderingEntity(corridorEntity);
 
             // Create physics mesh for the corridor
-            CreatePhysicsMesh(mesh, offset, rotation, QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 90, 0), Vector3.Zero);
+            CreatePhysicsMesh(mesh, offset, rotation, QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
         }
 
 
-        private void CreateCorridorWithMaterialsAndPhysics(Vector3 offset, Quaternion rotation)
+        private void CreateCorridorWithMaterialsAndPhysics(Vector3 offset, Quaternion rotation, Material wall, Material floor)
         {
-            var affine = 0;
             var mesh = "models/corridor_single";
-            // Create three different materials for the corridor channels using actual texture files
-            var cieling = new UnlitMaterial("textures/corridor_wall");
-            cieling.VertexJitterAmount = 4f;
-            cieling.AffineAmount = affine;
-            cieling.Brightness = 1.0f; // Slightly darker
-            
-            var floor = new UnlitMaterial("textures/floor_1");
-            floor.VertexJitterAmount = 4f;
-            floor.AffineAmount = affine;
-            floor.Brightness = 1.0f; // Brighter
-            //material2.LightDirection = Vector3.Normalize(new Vector3(0.5f, -1, 0.3f));
-
 
             // Create corridor entity with three material channels
-            corridorEntity = new MultiMaterialRenderingEntity(mesh, 
+            var corridorEntity = new MultiMaterialRenderingEntity(mesh, 
                 new Dictionary<int, Material>
                 {
                     { 0, floor }, // Floor/walls
-                    { 1, cieling }, // Architectural details
-                    { 2, cieling }  // Decorative elements
+                    { 1, wall }, // Architectural details
+                    { 2, wall }  // Decorative elements
                 });
 
             corridorEntity.Position = Vector3.Zero + offset; 
@@ -204,7 +302,7 @@ namespace anakinsoft.game.scenes
                 // Add the mesh shape to the simulation's shape collection
                 var shapeIndex = physicsSystem.Simulation.Shapes.Add(bepuMesh);
                 //rotate the rotation by this.
-                var rotation2 = rotationOffset * rotation;
+                var rotation2 = rotation * rotationOffset;
                 // Create static body with the mesh shape
                 var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
                     offset.ToVector3N(),
@@ -253,34 +351,13 @@ namespace anakinsoft.game.scenes
             characterActive = true;
             character = new CharacterInput(characters, position.ToVector3N(), 
                 new Capsule(0.5f * 10, 1 * 10),
-                minimumSpeculativeMargin: 0.1f, 
+                minimumSpeculativeMargin: 0.5f, 
                 mass: 0.1f, 
                 maximumHorizontalForce: 100,
-                maximumVerticalGlueForce: 500,
+                maximumVerticalGlueForce: 1500,
                 jumpVelocity: 0,
                 speed: 80,
-                maximumSlope: 30f.ToRadians());
-        }
-
-        private PhysicsEntity CreateBulletEntity(Vector3 position, Vector3N direction)
-        {
-            // Create bullet with physics
-            var bullet = CreateSphere(position, 2f, 5f, false, "models/sphere", null);
-            
-            bullet.Scale = new Vector3(0.2f);
-            bullet.Color = new Vector3(1, 0.3f, 0); // Orange bullets
-            
-            // Apply initial velocity
-            bullet.SetVelocity(direction * 300f);
-            
-            bullets.Add(bullet);
-            return bullet;
-        }
-
-        void ShootBullet(Vector3 position, Vector3N direction)
-        {
-            CreateBulletEntity(position, direction);
-            Console.WriteLine("Corridor bullet fired");
+                maximumSlope: 40f.ToRadians());
         }
 
         public override void Update(GameTime gameTime)
@@ -331,7 +408,7 @@ namespace anakinsoft.game.scenes
                     
                     // Use forward direction (will be replaced by proper camera forward by screen)
                     var dir = Vector3N.UnitZ;
-                    ShootBullet(characterPos + new Vector3(0, 5, 0), dir);
+                    //ShootBullet(characterPos + new Vector3(0, 5, 0), dir);
                 }
                 mouseClick = true;
             }
@@ -436,7 +513,7 @@ namespace anakinsoft.game.scenes
         public List<PhysicsEntity> GetBullets() => bullets;
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
-        public MultiMaterialRenderingEntity GetCorridor() => corridorEntity;
+        //public MultiMaterialRenderingEntity GetCorridor() => corridorEntity;
         
         protected override void Dispose(bool disposing)
         {

@@ -16,8 +16,8 @@ namespace rubens_psx_engine.entities
         // Lighting parameters
         public Vector3 LightDirection { get; set; } = Vector3.Normalize(new Vector3(1, -1, 1));
         public Vector3 LightColor { get; set; } = new Vector3(1.0f, 0.9f, 0.8f);
-        public Vector3 AmbientColor { get; set; } = new Vector3(0.2f, 0.2f, 0.3f);
-        public float LightIntensity { get; set; } = 1.0f;
+        public Vector3 AmbientColor { get; set; } = new Vector3(0.6f, 0.6f, 0.6f);
+        public float LightIntensity { get; set; } = 0.5f;
         
         public VertexLitMaterial(string texturePath = null) 
             : base("shaders/surface/VertexLit", texturePath)
