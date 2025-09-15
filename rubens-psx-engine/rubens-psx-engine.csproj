@@ -27,6 +27,9 @@
     <None Remove="Content\obj\**" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CHAIN\ChainUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
@@ -41,6 +44,7 @@
   <ItemGroup>
     <Folder Include="Content\Assets\fonts\" />
     <Folder Include="Content\Assets\shaders\surface\" />
+    <Folder Include="StreamingAssets\" />
   </ItemGroup>
   <ItemGroup>
     <!-- BepuPhysics2 project references - commit hash: bfb11dc2020555b09978c473d9655509e844032c -->
@@ -59,6 +63,12 @@
     </None>
     <None Update="SDL2.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="StreamingAssets\enter.door">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="StreamingAssets\hold.door">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="CollectPackageReferences">

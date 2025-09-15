@@ -38,6 +38,7 @@ namespace anakinsoft.game.scenes
         bool characterActive;
         float characterLoadDelay = 1.0f; // Delay in seconds before character physics activate
         float timeSinceLoad = 0f;
+        Quaternion characterInitialRotation = Quaternion.Identity; // Initial camera rotation
 
         // Multi-material corridor entity
         //MultiMaterialRenderingEntity corridorEntity;
@@ -94,8 +95,30 @@ namespace anakinsoft.game.scenes
             {
                 boundingBoxRenderer.ShowBoundingBoxes = false;
             }
-
             float intervals = 20;
+
+
+
+            // Load CHAIN stuff
+
+            List<DoorMapping> doorMappings = new List<DoorMapping>()
+            {
+                new(doorId: "AC1",
+                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
+                    startRotation: Quaternion.Identity),
+                new(doorId: "AC2",
+                    startLocaion: new Vector3(6.2873f, 3f, -140.26f) * intervals,
+                    startRotation: Quaternion.CreateFromYawPitchRoll(86,0,0)),
+                new(doorId: "AA1",
+                    startLocaion: new Vector3(25.825f, 3f, -139.56f) * intervals,
+                    startRotation: Quaternion.CreateFromYawPitchRoll(-86,0,0)),
+            };
+
+            var entryDoor = ChainUtilities.GetSceneFromDoorFile(doorMappings, "AC1");
+
+            // Create character with initial orientation based on the starting door
+            CreateCharacter(entryDoor.startlocation , entryDoor.startRotation); // Start at back of corridor with orientation
+
             float jitter = 3;
             var affine = 0;
             var wall = new UnlitMaterial("textures/corridor_wall");
@@ -335,36 +358,29 @@ namespace anakinsoft.game.scenes
 
             CreateInteractiveDoor(new Vector3(0, -4, 49) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0),
-                "Door teleport to AC1", doorMat_2, frameMat_2);
+                "Door teleport to AC1", doorMat_2, frameMat_2,
+                (door) =>
+                {
+                    ChainUtilities.ExitGame("AC1");
+                }); //red
 
             CreateInteractiveDoor(new Vector3(4.7042f, 2.3f, -140.06f) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 97.559f, 0, 0),
-                "Door teleport to AC2", doorMat_2A, frameMat_2); //cyan
+                "Door teleport to AC2", doorMat_2A, frameMat_2,
+                (door) =>
+                {
+                    ChainUtilities.ExitGame("AC2");
+                }); //cyan
 
             CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
-                "Door teleport to AA1", doorMat_2B, frameMat_2);//green
+                "Door teleport to AA1", doorMat_2B, frameMat_2, (door) =>
+                {
+                    ChainUtilities.ExitGame("AA1");
+
+                });//green
 
 
-            // Load CHAIN stuff
-
-            List<DoorMapping> doorMappings = new List<DoorMapping>()
-            {
-                new(doorId: "AC1",
-                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
-                    startRotation: Quaternion.Identity),
-                new(doorId: "AC2",
-                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
-                    startRotation: Quaternion.CreateFromYawPitchRoll(-86,0,0)),
-                new(doorId: "AA1",
-                    startLocaion: new Vector3(0, -3.5f, 36) * intervals,
-                    startRotation: Quaternion.CreateFromYawPitchRoll(-257.41f,0,0)),
-            };
-
-            ChainUtilities.GetSceneFromDoorFile(doorMappings, "AC1");
-
-            // Create character
-            CreateCharacter(new Vector3(0, -3.5f, 36) * intervals); // Start at back of corridor
 
 
         }
@@ -526,7 +542,7 @@ namespace anakinsoft.game.scenes
             testCube.IsVisible = true;
         }
 
-        void CreateCharacter(Vector3 position)
+        void CreateCharacter(Vector3 position, Quaternion rotation)
         {
             characterActive = true;
             character = new CharacterInput(characters, position.ToVector3N(),
@@ -538,6 +554,9 @@ namespace anakinsoft.game.scenes
                 jumpVelocity: 0,
                 speed: 80,
                 maximumSlope: 40f.ToRadians());
+
+            // Store the initial rotation for the camera
+            characterInitialRotation = rotation;
         }
 
                     //      "models/level/door", "models/level/door_frame",
@@ -627,7 +646,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         public InteractableDoorEntity CreateInteractiveDoor(Vector3 position, Quaternion rotation,
             string destinationName, Material doorMaterial, Material frameMaterial,
-            Vector3? scale = null)
+            Action<InteractableDoorEntity> doorAction, Vector3? scale = null)
         {
             var doorScale = scale ?? new Vector3(0.2f);
 
@@ -649,6 +668,7 @@ namespace anakinsoft.game.scenes
             // Set up custom action for demonstration
             interactiveDoor.SetCustomAction((door) =>
             {
+                doorAction(door);
                 Console.WriteLine($"Teleporting to {door.DestinationName}!");
                 // Here you could implement actual teleportation, scene switching, etc.
             });
@@ -1043,6 +1063,7 @@ namespace anakinsoft.game.scenes
         public List<PhysicsEntity> GetBullets() => bullets;
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
+        public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
         //public MultiMaterialRenderingEntity GetCorridor() => corridorEntity;
         
         protected override void Dispose(bool disposing)

@@ -38,7 +38,7 @@ namespace rubens_psx_engine
             }
 
             buttonList.Add(new Button("Options", HitButton_Settings));
-            buttonList.Add(new Button("Exit to desktop", HitButton_Quit));
+            buttonList.Add(new Button("Exit", HitButton_Quit));
 
             buttons = buttonList.ToArray();
 

@@ -86,6 +86,9 @@ namespace rubens_psx_engine.chain
                 File.WriteAllText(doorPath, doorID);
 
                 Console.WriteLine($"Exit door created for: {doorID}");
+
+                Globals.screenManager.Exit();
+
             }
             catch (Exception ex)
             {

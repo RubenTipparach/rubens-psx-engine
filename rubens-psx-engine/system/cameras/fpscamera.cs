@@ -27,6 +27,18 @@ namespace anakinsoft.system.cameras
             Mouse.SetPosition(screenCenter.X, screenCenter.Y);
         }
 
+        /// <summary>
+        /// Sets the camera's orientation from a quaternion
+        /// </summary>
+        /// <param name="rotation">Quaternion representing the desired orientation</param>
+        public void SetRotation(Quaternion rotation)
+        {
+            // Extract yaw and pitch from the quaternion
+            Vector3 forward = Vector3.Transform(Vector3.Forward, rotation);
+            yaw = (float)Math.Atan2(-forward.X, -forward.Z);
+            pitch = (float)Math.Asin(forward.Y);
+        }
+
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);

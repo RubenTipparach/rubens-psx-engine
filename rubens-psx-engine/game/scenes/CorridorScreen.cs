@@ -25,11 +25,14 @@ namespace anakinsoft.game.scenes
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
             fpsCamera = new FPSCamera(gd, new Vector3(0, 10, 100));
-            fpsCamera.Position = new Vector3(0, 10, 100); // Start at back of corridor
 
             corridorScene = new CorridorScene();
             SetScene(corridorScene); // Register scene with physics screen for automatic disposal
-            
+
+            // Create camera and set its rotation from the character's initial rotation
+            //fpsCamera.Position = new Vector3(0, 10, 100); // Start at back of corridor
+            fpsCamera.SetRotation(corridorScene.GetCharacterInitialRotation());
+
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
         }
