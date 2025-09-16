@@ -10,59 +10,41 @@ namespace rubens_psx_engine
     {
         private List<Button> sceneButtons;
         private Button backButton;
+        private List<(string name, string id)> scenes;
+        private const float ButtonStartY = 180f;
+        private const float ButtonSpacing = 50f;
+        private const float ButtonX = 100f;
 
         public SceneSelectionMenu()
         {
             sceneButtons = new List<Button>();
 
-            // Create buttons for each scene
-            var thirdPersonButton = new Button("Third Person Sandbox", (sender, args) => LoadScene("thirdPersonSandbox"));
-            thirdPersonButton.SetPosition(new Vector2(100, 180));
-            sceneButtons.Add(thirdPersonButton);
+            // Define scenes with their display names and scene IDs
+            scenes = new List<(string name, string id)>
+            {
+                ("Third Person Sandbox", "thirdPersonSandbox"),
+                ("FPS Sandbox", "fpsSandbox"),
+                ("RTS Test Scene", "rtsTest"),
+                ("Graphics Test Scene", "graphicsTest"),
+                ("Corridor Multi-Material Scene", "corridor"),
+                ("Wireframe Cube Test", "wireframeTest"),
+                ("Static Mesh Demo", "staticMeshDemo"),
+                ("Interactive Test Scene", "interactiveTest"),
+                ("BEPU Physics Interaction", "bepuInteraction")
+            };
 
-            var fpsButton = new Button("FPS Sandbox", (sender, args) => LoadScene("fpsSandbox"));
-            fpsButton.SetPosition(new Vector2(100, 240));
-            sceneButtons.Add(fpsButton);
+            // Create buttons dynamically based on position in list
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                var scene = scenes[i];
+                var button = new Button(scene.name, (sender, args) => LoadScene(scene.id));
+                button.SetPosition(new Vector2(ButtonX, ButtonStartY + (i * ButtonSpacing)));
+                sceneButtons.Add(button);
+            }
 
-            //var basicButton = new Button("Basic Scene", (sender, args) => LoadScene("basic"));
-            //basicButton.SetPosition(new Vector2(100, 300));
-            //sceneButtons.Add(basicButton);
-
-            //var cameraTestButton = new Button("Camera Test Scene", (sender, args) => LoadScene("cameraTest"));
-            //cameraTestButton.SetPosition(new Vector2(100, 360));
-            //sceneButtons.Add(cameraTestButton);
-
-            //var thirdPersonHallwayButton = new Button("Third Person Hallway", (sender, args) => LoadScene("thirdPersonHallway"));
-            //thirdPersonHallwayButton.SetPosition(new Vector2(100, 420));
-            //sceneButtons.Add(thirdPersonHallwayButton);
-
-            var graphicsTestButton = new Button("Graphics Test Scene", (sender, args) => LoadScene("graphicsTest"));
-            graphicsTestButton.SetPosition(new Vector2(100, 480));
-            sceneButtons.Add(graphicsTestButton);
-
-            var corridorButton = new Button("Corridor Multi-Material Scene", (sender, args) => LoadScene("corridor"));
-            corridorButton.SetPosition(new Vector2(100, 540));
-            sceneButtons.Add(corridorButton);
-
-            var wireframeTestButton = new Button("Wireframe Cube Test", (sender, args) => LoadScene("wireframeTest"));
-            wireframeTestButton.SetPosition(new Vector2(100, 600));
-            sceneButtons.Add(wireframeTestButton);
-
-            var staticMeshDemoButton = new Button("Static Mesh Demo", (sender, args) => LoadScene("staticMeshDemo"));
-            staticMeshDemoButton.SetPosition(new Vector2(100, 660));
-            sceneButtons.Add(staticMeshDemoButton);
-
-            var interactiveTestButton = new Button("Interactive Test Scene", (sender, args) => LoadScene("interactiveTest"));
-            interactiveTestButton.SetPosition(new Vector2(100, 720));
-            sceneButtons.Add(interactiveTestButton);
-
-            var bepuInteractionButton = new Button("BEPU Physics Interaction", (sender, args) => LoadScene("bepuInteraction"));
-            bepuInteractionButton.SetPosition(new Vector2(100, 780));
-            sceneButtons.Add(bepuInteractionButton);
-
-            // Back button
+            // Back button positioned after all scene buttons
             backButton = new Button("Back", (sender, args) => ExitScreen());
-            backButton.SetPosition(new Vector2(100, 840));
+            backButton.SetPosition(new Vector2(ButtonX, ButtonStartY + (scenes.Count * ButtonSpacing) + ButtonSpacing));
         }
 
         private void LoadScene(string sceneType)
@@ -95,47 +77,27 @@ namespace rubens_psx_engine
             }
             backButton.Update(gameTime);
 
-            // Handle number key shortcuts
-            if (InputManager.GetKeyboardClick(Keys.D1))
-            {
-                LoadScene("thirdPersonSandbox");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D2))
-            {
-                LoadScene("fpsSandbox");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D3))
-            {
-                LoadScene("basic");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D4))
-            {
-                LoadScene("cameraTest");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D5))
-            {
-                LoadScene("thirdPersonHallway");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D6))
-            {
-                LoadScene("graphicsTest");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D7))
-            {
-                LoadScene("corridor");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D8))
-            {
-                LoadScene("wireframeTest");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D9))
-            {
-                LoadScene("staticMeshDemo");
-            }
-            else if (InputManager.GetKeyboardClick(Keys.D0))
-            {
-                LoadScene("bepuInteraction");
-            }
+            // Handle number key shortcuts based on button order
+            if (InputManager.GetKeyboardClick(Keys.D1) && scenes.Count > 0)
+                LoadScene(scenes[0].id);
+            else if (InputManager.GetKeyboardClick(Keys.D2) && scenes.Count > 1)
+                LoadScene(scenes[1].id);
+            else if (InputManager.GetKeyboardClick(Keys.D3) && scenes.Count > 2)
+                LoadScene(scenes[2].id);
+            else if (InputManager.GetKeyboardClick(Keys.D4) && scenes.Count > 3)
+                LoadScene(scenes[3].id);
+            else if (InputManager.GetKeyboardClick(Keys.D5) && scenes.Count > 4)
+                LoadScene(scenes[4].id);
+            else if (InputManager.GetKeyboardClick(Keys.D6) && scenes.Count > 5)
+                LoadScene(scenes[5].id);
+            else if (InputManager.GetKeyboardClick(Keys.D7) && scenes.Count > 6)
+                LoadScene(scenes[6].id);
+            else if (InputManager.GetKeyboardClick(Keys.D8) && scenes.Count > 7)
+                LoadScene(scenes[7].id);
+            else if (InputManager.GetKeyboardClick(Keys.D9) && scenes.Count > 8)
+                LoadScene(scenes[8].id);
+            else if (InputManager.GetKeyboardClick(Keys.D0) && scenes.Count > 9)
+                LoadScene(scenes[9].id);
         }
 
         public override void Update(GameTime gameTime)
@@ -158,7 +120,7 @@ namespace rubens_psx_engine
             getSpriteBatch.DrawString(Globals.fontNTR, title, titlePosition, Color.White);
 
             // Draw instructions
-            string instructions = "Press 1-9,0 for scenes or use mouse to click buttons\n1=Third Person  2=FPS  3=Basic  4=Camera Test  5=Third Person Hallway\n6=Graphics Test  7=Corridor  8=Wireframe Test  9=Static Mesh Demo  0=BEPU Physics\nESC to go back";
+            string instructions = "Press number keys (1-9, 0) or click buttons to select a scene\nESC to go back";
             Vector2 instructionsSize = Globals.fontNTR.MeasureString(instructions);
             Vector2 instructionsPosition = new Vector2(
                 Globals.screenManager.Window.ClientBounds.Width / 2 - instructionsSize.X / 2,
