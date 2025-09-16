@@ -82,10 +82,10 @@ scene:
   # - "staticMeshDemo" (Static Mesh Demo)
   # - "interactiveTest" (Interactive Test Scene)
   # - "bepuInteraction" (BEPU Physics Interaction)
-  defaultScene: "default"
+  defaultScene: "corridor"
   
   # Whether to show scene selection menu on startup
-  showSceneMenu: true
+  showSceneMenu: false
 
 # Input Settings
 input:
@@ -102,3 +102,10 @@ development:
   
   # Show debug bounding boxes for static meshes globally
   showStaticMeshDebug: false
+
+  # Console output settings
+  console:
+    # Show console window in debug builds (automatically disabled in release builds)
+    showConsole: false
+    # Enable console output (Console.WriteLine statements)
+    enableOutput: true
