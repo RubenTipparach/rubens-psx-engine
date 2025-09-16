@@ -82,10 +82,10 @@ scene:
   # - "staticMeshDemo" (Static Mesh Demo)
   # - "interactiveTest" (Interactive Test Scene)
   # - "bepuInteraction" (BEPU Physics Interaction)
-  defaultScene: "corridor"
+  defaultScene: "default"
   
   # Whether to show scene selection menu on startup
-  showSceneMenu: false
+  showSceneMenu: true
 
 # Input Settings
 input:
