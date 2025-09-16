@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine.system.config;
+using rubens_psx_engine.system.utils;
 
 
 
@@ -47,55 +48,83 @@ namespace rubens_psx_engine
 
         public ScreenManager()
         {
-            //Initialize the game.
-            graphics = new GraphicsDeviceManager(this);
-
-            settingsManager = new SettingsManager();
-            bool foundSettings = settingsManager.ReadSettingsFromFile();            
-
-            //If there are no settings found
-            if (!foundSettings)
+            try
             {
-                //No settings found. Use default settings.
-                DisplayMode defaultMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-                settingsManager.GetSettings.screenwidth = defaultMode.Width;
-                settingsManager.GetSettings.screenheight = defaultMode.Height;
-                settingsManager.GetSettings.fullscreen = true;
-                settingsManager.GetSettings.soundvolume = 1.0f;
+                Logger.Info("ScreenManager: Starting initialization");
+                Logger.LogSystemInfo();
 
-                //Write the settings file.
-                settingsManager.WriteSettingsToFile();
-            }
+                //Initialize the game.
+                Logger.Info("ScreenManager: Creating GraphicsDeviceManager");
+                graphics = new GraphicsDeviceManager(this);
+
+                Logger.Info("ScreenManager: Creating SettingsManager");
+                settingsManager = new SettingsManager();
+                bool foundSettings = settingsManager.ReadSettingsFromFile();
+
+                //If there are no settings found
+                if (!foundSettings)
+                {
+                    Logger.Info("ScreenManager: No settings found, creating defaults");
+                    //No settings found. Use default settings.
+                    DisplayMode defaultMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
+                    settingsManager.GetSettings.screenwidth = defaultMode.Width;
+                    settingsManager.GetSettings.screenheight = defaultMode.Height;
+                    settingsManager.GetSettings.fullscreen = true;
+                    settingsManager.GetSettings.soundvolume = 1.0f;
+                    Logger.Info($"ScreenManager: Default resolution set to {defaultMode.Width}x{defaultMode.Height}");
+
+                    //Write the settings file.
+                    settingsManager.WriteSettingsToFile();
+                }
+                else
+                {
+                    Logger.Info($"ScreenManager: Settings loaded - Resolution: {settingsManager.GetSettings.screenwidth}x{settingsManager.GetSettings.screenheight}, Fullscreen: {settingsManager.GetSettings.fullscreen}");
+                }
 
             
-            //Settings are now loaded. Hook them into all the game systems.
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                //this.Window.IsBorderlessEXT = settingsManager.GetSettings.fullscreen;
+                Logger.Info("ScreenManager: Configuring graphics settings");
+                //Settings are now loaded. Hook them into all the game systems.
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    Logger.Info("ScreenManager: Running on Windows platform");
+                    //this.Window.IsBorderlessEXT = settingsManager.GetSettings.fullscreen;
+                }
+                else
+                {
+                    Logger.Info("ScreenManager: Running on non-Windows platform");
+                    graphics.IsFullScreen = settingsManager.GetSettings.fullscreen;
+                }
+
+                graphics.PreferredBackBufferWidth = settingsManager.GetSettings.screenwidth;
+                graphics.PreferredBackBufferHeight = settingsManager.GetSettings.screenheight;
+                Logger.Info($"ScreenManager: Graphics buffer set to {settingsManager.GetSettings.screenwidth}x{settingsManager.GetSettings.screenheight}");
+
+                SoundEffect.MasterVolume = settingsManager.GetSettings.soundvolume;
+                Logger.Info($"ScreenManager: Sound volume set to {settingsManager.GetSettings.soundvolume}");
+
+                graphics.SynchronizeWithVerticalRetrace = true; //vsync
+                graphics.PreferMultiSampling = true;
+                this.IsFixedTimeStep = false;
+
+                Logger.Info("ScreenManager: Loading game configuration");
+                this.Window.Title = RenderingConfigManager.Config.Game.Name;
+                this.Window.AllowUserResizing = false;
+                Logger.Info($"ScreenManager: Window title set to '{RenderingConfigManager.Config.Game.Name}'");
+
+                Logger.Info("ScreenManager: Creating SoundManager");
+                soundManager = new SoundManager();
+
+                Content.RootDirectory = Globals.baseFolder;
+                Logger.Info($"ScreenManager: Content root directory set to '{Globals.baseFolder}'");
+
+                TargetElapsedTime = TimeSpan.FromSeconds(1 / 60.0f);
+                Logger.Info("ScreenManager: Initialization completed successfully");
             }
-            else
+            catch (Exception ex)
             {
-                graphics.IsFullScreen = settingsManager.GetSettings.fullscreen;
+                Logger.Critical("ScreenManager: Fatal error during initialization", ex);
+                throw; // Re-throw to prevent corrupted state
             }
-
-            graphics.PreferredBackBufferWidth = settingsManager.GetSettings.screenwidth;
-            graphics.PreferredBackBufferHeight = settingsManager.GetSettings.screenheight;   
-            
-
-            SoundEffect.MasterVolume = settingsManager.GetSettings.soundvolume;
-
-            graphics.SynchronizeWithVerticalRetrace = true; //vsync
-            graphics.PreferMultiSampling = true;
-            this.IsFixedTimeStep = false;
-            this.Window.Title = RenderingConfigManager.Config.Game.Name;
-            this.Window.AllowUserResizing = false;
-            // Mouse visibility will be set based on config
-            //this.IsMouseVisible = true;
-
-            soundManager = new SoundManager();
-
-            Content.RootDirectory = Globals.baseFolder;
-            TargetElapsedTime = TimeSpan.FromSeconds(1 / 60.0f);
         }
 
         //Call this when player changes their screen resolution while in-game.
@@ -144,17 +173,60 @@ namespace rubens_psx_engine
 
         protected override void LoadContent()
         {
-            spriteBatch = new SpriteBatch(GraphicsDevice);
-            Globals.white = Content.Load<Texture2D>("textures\\white");
+            try
+            {
+                Logger.Info("ScreenManager: Starting LoadContent");
+                Logger.Info($"ScreenManager: GraphicsDevice - {GraphicsDevice?.GetType().Name ?? "NULL"}");
 
-            // Initialize the retro renderer after GraphicsDevice is ready
-            retroRenderer = new rubens_psx_engine.system.postprocess.RetroRenderer(GraphicsDevice, this);
-            retroRenderer.Initialize();
+                Logger.Info("ScreenManager: Creating SpriteBatch");
+                spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Initialize screenshot manager
-            screenshotManager = new rubens_psx_engine.system.utils.ScreenshotManager(GraphicsDevice, this);
+                Logger.Info("ScreenManager: Loading white texture");
+                try
+                {
+                    Globals.white = Content.Load<Texture2D>("textures\\white");
+                    Logger.Info("ScreenManager: White texture loaded successfully");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("ScreenManager: Failed to load white texture", ex);
+                    throw;
+                }
 
-            AddScreen(new LoadScreen()); //Go to the loading screen.
+                Logger.Info("ScreenManager: Initializing RetroRenderer");
+                try
+                {
+                    retroRenderer = new rubens_psx_engine.system.postprocess.RetroRenderer(GraphicsDevice, this);
+                    retroRenderer.Initialize();
+                    Logger.Info("ScreenManager: RetroRenderer initialized successfully");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("ScreenManager: Failed to initialize RetroRenderer", ex);
+                    throw;
+                }
+
+                Logger.Info("ScreenManager: Initializing ScreenshotManager");
+                try
+                {
+                    screenshotManager = new rubens_psx_engine.system.utils.ScreenshotManager(GraphicsDevice, this);
+                    Logger.Info("ScreenManager: ScreenshotManager initialized successfully");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("ScreenManager: Failed to initialize ScreenshotManager", ex);
+                    throw;
+                }
+
+                Logger.Info("ScreenManager: Adding LoadScreen");
+                AddScreen(new LoadScreen());
+                Logger.Info("ScreenManager: LoadContent completed successfully");
+            }
+            catch (Exception ex)
+            {
+                Logger.Critical("ScreenManager: Fatal error in LoadContent", ex);
+                throw;
+            }
         }
 
         protected override void UnloadContent()
@@ -193,7 +265,10 @@ namespace rubens_psx_engine
                     }
                     catch (Exception ex)
                     {
+                        Logger.Error("ScreenManager: Error disposing screen", ex);
+#if !RELEASE
                         System.Console.WriteLine($"ScreenManager: Error disposing screen: {ex.Message}");
+#endif
                     }
                     
                     continue;
@@ -313,7 +388,10 @@ namespace rubens_psx_engine
                 }
                 catch (Exception ex)
                 {
+                    Logger.Error("ScreenManager: Error disposing screen during ExitAllScreens", ex);
+#if !RELEASE
                     System.Console.WriteLine($"ScreenManager: Error disposing screen during ExitAllScreens: {ex.Message}");
+#endif
                 }
             }
             

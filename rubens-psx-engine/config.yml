@@ -109,3 +109,9 @@ development:
     showConsole: false
     # Enable console output (Console.WriteLine statements)
     enableOutput: true
+
+  # Automatically open log files when game exits (useful for debugging deployment issues)
+  openLogsOnExit: false
+
+  # Show error dialog boxes when fatal errors occur
+  showErrorDialogs: true

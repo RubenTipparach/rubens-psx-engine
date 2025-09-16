@@ -163,6 +163,8 @@ namespace rubens_psx_engine.system.config
         public bool EnableScreenshots { get; set; } = true;
         public string ScreenshotDirectory { get; set; } = "screenshots";
         public bool ShowStaticMeshDebug { get; set; } = false;
+        public bool OpenLogsOnExit { get; set; } = false;
+        public bool ShowErrorDialogs { get; set; } = true;
     }
 
     /// <summary>
@@ -221,7 +223,15 @@ namespace rubens_psx_engine.system.config
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to load config: {ex.Message}");
-                
+                try
+                {
+                    rubens_psx_engine.system.utils.Logger.Error("RenderingConfigManager: Failed to load config.yml", ex);
+                }
+                catch
+                {
+                    // Ignore logger errors during config loading
+                }
+
                 // Fall back to default configuration
                 _config = new RenderingConfig();
                 return _config;
