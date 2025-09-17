@@ -399,7 +399,7 @@ namespace anakinsoft.game.scenes
             return CreateDoorWithParameters(
                 position, rotation,
                 openSpeed: 1f,
-                openHeight: 300f,
+                openHeight: 250f,
                 triggerDistance: 60f,
                 closeDelay: 2f,
                 scale: new Vector3(0.2f),

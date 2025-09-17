@@ -8,6 +8,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>derelict</AssemblyName>
     <OutputPath>bin\game\</OutputPath>
+
+    <!-- Self-contained deployment settings -->
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DefineConstants>RELEASE</DefineConstants>
@@ -26,7 +33,18 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>embedded</DebugType>
+    <!-- Additional release optimizations -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
+  <!-- Content files that should not be trimmed -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="MonoGame.Framework" />
+    <TrimmerRootAssembly Include="YamlDotNet" />
+    <TrimmerRootAssembly Include="Newtonsoft.Json" />
+    <TrimmerRootAssembly Include="ImGui.NET" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Remove="CHAIN\**" />
     <Compile Remove="Content\bin\**" />
