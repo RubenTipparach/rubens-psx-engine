@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "rubens-psx-engine.csproj",
+        "Action": "Start",
+        "DebugTarget": "rubens-psx-engine"
+      },
+      {
+        "Path": "Tools\\TerrainGenerator\\TerrainGenerator.csproj",
+        "Action": "Start",
+        "DebugTarget": "TerrainGenerator"
+      }
+    ]
+  }
+]

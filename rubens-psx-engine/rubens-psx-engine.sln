@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rubens-psx-engine", "rubens-psx-engine.csproj", "{EA818DD8-9C97-55AD-CE0F-FD275975B530}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TerrainGenerator", "Tools\TerrainGenerator\TerrainGenerator.csproj", "{AD90680B-4D4A-46D4-9F77-4F325EE9EECC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{EA818DD8-9C97-55AD-CE0F-FD275975B530}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA818DD8-9C97-55AD-CE0F-FD275975B530}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA818DD8-9C97-55AD-CE0F-FD275975B530}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD90680B-4D4A-46D4-9F77-4F325EE9EECC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD90680B-4D4A-46D4-9F77-4F325EE9EECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD90680B-4D4A-46D4-9F77-4F325EE9EECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD90680B-4D4A-46D4-9F77-4F325EE9EECC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

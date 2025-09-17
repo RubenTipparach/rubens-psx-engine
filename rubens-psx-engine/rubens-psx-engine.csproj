@@ -49,12 +49,15 @@
     <Compile Remove="CHAIN\**" />
     <Compile Remove="Content\bin\**" />
     <Compile Remove="Content\obj\**" />
+    <Compile Remove="Tools\**" />
     <EmbeddedResource Remove="CHAIN\**" />
     <EmbeddedResource Remove="Content\bin\**" />
     <EmbeddedResource Remove="Content\obj\**" />
+    <EmbeddedResource Remove="Tools\**" />
     <None Remove="CHAIN\**" />
     <None Remove="Content\bin\**" />
     <None Remove="Content\obj\**" />
+    <None Remove="Tools\**" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CHAIN\ChainUtilities.cs" />

@@ -8,7 +8,10 @@
       "Bash(dotnet run:*)",
       "Bash(timeout:*)",
       "Bash(taskkill:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(dir)",
+      "Bash(dir Tools)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
