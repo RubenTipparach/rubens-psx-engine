@@ -167,21 +167,28 @@ namespace rubens_psx_engine
         public Vector3 ScreenToWorld(Vector2 screenPosition, float? heightPlane = null)
         {
             var viewport = graphics.GraphicsDevice.Viewport;
-            
+
             Vector3 nearPoint = viewport.Unproject(
-                new Vector3(screenPosition, 0), 
+                new Vector3(screenPosition, 0),
                 Projection, View, Matrix.Identity);
-            
+
             Vector3 farPoint = viewport.Unproject(
-                new Vector3(screenPosition, 1), 
+                new Vector3(screenPosition, 1),
                 Projection, View, Matrix.Identity);
 
             Vector3 direction = Vector3.Normalize(farPoint - nearPoint);
-            
+
             float targetY = heightPlane ?? 0.0f;
             float t = (targetY - nearPoint.Y) / direction.Y;
-            
+
             return nearPoint + direction * t;
+        }
+
+        public Vector2 WorldToScreen(Vector3 worldPosition)
+        {
+            var viewport = graphics.GraphicsDevice.Viewport;
+            Vector3 screenPos = viewport.Project(worldPosition, Projection, View, Matrix.Identity);
+            return new Vector2(screenPos.X, screenPos.Y);
         }
 
         public void FocusOn(Vector3 worldPosition)

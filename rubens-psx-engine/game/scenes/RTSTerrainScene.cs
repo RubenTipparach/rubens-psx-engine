@@ -1,18 +1,20 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using ProceduralTerrain;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
 using rubens_psx_engine.system.ui;
 using rubens_psx_engine.system.lighting;
+using rubens_psx_engine.system.terrain;
+using rubens_psx_engine.game.units;
+using rubens_psx_engine.game.environment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace rubens_psx_engine.game.scenes
 {
-    public class RTSTerrainScene : IDisposable
+    public class RTSTerrainScene : Scene
     {
         private TerrainData terrainData;
         private TerrainRenderer terrainRenderer;
@@ -29,11 +31,45 @@ namespace rubens_psx_engine.game.scenes
         // Example static lights
         private List<PointLight> sceneLights;
 
-        public RTSTerrainScene(RTSCamera camera)
+        // Game systems
+        private UnitManager unitManager;
+        private WaterSystem waterSystem;
+        private Bridge bridge;
+
+        // Center cube
+        private RenderingEntity centerCube;
+
+        // Test cube using working Scene methods
+        private RenderingEntity testCube;
+
+        // Debug wireframe rendering
+        private BasicEffect wireframeEffect;
+        private List<VertexPositionColor> wireframeVertices;
+        private List<short> wireframeIndices;
+
+        public RTSTerrainScene(RTSCamera camera) : base(null) // No physics needed for this scene
         {
             rtsCamera = camera;
             InitializeLighting();
+            InitializeGameSystems();
+            InitializeWireframe();
             LoadContent();
+        }
+
+        private void InitializeGameSystems()
+        {
+            unitManager = new UnitManager();
+            waterSystem = new WaterSystem(Globals.screenManager.getGraphicsDevice.GraphicsDevice);
+        }
+
+        private void InitializeWireframe()
+        {
+            wireframeVertices = new List<VertexPositionColor>();
+            wireframeIndices = new List<short>();
+
+            wireframeEffect = new BasicEffect(Globals.screenManager.getGraphicsDevice.GraphicsDevice);
+            wireframeEffect.VertexColorEnabled = true;
+            wireframeEffect.LightingEnabled = false;
         }
 
         private void InitializeLighting()
@@ -146,6 +182,7 @@ namespace rubens_psx_engine.game.scenes
             );
             minimap.SetTerrain(terrainData);
             minimap.SetCamera(rtsCamera);
+            minimap.SetUnitManager(unitManager);
         }
 
         private void LoadTerrainAssets()
@@ -171,17 +208,42 @@ namespace rubens_psx_engine.game.scenes
 
             terrainRenderer.LoadTerrain(terrainData, grassTexture);
 
+            // Initialize water system with terrain
+            waterSystem.GenerateRiverGeometry(terrainData);
+
+            // Pass terrain data to unit manager
+            unitManager.SetTerrainData(terrainData);
+
+            // Create bridge across the river
+            CreateBridge();
+
+            // Create center cube
+            CreateCenterCube();
+
+            // Create test cube using known working method
+            CreateTestCube();
+
+            // Create some initial units
+            CreateInitialUnits();
+
             // Create scene lights after terrain is loaded
-            //CreateSceneLights();
+            CreateSceneLights();
         }
 
-        public void Update(GameTime gameTime)
+        public override void Update(GameTime gameTime)
         {
+            // Call base Scene update to handle all entities
+            base.Update(gameTime);
+
             rtsCamera.Update(gameTime);
 
             HandleTerrainInteraction();
             UpdateMousePointLight();
             UpdateLighting(gameTime);
+
+            // Update game systems
+            unitManager.Update(gameTime, rtsCamera);
+            waterSystem.Update(gameTime);
 
             // Update all lights
             lightProcessor.Update(gameTime);
@@ -191,26 +253,26 @@ namespace rubens_psx_engine.game.scenes
         {
             var keyboardState = Keyboard.GetState();
 
-            // Press 1-4 to switch between lighting presets
-            if (keyboardState.IsKeyDown(Keys.D1))
+            // Press F1-F4 to switch between lighting presets (moved from 1-4 to avoid conflict with unit spawning)
+            if (keyboardState.IsKeyDown(Keys.F1))
             {
                 environmentLight = EnvironmentLight.CreateDaylight();
                 lightProcessor.SetEnvironmentLight(environmentLight);
                 System.Console.WriteLine("Switched to Daylight lighting");
             }
-            else if (keyboardState.IsKeyDown(Keys.D2))
+            else if (keyboardState.IsKeyDown(Keys.F2))
             {
                 environmentLight = EnvironmentLight.CreateSunset();
                 lightProcessor.SetEnvironmentLight(environmentLight);
                 System.Console.WriteLine("Switched to Sunset lighting");
             }
-            else if (keyboardState.IsKeyDown(Keys.D3))
+            else if (keyboardState.IsKeyDown(Keys.F3))
             {
                 environmentLight = EnvironmentLight.CreateNight();
                 lightProcessor.SetEnvironmentLight(environmentLight);
                 System.Console.WriteLine("Switched to Night lighting");
             }
-            else if (keyboardState.IsKeyDown(Keys.D4))
+            else if (keyboardState.IsKeyDown(Keys.F4))
             {
                 environmentLight = EnvironmentLight.CreateOvercast();
                 lightProcessor.SetEnvironmentLight(environmentLight);
@@ -333,10 +395,10 @@ namespace rubens_psx_engine.game.scenes
             }
         }
 
-        public void Draw(GameTime gameTime)
+        public override void Draw(GameTime gameTime, Camera camera)
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
-            
+
             gd.Clear(new Color(0.0f,0.021f,0.1f,0));
             gd.RasterizerState = RasterizerState.CullNone;
             gd.DepthStencilState = DepthStencilState.Default;
@@ -383,12 +445,65 @@ namespace rubens_psx_engine.game.scenes
                 projection: rtsCamera.Projection,
                 lightDirection: environmentLight.DirectionalLightDirection
             );
+
+            // Draw water
+            waterSystem.Draw(Matrix.Identity, rtsCamera.View, rtsCamera.Projection);
+
+            // Draw bridge
+            bridge?.Draw(rtsCamera.View, rtsCamera.Projection);
+
+            // Call base Scene draw to handle all RenderingEntity objects
+            base.Draw(gameTime, rtsCamera);
+
+            // Draw units
+            unitManager.Draw(rtsCamera);
+
+            // Draw debug wireframes
+            DrawDebugWireframes();
+        }
+
+        // Keep the original Draw method for backward compatibility with existing callers
+        public void Draw(GameTime gameTime)
+        {
+            Draw(gameTime, rtsCamera);
         }
 
         public void DrawUI(GameTime gameTime)
         {
             minimap?.Draw();
             DrawLightingDebugInfo();
+            DrawGameUI();
+
+            // Draw unit UI (labels and selection box)
+            unitManager.DrawUI(rtsCamera);
+        }
+
+        private void DrawGameUI()
+        {
+            var spriteBatch = Globals.screenManager.getSpriteBatch;
+            var font = Globals.screenManager.Content.Load<SpriteFont>("fonts/Arial");
+
+            int y = 420; // Below lighting info
+            int lineHeight = 20;
+            Color textColor = Color.White;
+
+            spriteBatch.DrawString(font, "=== UNIT CONTROLS ===", new Vector2(10, y), textColor);
+            y += lineHeight;
+
+            spriteBatch.DrawString(font, "1: Create Worker | 2: Create Soldier | 3: Create Tank", new Vector2(10, y), Color.Yellow);
+            y += lineHeight;
+
+            spriteBatch.DrawString(font, "Left Click: Select | Right Click: Move | Ctrl+Click: Multi-select", new Vector2(10, y), Color.Yellow);
+            y += lineHeight;
+
+            spriteBatch.DrawString(font, $"Units: {unitManager.Units.Count} | Selected: {unitManager.SelectedUnits.Count}", new Vector2(10, y), Color.Cyan);
+            y += lineHeight;
+
+            // Unit type counts
+            int workers = unitManager.GetUnitCount(UnitType.Worker);
+            int soldiers = unitManager.GetUnitCount(UnitType.Soldier);
+            int tanks = unitManager.GetUnitCount(UnitType.Tank);
+            spriteBatch.DrawString(font, $"Workers: {workers} | Soldiers: {soldiers} | Tanks: {tanks}", new Vector2(10, y), Color.LightGreen);
         }
 
         private void DrawLightingDebugInfo()
@@ -404,7 +519,7 @@ namespace rubens_psx_engine.game.scenes
             spriteBatch.DrawString(font, "=== LIGHTING CONTROLS ===", new Vector2(10, y), textColor);
             y += lineHeight;
 
-            spriteBatch.DrawString(font, "1-4: Lighting Presets (Day/Sunset/Night/Overcast)", new Vector2(10, y), Color.Yellow);
+            spriteBatch.DrawString(font, "F1-F4: Lighting Presets (Day/Sunset/Night/Overcast)", new Vector2(10, y), Color.Yellow);
             y += lineHeight;
 
             spriteBatch.DrawString(font, $"Directional Intensity: {environmentLight.DirectionalLightIntensity:F2} (Up/Down)", new Vector2(10, y), textColor);
@@ -429,10 +544,248 @@ namespace rubens_psx_engine.game.scenes
             spriteBatch.DrawString(font, "Space: Regenerate Terrain | C: Center Camera", new Vector2(10, y), Color.Gray);
         }
 
-        public void Dispose()
+        private void CreateBridge()
         {
-            terrainRenderer?.Dispose();
-            minimap?.Dispose();
+            // Create bridge at roughly 1/3 point across the terrain
+            float terrainWidth = terrainData.Width * terrainData.Scale;
+            float terrainDepth = terrainData.Height * terrainData.Scale;
+            float bridgeX = terrainWidth * 0.33f;
+
+            Vector3 bridgeStart = new Vector3(bridgeX, 2.0f, 0);
+            Vector3 bridgeEnd = new Vector3(bridgeX, 2.0f, terrainDepth);
+
+            bridge = new Bridge(Globals.screenManager.getGraphicsDevice.GraphicsDevice, bridgeStart, bridgeEnd);
+        }
+
+        private void CreateCenterCube()
+        {
+            // Calculate center of terrain
+            float terrainWidth = terrainData.Width * terrainData.Scale;
+            float terrainDepth = terrainData.Height * terrainData.Scale;
+            Vector3 centerPosition = new Vector3(terrainWidth * 0.5f, 0, terrainDepth * 0.5f);
+
+            // Get terrain height at center
+            float terrainHeight = terrainData.GetHeightAt(centerPosition.X, centerPosition.Z);
+            centerPosition.Y = terrainHeight + 2.0f; // Place cube 2 units above terrain
+
+            System.Console.WriteLine($"Creating cube at position: {centerPosition}, terrain size: {terrainWidth}x{terrainDepth}");
+
+            // Create cube entity using the SAME effect and texture as terrain and add to scene
+            centerCube = CreateRenderingEntity(centerPosition, "models/cube", "textures/prototype/grass", "shaders/surface/VertexLitStandard");
+            centerCube.Scale = new Vector3(1.0f, 1.0f, 1.0f); // Make it a proper 5x5x5 cube
+            centerCube.Color = new Vector3(1.0f, 1.0f, 0.0f); // Bright yellow color for visibility
+        }
+
+        private void CreateTestCube()
+        {
+            // Create a test cube using the exact same method as GraphicsTestScene and add to scene
+            Vector3 testPosition = new Vector3(terrainData.Width * terrainData.Scale * 0.7f, 15.0f, terrainData.Height * terrainData.Scale * 0.7f);
+            testCube = CreateRenderingEntity(testPosition, "models/cube", "textures/white");
+            testCube.Scale = new Vector3(1.0f, 1.0f, 1.0f); // Large for visibility
+            testCube.Color = new Vector3(0.0f, 1.0f, 0.0f); // Bright green color
+            testCube.IsVisible = true;
+
+            System.Console.WriteLine($"Created test cube at position: {testCube.Position}, scale: {testCube.Scale}");
+        }
+
+        private void CreateInitialUnits()
+        {
+            float terrainWidth = terrainData.Width * terrainData.Scale;
+            float terrainDepth = terrainData.Height * terrainData.Scale;
+
+            // Create some units on one side of the river
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 unitPos = new Vector3(
+                    10 + i * 3,
+                    0,
+                    terrainDepth * 0.25f + i * 2
+                );
+                unitPos.Y = terrainData.GetHeightAt(unitPos.X, unitPos.Z) + 1.0f;
+                unitManager.CreateUnit(UnitType.Worker, unitPos, Color.Blue, $"Worker {i + 1}");
+            }
+
+            // Create a soldier near the bridge
+            Vector3 soldierPos = new Vector3(
+                terrainWidth * 0.3f,
+                0,
+                terrainDepth * 0.2f
+            );
+            soldierPos.Y = terrainData.GetHeightAt(soldierPos.X, soldierPos.Z) + 1.0f;
+            unitManager.CreateUnit(UnitType.Soldier, soldierPos, Color.Blue, "Guard");
+        }
+
+        private void DrawDebugWireframes()
+        {
+            wireframeVertices.Clear();
+            wireframeIndices.Clear();
+
+            // Draw bounding box for center cube
+            if (centerCube != null)
+            {
+                var cubeWorldMatrix = centerCube.GetWorldMatrix();
+                var actualBounds = GetModelBounds(centerCube.Model, cubeWorldMatrix);
+
+                // Calculate expected bounds based on position and scale
+                var expectedMin = centerCube.Position - centerCube.Scale * 0.5f;
+                var expectedMax = centerCube.Position + centerCube.Scale * 0.5f;
+                var expectedBounds = new BoundingBox(expectedMin, expectedMax);
+
+                CreateWireframeBox(actualBounds, Color.Yellow);
+                CreateWireframeBox(expectedBounds, Color.Orange); // Different color to distinguish
+
+                //System.Console.WriteLine($"=== CENTER CUBE DEBUG ===");
+                //System.Console.WriteLine($"Position: {centerCube.Position}");
+                //System.Console.WriteLine($"Scale: {centerCube.Scale}");
+                //System.Console.WriteLine($"EXPECTED bounds: Min:{expectedBounds.Min} Max:{expectedBounds.Max}");
+                //System.Console.WriteLine($"ACTUAL mesh bounds: Min:{actualBounds.Min} Max:{actualBounds.Max}");
+                //System.Console.WriteLine($"Bounds match: {Vector3.Distance(expectedBounds.Min, actualBounds.Min) < 0.1f && Vector3.Distance(expectedBounds.Max, actualBounds.Max) < 0.1f}");
+                //System.Console.WriteLine();
+            }
+
+            // Draw bounding boxes for all units
+            foreach (var unit in unitManager.Units)
+            {
+                var unitScale = unit.GetPublicUnitScale();
+                var unitWorldMatrix = Matrix.CreateScale(unitScale) *
+                                    Matrix.CreateTranslation(unit.Position);
+                var actualBounds = GetModelBounds(unit.GetModel(), unitWorldMatrix);
+
+                // Calculate expected bounds based on position and scale
+                var expectedMin = unit.Position - Vector3.One * unitScale * 0.5f;
+                var expectedMax = unit.Position + Vector3.One * unitScale * 0.5f;
+                var expectedBounds = new BoundingBox(expectedMin, expectedMax);
+
+                CreateWireframeBox(actualBounds, Color.Cyan);
+                CreateWireframeBox(expectedBounds, Color.Lime); // Different color to distinguish
+
+                //System.Console.WriteLine($"=== UNIT {unit.Name} DEBUG ===");
+                //System.Console.WriteLine($"Type: {unit.Type}");
+                //System.Console.WriteLine($"Position: {unit.Position}");
+                //System.Console.WriteLine($"Scale: {unitScale}");
+                //System.Console.WriteLine($"EXPECTED bounds: Min:{expectedBounds.Min} Max:{expectedBounds.Max}");
+                //System.Console.WriteLine($"ACTUAL mesh bounds: Min:{actualBounds.Min} Max:{actualBounds.Max}");
+                //System.Console.WriteLine($"Bounds match: {Vector3.Distance(expectedBounds.Min, actualBounds.Min) < 0.1f && Vector3.Distance(expectedBounds.Max, actualBounds.Max) < 0.1f}");
+                //System.Console.WriteLine();
+            }
+
+            // Draw all wireframes
+            if (wireframeVertices.Count > 0 && wireframeIndices.Count > 0)
+            {
+                var graphicsDevice = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
+
+                wireframeEffect.World = Matrix.Identity;
+                wireframeEffect.View = rtsCamera.View;
+                wireframeEffect.Projection = rtsCamera.Projection;
+
+                wireframeEffect.CurrentTechnique.Passes[0].Apply();
+
+                try
+                {
+                    graphicsDevice.DrawUserIndexedPrimitives(
+                        PrimitiveType.LineList,
+                        wireframeVertices.ToArray(),
+                        0,
+                        wireframeVertices.Count,
+                        wireframeIndices.ToArray(),
+                        0,
+                        wireframeIndices.Count / 2
+                    );
+                }
+                catch (Exception ex)
+                {
+                    System.Console.WriteLine($"Wireframe drawing error: {ex.Message}");
+                }
+            }
+        }
+
+        private BoundingBox GetModelBounds(Model model, Matrix worldMatrix)
+        {
+            if (model == null) return new BoundingBox();
+
+            BoundingBox modelBounds = new BoundingBox();
+            bool first = true;
+
+            foreach (var mesh in model.Meshes)
+            {
+                // Convert BoundingSphere to BoundingBox manually
+                var sphere = mesh.BoundingSphere;
+                Vector3 min = sphere.Center - Vector3.One * sphere.Radius;
+                Vector3 max = sphere.Center + Vector3.One * sphere.Radius;
+                BoundingBox meshBounds = new BoundingBox(min, max);
+
+                if (first)
+                {
+                    modelBounds = meshBounds;
+                    first = false;
+                }
+                else
+                {
+                    modelBounds = BoundingBox.CreateMerged(modelBounds, meshBounds);
+                }
+            }
+
+            // Transform bounding box to world space
+            Vector3[] corners = new Vector3[8];
+            modelBounds.GetCorners(corners);
+
+            for (int i = 0; i < corners.Length; i++)
+            {
+                corners[i] = Vector3.Transform(corners[i], worldMatrix);
+            }
+
+            return BoundingBox.CreateFromPoints(corners);
+        }
+
+        private void CreateWireframeBox(BoundingBox bounds, Color color)
+        {
+            Vector3[] corners = new Vector3[8];
+            bounds.GetCorners(corners);
+
+            short vertexStart = (short)wireframeVertices.Count;
+
+            // Add vertices
+            foreach (var corner in corners)
+            {
+                wireframeVertices.Add(new VertexPositionColor(corner, color));
+            }
+
+            // Add indices for the 12 edges of the box
+            // Bottom face edges (0,1,2,3)
+            wireframeIndices.Add((short)(vertexStart + 0)); wireframeIndices.Add((short)(vertexStart + 1));
+            wireframeIndices.Add((short)(vertexStart + 1)); wireframeIndices.Add((short)(vertexStart + 2));
+            wireframeIndices.Add((short)(vertexStart + 2)); wireframeIndices.Add((short)(vertexStart + 3));
+            wireframeIndices.Add((short)(vertexStart + 3)); wireframeIndices.Add((short)(vertexStart + 0));
+
+            // Top face edges (4,5,6,7)
+            wireframeIndices.Add((short)(vertexStart + 4)); wireframeIndices.Add((short)(vertexStart + 5));
+            wireframeIndices.Add((short)(vertexStart + 5)); wireframeIndices.Add((short)(vertexStart + 6));
+            wireframeIndices.Add((short)(vertexStart + 6)); wireframeIndices.Add((short)(vertexStart + 7));
+            wireframeIndices.Add((short)(vertexStart + 7)); wireframeIndices.Add((short)(vertexStart + 4));
+
+            // Vertical edges
+            wireframeIndices.Add((short)(vertexStart + 0)); wireframeIndices.Add((short)(vertexStart + 4));
+            wireframeIndices.Add((short)(vertexStart + 1)); wireframeIndices.Add((short)(vertexStart + 5));
+            wireframeIndices.Add((short)(vertexStart + 2)); wireframeIndices.Add((short)(vertexStart + 6));
+            wireframeIndices.Add((short)(vertexStart + 3)); wireframeIndices.Add((short)(vertexStart + 7));
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                terrainRenderer?.Dispose();
+                minimap?.Dispose();
+                waterSystem?.Dispose();
+                bridge?.Dispose();
+                centerCube = null; // RenderingEntity doesn't have Dispose (managed by Scene)
+                testCube = null; // RenderingEntity doesn't have Dispose (managed by Scene)
+                unitManager?.Dispose();
+                wireframeEffect?.Dispose();
+            }
+
+            // Call base Scene dispose
+            base.Dispose(disposing);
         }
     }
 }

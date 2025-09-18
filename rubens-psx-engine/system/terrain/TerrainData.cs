@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace ProceduralTerrain
+namespace rubens_psx_engine.system.terrain
 {
     /// <summary>
     /// Core terrain data structure with mesh generation and serialization capabilities

@@ -76,7 +76,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Content\Assets\fonts\" />
-    <Folder Include="Content\Assets\shaders\surface\" />
     <Folder Include="StreamingAssets\" />
   </ItemGroup>
   <ItemGroup>

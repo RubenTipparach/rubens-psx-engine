@@ -1,7 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using ProceduralTerrain;
+using rubens_psx_engine.system.terrain;
 using System;
+using System.Collections.Generic;
+using rubens_psx_engine.game.units;
 
 namespace rubens_psx_engine.system.ui
 {
@@ -13,12 +15,14 @@ namespace rubens_psx_engine.system.ui
         private Rectangle bounds;
         private TerrainData terrainData;
         private RTSCamera camera;
-        
+        private UnitManager unitManager;
+
         private Color backgroundColor = Color.Black * 0.7f;
         private Color terrainColor = Color.DarkGreen;
         private Color cameraPositionColor = Color.Yellow;
         private Color frustumColor = Color.White * 0.8f;
         private Color borderColor = Color.White;
+        private Color unitColor = Color.Red;
 
         public Rectangle Bounds => bounds;
 
@@ -30,7 +34,7 @@ namespace rubens_psx_engine.system.ui
             
             // Create a 1x1 white pixel texture for drawing
             pixelTexture = new Texture2D(device, 1, 1);
-            pixelTexture.SetData(new[] { new Color(0.3f,.3f,.4f, .5f)});
+            pixelTexture.SetData(new[] { new Color(0.3f,.3f,.1f, .2f)});
         }
 
         public void SetTerrain(TerrainData terrain)
@@ -41,6 +45,11 @@ namespace rubens_psx_engine.system.ui
         public void SetCamera(RTSCamera rtsCamera)
         {
             camera = rtsCamera;
+        }
+
+        public void SetUnitManager(UnitManager manager)
+        {
+            unitManager = manager;
         }
 
         public void Draw()
@@ -59,6 +68,9 @@ namespace rubens_psx_engine.system.ui
 
             // Draw camera position
             DrawCameraPosition();
+
+            // Draw units
+            DrawUnits();
 
             // Draw border
             DrawBorder();
@@ -132,6 +144,41 @@ namespace rubens_psx_engine.system.ui
             );
             
             spriteBatch.Draw(pixelTexture, cameraRect, cameraPositionColor);
+        }
+
+        private void DrawUnits()
+        {
+            if (unitManager == null) return;
+
+            foreach (var unit in unitManager.Units)
+            {
+                if (unit.State == UnitState.Dead) continue;
+
+                Vector2 minimapPos = WorldToMinimap(unit.Position);
+
+                // Clamp to minimap bounds
+                minimapPos.X = MathHelper.Clamp(minimapPos.X, bounds.X, bounds.X + bounds.Width);
+                minimapPos.Y = MathHelper.Clamp(minimapPos.Y, bounds.Y, bounds.Y + bounds.Height);
+
+                // Draw unit as a small square
+                int unitSize = 3;
+                Rectangle unitRect = new Rectangle(
+                    (int)minimapPos.X - unitSize / 2,
+                    (int)minimapPos.Y - unitSize / 2,
+                    unitSize,
+                    unitSize
+                );
+
+                // Use unit's team color
+                Color color = unit.TeamColor;
+                if (unit.IsSelected)
+                {
+                    // Make selected units brighter/white outline
+                    spriteBatch.Draw(pixelTexture, new Rectangle(unitRect.X - 1, unitRect.Y - 1, unitRect.Width + 2, unitRect.Height + 2), Color.White);
+                }
+
+                spriteBatch.Draw(pixelTexture, unitRect, color);
+            }
         }
 
         private void DrawBorder()

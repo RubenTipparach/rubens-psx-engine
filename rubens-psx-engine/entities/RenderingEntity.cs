@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using rubens_psx_engine;
+using System.Diagnostics;
 
 namespace rubens_psx_engine.entities
 {
@@ -143,8 +144,14 @@ namespace rubens_psx_engine.entities
                         SetupBasicEffectLighting(basicEffect);
                     }
                 }
-
-                mesh.Draw();
+                try
+                {
+                    mesh.Draw();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"RenderingEntity: ERROR drawing mesh {mesh.Name}: {ex.Message}");
+                }
             }
         }
 

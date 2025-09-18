@@ -9,7 +9,7 @@ public class PrimitiveCube
 
     public PrimitiveCube(GraphicsDevice graphicsDevice)
     {
-        var verts = new List<VertexPositionNormal>();
+        var verts = new List<VertexPositionNormalTexture>();
         var indices = new List<ushort>();
 
         Vector3[] corners = {
@@ -21,6 +21,10 @@ public class PrimitiveCube
             new Vector3( 0.5f, -0.5f,  0.5f),
             new Vector3( 0.5f,  0.5f,  0.5f),
             new Vector3(-0.5f,  0.5f,  0.5f),
+        };
+
+        Vector2[] texCoords = {
+            new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
         };
 
         int[][] faces = {
@@ -47,10 +51,10 @@ public class PrimitiveCube
             var normal = normals[f];
             var face = faces[f];
 
-            verts.Add(new VertexPositionNormal(corners[face[0]], normal));
-            verts.Add(new VertexPositionNormal(corners[face[1]], normal));
-            verts.Add(new VertexPositionNormal(corners[face[2]], normal));
-            verts.Add(new VertexPositionNormal(corners[face[3]], normal));
+            verts.Add(new VertexPositionNormalTexture(corners[face[0]], normal, texCoords[0]));
+            verts.Add(new VertexPositionNormalTexture(corners[face[1]], normal, texCoords[1]));
+            verts.Add(new VertexPositionNormalTexture(corners[face[2]], normal, texCoords[2]));
+            verts.Add(new VertexPositionNormalTexture(corners[face[3]], normal, texCoords[3]));
 
             indices.Add((ushort)(idx + 0));
             indices.Add((ushort)(idx + 1));
@@ -62,7 +66,7 @@ public class PrimitiveCube
             idx += 4;
         }
 
-        VertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormal), verts.Count, BufferUsage.WriteOnly);
+        VertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), verts.Count, BufferUsage.WriteOnly);
         VertexBuffer.SetData(verts.ToArray());
 
         IndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.SixteenBits, indices.Count, BufferUsage.WriteOnly);
@@ -79,5 +83,11 @@ public class PrimitiveCube
             pass.Apply();
             device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, IndexBuffer.IndexCount / 3);
         }
+    }
+
+    public void Dispose()
+    {
+        VertexBuffer?.Dispose();
+        IndexBuffer?.Dispose();
     }
 }
