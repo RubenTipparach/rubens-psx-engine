@@ -24,7 +24,7 @@ namespace rubens_psx_engine
             {
                 ("Third Person Sandbox", "thirdPersonSandbox"),
                 ("FPS Sandbox", "fpsSandbox"),
-                ("RTS Test Scene", "rtsTest"),
+                ("RTS Terrain Demo", "rtsTerrainTest"),
                 ("Graphics Test Scene", "graphicsTest"),
                 ("Corridor Multi-Material Scene", "corridor"),
                 ("Wireframe Cube Test", "wireframeTest"),

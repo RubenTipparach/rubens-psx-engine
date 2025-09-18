@@ -81,8 +81,10 @@
   </ItemGroup>
   <ItemGroup>
     <!-- BepuPhysics2 project references - commit hash: bfb11dc2020555b09978c473d9655509e844032c -->
-    <ProjectReference Include="..\bepuphysics2\BepuPhysics\BepuPhysics.csproj" />
-    <ProjectReference Include="..\bepuphysics2\BepuUtilities\BepuUtilities.csproj" />
+    <ProjectReference Include="..\..\bepuphysics2\BepuPhysics\BepuPhysics.csproj" />
+    <ProjectReference Include="..\..\bepuphysics2\BepuUtilities\BepuUtilities.csproj" />
+    <!-- ProceduralTerrain library reference -->
+    <ProjectReference Include="..\ProceduralTerrain\ProceduralTerrain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="config.yml">

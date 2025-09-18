@@ -1,7 +1,10 @@
 using System;
 
-namespace TerrainGenerator
+namespace ProceduralTerrain
 {
+    /// <summary>
+    /// Perlin noise generator for procedural terrain generation
+    /// </summary>
     public class PerlinNoise
     {
         private readonly Random random;

@@ -1,0 +1,6 @@
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.csproj.AssemblyReference.cache
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.AssemblyInfoInputs.cache
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.AssemblyInfo.cs
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.csproj.CoreCompileInputs.cache
+C:\Users\santi\repos\rubens-psx-engine\ProceduralTerrain\obj\Debug\net9.0\ProceduralTerrain.sourcelink.json

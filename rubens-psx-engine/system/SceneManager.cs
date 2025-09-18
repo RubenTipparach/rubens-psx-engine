@@ -29,6 +29,7 @@ namespace rubens_psx_engine.system
                 "staticMeshDemo" => new StaticMeshDemoScreen(),
                 "interactiveTest" => new InteractiveTestSceneScreen(),
                 "bepuInteraction" => new BepuInteractionScreen(),
+                "rtsTerrainTest" => new RTSTerrainScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -85,7 +86,8 @@ namespace rubens_psx_engine.system
                 "wireframeTest",
                 "staticMeshDemo",
                 "interactiveTest",
-                "bepuInteraction"
+                "bepuInteraction",
+                "rtsTerrainTest"
             };
         }
 
@@ -109,6 +111,7 @@ namespace rubens_psx_engine.system
                 "staticMeshDemo" => "Static Mesh Demo",
                 "interactiveTest" => "Interactive Test Scene",
                 "bepuInteraction" => "BEPU Physics Interaction",
+                "rtsTerrainTest" => "RTS Terrain Demo",
                 _ => "Unknown Scene"
             };
         }

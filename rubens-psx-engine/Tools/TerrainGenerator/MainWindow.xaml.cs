@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ProceduralTerrain;
 
 namespace TerrainGenerator
 {
@@ -34,7 +35,6 @@ namespace TerrainGenerator
                 currentTerrain = new TerrainData(width, height);
                 currentTerrain.HeightScale = heightScale;
                 currentTerrain.GenerateTerrain(seed, noiseScale, octaves, persistence);
-                currentTerrain.TexturePath = @"..\..\Content\Assets\textures\prototype\prototype_512x512_green1.png";
 
                 UpdateHeightmapPreview();
 
@@ -176,7 +176,7 @@ namespace TerrainGenerator
         {
             if (currentTerrain == null) return;
 
-            using (var bitmap = currentTerrain.GenerateHeightmapImage())
+            using (var bitmap = HeightmapUtilities.GenerateHeightmapImage(currentTerrain.HeightMap))
             {
                 using (var memory = new MemoryStream())
                 {
@@ -221,7 +221,7 @@ namespace TerrainGenerator
             {
                 try
                 {
-                    currentTerrain.SaveHeightmapTexture(saveFileDialog.FileName);
+                    HeightmapUtilities.SaveHeightmapTexture(currentTerrain, saveFileDialog.FileName);
                     MessageBox.Show($"Heightmap saved successfully to:\n{saveFileDialog.FileName}",
                                   "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }

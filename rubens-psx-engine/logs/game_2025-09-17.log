@@ -1,0 +1,369 @@
+﻿=== Game Started at 2025-09-17 15:43:59 ===
+OS: Microsoft Windows NT 10.0.22631.0
+Runtime: 9.0.6
+Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+Command Line: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\bin\game\net9.0-windows7.0\win-x64\derelict.dll 2
+========================================
+[2025-09-17 15:43:59.060] [INFO    ] Program: Starting application
+
+[2025-09-17 15:43:59.254] [INFO    ] ScreenManager: Starting initialization
+
+[2025-09-17 15:43:59.255] [INFO    ] === SYSTEM INFORMATION ===
+
+[2025-09-17 15:43:59.256] [INFO    ] OS Version: Microsoft Windows NT 10.0.22631.0
+
+[2025-09-17 15:43:59.257] [INFO    ] Is 64-bit OS: True
+
+[2025-09-17 15:43:59.258] [INFO    ] Is 64-bit Process: True
+
+[2025-09-17 15:43:59.258] [INFO    ] Processor Count: 16
+
+[2025-09-17 15:43:59.259] [INFO    ] CLR Version: 9.0.6
+
+[2025-09-17 15:43:59.259] [INFO    ] Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+
+[2025-09-17 15:43:59.259] [INFO    ] Machine Name: RUBENS_DRAWER
+
+[2025-09-17 15:43:59.260] [INFO    ] User Name: santi
+
+[2025-09-17 15:43:59.390] [INFO    ] Graphics Adapters Count: 2
+
+[2025-09-17 15:43:59.390] [INFO    ]   Adapter 0: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 15:43:59.390] [INFO    ]     Device Name: \\.\DISPLAY1
+
+[2025-09-17 15:43:59.391] [INFO    ]   Adapter 1: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 15:43:59.391] [INFO    ]     Device Name: \\.\DISPLAY2
+
+[2025-09-17 15:43:59.392] [INFO    ] =============================
+
+[2025-09-17 15:43:59.392] [INFO    ] ScreenManager: Creating GraphicsDeviceManager
+
+[2025-09-17 15:43:59.393] [INFO    ] ScreenManager: Creating SettingsManager
+
+[2025-09-17 15:43:59.513] [INFO    ] ScreenManager: Settings loaded - Resolution: 1920x1080, Fullscreen: True
+
+[2025-09-17 15:43:59.513] [INFO    ] ScreenManager: Configuring graphics settings
+
+[2025-09-17 15:43:59.513] [INFO    ] ScreenManager: Running on Windows platform
+
+[2025-09-17 15:43:59.514] [INFO    ] ScreenManager: Graphics buffer set to 1920x1080
+
+[2025-09-17 15:43:59.520] [INFO    ] ScreenManager: Sound volume set to 1
+
+[2025-09-17 15:43:59.520] [INFO    ] ScreenManager: Loading game configuration
+
+[2025-09-17 15:43:59.718] [INFO    ] ScreenManager: Window title set to 'DERELICT'
+
+[2025-09-17 15:43:59.718] [INFO    ] ScreenManager: Creating SoundManager
+
+[2025-09-17 15:44:00.576] [INFO    ] ScreenManager: Content root directory set to 'Content/Assets'
+
+[2025-09-17 15:44:00.577] [INFO    ] ScreenManager: Initialization completed successfully
+
+[2025-09-17 15:44:00.577] [INFO    ] Program: ScreenManager created, starting game loop
+
+[2025-09-17 15:44:00.894] [INFO    ] ScreenManager: Starting LoadContent
+
+[2025-09-17 15:44:00.894] [INFO    ] ScreenManager: GraphicsDevice - GraphicsDevice
+
+[2025-09-17 15:44:00.894] [INFO    ] ScreenManager: Creating SpriteBatch
+
+[2025-09-17 15:44:00.907] [INFO    ] ScreenManager: Loading white texture
+
+[2025-09-17 15:44:00.932] [INFO    ] ScreenManager: White texture loaded successfully
+
+[2025-09-17 15:44:00.933] [INFO    ] ScreenManager: Initializing RetroRenderer
+
+[2025-09-17 15:44:00.965] [INFO    ] ScreenManager: RetroRenderer initialized successfully
+
+[2025-09-17 15:44:00.965] [INFO    ] ScreenManager: Initializing ScreenshotManager
+
+[2025-09-17 15:44:00.966] [INFO    ] ScreenManager: ScreenshotManager initialized successfully
+
+[2025-09-17 15:44:00.967] [INFO    ] ScreenManager: Adding LoadScreen
+
+[2025-09-17 15:44:00.967] [INFO    ] ScreenManager: LoadContent completed successfully
+
+=== Game Started at 2025-09-17 17:48:13 ===
+OS: Microsoft Windows NT 10.0.22631.0
+Runtime: 9.0.6
+Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+Command Line: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\bin\game\net9.0-windows7.0\win-x64\derelict.dll --scene RTSTerrainScene
+========================================
+[2025-09-17 17:48:13.031] [INFO    ] Program: Starting application
+
+[2025-09-17 17:48:13.205] [INFO    ] ScreenManager: Starting initialization
+
+[2025-09-17 17:48:13.206] [INFO    ] === SYSTEM INFORMATION ===
+
+[2025-09-17 17:48:13.206] [INFO    ] OS Version: Microsoft Windows NT 10.0.22631.0
+
+[2025-09-17 17:48:13.206] [INFO    ] Is 64-bit OS: True
+
+[2025-09-17 17:48:13.207] [INFO    ] Is 64-bit Process: True
+
+[2025-09-17 17:48:13.207] [INFO    ] Processor Count: 16
+
+[2025-09-17 17:48:13.207] [INFO    ] CLR Version: 9.0.6
+
+[2025-09-17 17:48:13.207] [INFO    ] Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+
+[2025-09-17 17:48:13.208] [INFO    ] Machine Name: RUBENS_DRAWER
+
+[2025-09-17 17:48:13.209] [INFO    ] User Name: santi
+
+[2025-09-17 17:48:13.306] [INFO    ] Graphics Adapters Count: 2
+
+[2025-09-17 17:48:13.307] [INFO    ]   Adapter 0: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:48:13.307] [INFO    ]     Device Name: \\.\DISPLAY1
+
+[2025-09-17 17:48:13.307] [INFO    ]   Adapter 1: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:48:13.308] [INFO    ]     Device Name: \\.\DISPLAY2
+
+[2025-09-17 17:48:13.308] [INFO    ] =============================
+
+[2025-09-17 17:48:13.308] [INFO    ] ScreenManager: Creating GraphicsDeviceManager
+
+[2025-09-17 17:48:13.310] [INFO    ] ScreenManager: Creating SettingsManager
+
+[2025-09-17 17:48:13.423] [INFO    ] ScreenManager: Settings loaded - Resolution: 1920x1080, Fullscreen: True
+
+[2025-09-17 17:48:13.423] [INFO    ] ScreenManager: Configuring graphics settings
+
+[2025-09-17 17:48:13.423] [INFO    ] ScreenManager: Running on Windows platform
+
+[2025-09-17 17:48:13.424] [INFO    ] ScreenManager: Graphics buffer set to 1920x1080
+
+[2025-09-17 17:48:13.429] [INFO    ] ScreenManager: Sound volume set to 1
+
+[2025-09-17 17:48:13.430] [INFO    ] ScreenManager: Loading game configuration
+
+[2025-09-17 17:48:13.627] [INFO    ] ScreenManager: Window title set to 'DERELICT'
+
+[2025-09-17 17:48:13.627] [INFO    ] ScreenManager: Creating SoundManager
+
+[2025-09-17 17:48:14.466] [INFO    ] ScreenManager: Content root directory set to 'Content/Assets'
+
+[2025-09-17 17:48:14.467] [INFO    ] ScreenManager: Initialization completed successfully
+
+[2025-09-17 17:48:14.467] [INFO    ] Program: ScreenManager created, starting game loop
+
+[2025-09-17 17:48:14.784] [INFO    ] ScreenManager: Starting LoadContent
+
+[2025-09-17 17:48:14.784] [INFO    ] ScreenManager: GraphicsDevice - GraphicsDevice
+
+[2025-09-17 17:48:14.784] [INFO    ] ScreenManager: Creating SpriteBatch
+
+[2025-09-17 17:48:14.797] [INFO    ] ScreenManager: Loading white texture
+
+[2025-09-17 17:48:14.819] [INFO    ] ScreenManager: White texture loaded successfully
+
+[2025-09-17 17:48:14.819] [INFO    ] ScreenManager: Initializing RetroRenderer
+
+[2025-09-17 17:48:14.840] [INFO    ] ScreenManager: RetroRenderer initialized successfully
+
+[2025-09-17 17:48:14.840] [INFO    ] ScreenManager: Initializing ScreenshotManager
+
+[2025-09-17 17:48:14.841] [INFO    ] ScreenManager: ScreenshotManager initialized successfully
+
+[2025-09-17 17:48:14.841] [INFO    ] ScreenManager: Adding LoadScreen
+
+[2025-09-17 17:48:14.842] [INFO    ] ScreenManager: LoadContent completed successfully
+
+=== Game Started at 2025-09-17 17:50:18 ===
+OS: Microsoft Windows NT 10.0.22631.0
+Runtime: 9.0.6
+Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+Command Line: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\bin\game\net9.0-windows7.0\win-x64\derelict.dll --scene RTSTerrainScene
+========================================
+[2025-09-17 17:50:18.806] [INFO    ] Program: Starting application
+
+[2025-09-17 17:50:18.894] [INFO    ] ScreenManager: Starting initialization
+
+[2025-09-17 17:50:18.895] [INFO    ] === SYSTEM INFORMATION ===
+
+[2025-09-17 17:50:18.895] [INFO    ] OS Version: Microsoft Windows NT 10.0.22631.0
+
+[2025-09-17 17:50:18.896] [INFO    ] Is 64-bit OS: True
+
+[2025-09-17 17:50:18.896] [INFO    ] Is 64-bit Process: True
+
+[2025-09-17 17:50:18.897] [INFO    ] Processor Count: 16
+
+[2025-09-17 17:50:18.897] [INFO    ] CLR Version: 9.0.6
+
+[2025-09-17 17:50:18.897] [INFO    ] Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+
+[2025-09-17 17:50:18.898] [INFO    ] Machine Name: RUBENS_DRAWER
+
+[2025-09-17 17:50:18.900] [INFO    ] User Name: santi
+
+[2025-09-17 17:50:18.920] [INFO    ] Graphics Adapters Count: 2
+
+[2025-09-17 17:50:18.920] [INFO    ]   Adapter 0: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:50:18.921] [INFO    ]     Device Name: \\.\DISPLAY1
+
+[2025-09-17 17:50:18.921] [INFO    ]   Adapter 1: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:50:18.921] [INFO    ]     Device Name: \\.\DISPLAY2
+
+[2025-09-17 17:50:18.922] [INFO    ] =============================
+
+[2025-09-17 17:50:18.922] [INFO    ] ScreenManager: Creating GraphicsDeviceManager
+
+[2025-09-17 17:50:18.923] [INFO    ] ScreenManager: Creating SettingsManager
+
+[2025-09-17 17:50:19.034] [INFO    ] ScreenManager: Settings loaded - Resolution: 1920x1080, Fullscreen: True
+
+[2025-09-17 17:50:19.035] [INFO    ] ScreenManager: Configuring graphics settings
+
+[2025-09-17 17:50:19.035] [INFO    ] ScreenManager: Running on Windows platform
+
+[2025-09-17 17:50:19.036] [INFO    ] ScreenManager: Graphics buffer set to 1920x1080
+
+[2025-09-17 17:50:19.041] [INFO    ] ScreenManager: Sound volume set to 1
+
+[2025-09-17 17:50:19.042] [INFO    ] ScreenManager: Loading game configuration
+
+[2025-09-17 17:50:19.161] [INFO    ] ScreenManager: Window title set to 'DERELICT'
+
+[2025-09-17 17:50:19.162] [INFO    ] ScreenManager: Creating SoundManager
+
+[2025-09-17 17:50:19.305] [INFO    ] ScreenManager: Content root directory set to 'Content/Assets'
+
+[2025-09-17 17:50:19.306] [INFO    ] ScreenManager: Initialization completed successfully
+
+[2025-09-17 17:50:19.307] [INFO    ] Program: ScreenManager created, starting game loop
+
+[2025-09-17 17:50:19.575] [INFO    ] ScreenManager: Starting LoadContent
+
+[2025-09-17 17:50:19.576] [INFO    ] ScreenManager: GraphicsDevice - GraphicsDevice
+
+[2025-09-17 17:50:19.576] [INFO    ] ScreenManager: Creating SpriteBatch
+
+[2025-09-17 17:50:19.590] [INFO    ] ScreenManager: Loading white texture
+
+[2025-09-17 17:50:19.621] [INFO    ] ScreenManager: White texture loaded successfully
+
+[2025-09-17 17:50:19.622] [INFO    ] ScreenManager: Initializing RetroRenderer
+
+[2025-09-17 17:50:19.635] [INFO    ] ScreenManager: RetroRenderer initialized successfully
+
+[2025-09-17 17:50:19.636] [INFO    ] ScreenManager: Initializing ScreenshotManager
+
+[2025-09-17 17:50:19.637] [INFO    ] ScreenManager: ScreenshotManager initialized successfully
+
+[2025-09-17 17:50:19.637] [INFO    ] ScreenManager: Adding LoadScreen
+
+[2025-09-17 17:50:19.638] [INFO    ] ScreenManager: LoadContent completed successfully
+
+=== Game Started at 2025-09-17 17:50:54 ===
+OS: Microsoft Windows NT 10.0.22631.0
+Runtime: 9.0.6
+Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+Command Line: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\bin\game\net9.0-windows7.0\win-x64\derelict.dll --scene rtsTerrainTest
+========================================
+[2025-09-17 17:50:54.478] [INFO    ] Program: Starting application
+
+[2025-09-17 17:50:54.565] [INFO    ] ScreenManager: Starting initialization
+
+[2025-09-17 17:50:54.566] [INFO    ] === SYSTEM INFORMATION ===
+
+[2025-09-17 17:50:54.566] [INFO    ] OS Version: Microsoft Windows NT 10.0.22631.0
+
+[2025-09-17 17:50:54.567] [INFO    ] Is 64-bit OS: True
+
+[2025-09-17 17:50:54.567] [INFO    ] Is 64-bit Process: True
+
+[2025-09-17 17:50:54.567] [INFO    ] Processor Count: 16
+
+[2025-09-17 17:50:54.567] [INFO    ] CLR Version: 9.0.6
+
+[2025-09-17 17:50:54.567] [INFO    ] Working Directory: C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine
+
+[2025-09-17 17:50:54.568] [INFO    ] Machine Name: RUBENS_DRAWER
+
+[2025-09-17 17:50:54.569] [INFO    ] User Name: santi
+
+[2025-09-17 17:50:54.591] [INFO    ] Graphics Adapters Count: 2
+
+[2025-09-17 17:50:54.591] [INFO    ]   Adapter 0: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:50:54.591] [INFO    ]     Device Name: \\.\DISPLAY1
+
+[2025-09-17 17:50:54.592] [INFO    ]   Adapter 1: NVIDIA GeForce RTX 3060 Laptop GPU
+
+[2025-09-17 17:50:54.592] [INFO    ]     Device Name: \\.\DISPLAY2
+
+[2025-09-17 17:50:54.592] [INFO    ] =============================
+
+[2025-09-17 17:50:54.592] [INFO    ] ScreenManager: Creating GraphicsDeviceManager
+
+[2025-09-17 17:50:54.594] [INFO    ] ScreenManager: Creating SettingsManager
+
+[2025-09-17 17:50:54.706] [INFO    ] ScreenManager: Settings loaded - Resolution: 1920x1080, Fullscreen: True
+
+[2025-09-17 17:50:54.706] [INFO    ] ScreenManager: Configuring graphics settings
+
+[2025-09-17 17:50:54.707] [INFO    ] ScreenManager: Running on Windows platform
+
+[2025-09-17 17:50:54.707] [INFO    ] ScreenManager: Graphics buffer set to 1920x1080
+
+[2025-09-17 17:50:54.712] [INFO    ] ScreenManager: Sound volume set to 1
+
+[2025-09-17 17:50:54.713] [INFO    ] ScreenManager: Loading game configuration
+
+[2025-09-17 17:50:54.856] [INFO    ] ScreenManager: Window title set to 'DERELICT'
+
+[2025-09-17 17:50:54.857] [INFO    ] ScreenManager: Creating SoundManager
+
+[2025-09-17 17:50:55.005] [INFO    ] ScreenManager: Content root directory set to 'Content/Assets'
+
+[2025-09-17 17:50:55.006] [INFO    ] ScreenManager: Initialization completed successfully
+
+[2025-09-17 17:50:55.006] [INFO    ] Program: ScreenManager created, starting game loop
+
+[2025-09-17 17:50:55.249] [INFO    ] ScreenManager: Starting LoadContent
+
+[2025-09-17 17:50:55.249] [INFO    ] ScreenManager: GraphicsDevice - GraphicsDevice
+
+[2025-09-17 17:50:55.249] [INFO    ] ScreenManager: Creating SpriteBatch
+
+[2025-09-17 17:50:55.267] [INFO    ] ScreenManager: Loading white texture
+
+[2025-09-17 17:50:55.290] [INFO    ] ScreenManager: White texture loaded successfully
+
+[2025-09-17 17:50:55.291] [INFO    ] ScreenManager: Initializing RetroRenderer
+
+[2025-09-17 17:50:55.298] [INFO    ] ScreenManager: RetroRenderer initialized successfully
+
+[2025-09-17 17:50:55.298] [INFO    ] ScreenManager: Initializing ScreenshotManager
+
+[2025-09-17 17:50:55.299] [INFO    ] ScreenManager: ScreenshotManager initialized successfully
+
+[2025-09-17 17:50:55.299] [INFO    ] ScreenManager: Adding LoadScreen
+
+[2025-09-17 17:50:55.300] [INFO    ] ScreenManager: LoadContent completed successfully
+
+[2025-09-17 17:55:52.016] [CRITICAL] Program: Fatal application error
+Exception: ArgumentException: Text contains characters that cannot be resolved by this SpriteFont. (Parameter 'text')
+Stack Trace:    at Microsoft.Xna.Framework.Graphics.SpriteFont.GetGlyphIndexOrDefault(Char c)
+   at Microsoft.Xna.Framework.Graphics.SpriteBatch.DrawString(SpriteFont spriteFont, String text, Vector2 position, Color color)
+   at rubens_psx_engine.game.scenes.RTSTerrainScreen.Draw2D(GameTime gameTime) in C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\game\scenes\RTSTerrainScreen.cs:line 56
+   at rubens_psx_engine.ScreenManager.Draw(GameTime gameTime) in C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\screenmanager.cs:line 348
+   at Microsoft.Xna.Framework.Game.DoDraw(GameTime gameTime)
+   at Microsoft.Xna.Framework.Game.Tick()
+   at MonoGame.Framework.WinFormsGameWindow.TickOnIdle(Object sender, EventArgs e)
+   at System.Windows.Forms.Application.LightThreadContext.FPushMessageLoop(msoloop uReason)
+   at System.Windows.Forms.Application.LightThreadContext.RunMessageLoop(msoloop reason, Boolean fullModal)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoopInner(msoloop reason, ApplicationContext context)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoop(msoloop reason, ApplicationContext context)
+   at MonoGame.Framework.WinFormsGameWindow.RunLoop()
+   at Microsoft.Xna.Framework.Game.Run(GameRunBehavior runBehavior)
+   at Program.<Main>$(String[] args) in C:\Users\santi\repos\rubens-psx-engine\rubens-psx-engine\Program.cs:line 15
+
