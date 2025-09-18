@@ -49,7 +49,7 @@ namespace rubens_psx_engine
             panSpeed = 100.0f;
             zoomSpeed = 50.0f;
             minHeight = 20.0f;
-            maxHeight = 200.0f;
+            maxHeight = 80.0f;
             viewAngle = MathHelper.ToRadians(45.0f); // 45 degrees below horizon
             terrainBounds = new Vector2(1000, 1000); // Default large bounds
             
@@ -146,7 +146,7 @@ namespace rubens_psx_engine
             if (previousMouseState.ScrollWheelValue != 0)
             {
                 int scrollDelta = mouseState.ScrollWheelValue - previousMouseState.ScrollWheelValue;
-                Height -= scrollDelta * 0.01f;
+                Height -= scrollDelta * 0.1f;
             }
 
             // Middle mouse button for panning
@@ -157,7 +157,7 @@ namespace rubens_psx_engine
                 Vector3 panMovement = new Vector3(
                     -mouseDelta.X * 0.1f,
                     0,
-                    mouseDelta.Y * 0.1f
+                    -mouseDelta.Y * 0.1f
                 );
                 
                 CameraPosition += panMovement;

@@ -8,3 +8,5 @@ bepuphysics2/
 rubens-psx-engine/debug_output.txt
 rubens-psx-engine/Tools/TerrainGenerator/bin/
 rubens-psx-engine/Tools/TerrainGenerator/obj/
+ProceduralTerrain/obj/
+ProceduralTerrain/bin/

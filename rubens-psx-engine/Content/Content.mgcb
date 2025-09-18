@@ -649,6 +649,12 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/VertexLit.fx;Assets/shaders/surface/VertexLit
 
+#begin Assets/shaders/surface/VertexLitStandard.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/VertexLitStandard.fx;Assets/shaders/surface/VertexLitStandard
+
 #begin Assets/sound/click.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor

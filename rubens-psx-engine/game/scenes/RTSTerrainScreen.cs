@@ -41,19 +41,19 @@ namespace rubens_psx_engine.game.scenes
             // Draw UI elements (including minimap)
             rtsScene.DrawUI(gameTime);
 
-            string instructions = "RTS Camera Demo\n" +
-                                "WASD/Arrows: Pan camera horizontally\n" +
-                                "Q/E: Zoom in/out\n" +
-                                "Mouse Wheel: Zoom\n" +
-                                "Middle Mouse: Pan\n" +
-                                "Left Click: Get terrain height\n" +
-                                "Space: Generate new terrain\n" +
-                                "C: Center camera\n" +
-                                "Escape: Exit\n\n" +
-                                "Camera is fixed at 45 angle\n" +
-                                "Check minimap (top-right)";
+            //string instructions = "RTS Camera Demo\n" +
+            //                    "WASD/Arrows: Pan camera horizontally\n" +
+            //                    "Q/E: Zoom in/out\n" +
+            //                    "Mouse Wheel: Zoom\n" +
+            //                    "Middle Mouse: Pan\n" +
+            //                    "Left Click: Get terrain height\n" +
+            //                    "Space: Generate new terrain\n" +
+            //                    "C: Center camera\n" +
+            //                    "Escape: Exit\n\n" +
+            //                    "Camera is fixed at 45 angle\n" +
+            //                    "Check minimap (top-right)";
 
-            getSpriteBatch.DrawString(Globals.fontNTR, instructions, new Vector2(10, 10), Color.White);
+            //getSpriteBatch.DrawString(Globals.fontNTR, instructions, new Vector2(10, 10), Color.White);
         }
 
         protected override void Dispose(bool disposing)

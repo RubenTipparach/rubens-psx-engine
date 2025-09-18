@@ -237,7 +237,7 @@ namespace anakinsoft.game.scenes
             float maxDistance = 1000f;
 
             var hitHandler = new RayHitHandler();
-            physicsSystem.Simulation.RayCast(rayStart, rayDir, maxDistance, physicsSystem.BufferPool, ref hitHandler);
+            physicsSystem.Simulation.RayCast(rayStart, rayDir, maxDistance, ref hitHandler);
 
             if (hitHandler.Hit)
             {

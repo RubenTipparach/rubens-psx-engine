@@ -82,10 +82,11 @@ scene:
   # - "staticMeshDemo" (Static Mesh Demo)
   # - "interactiveTest" (Interactive Test Scene)
   # - "bepuInteraction" (BEPU Physics Interaction)
-  defaultScene: "default"
+  # - "rtsTerrainTest"
+  defaultScene: "rtsTerrainTest"
   
   # Whether to show scene selection menu on startup
-  showSceneMenu: true
+  showSceneMenu: false
 
 # Input Settings
 input:

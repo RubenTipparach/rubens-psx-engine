@@ -132,7 +132,7 @@ namespace anakinsoft.system
 
             // Perform BEPU raycast
             var hitHandler = new InteractionRayHitHandler();
-            physicsSystem.Simulation.RayCast(rayStart, rayDir, maxRayDistance, physicsSystem.BufferPool, ref hitHandler);
+            physicsSystem.Simulation.RayCast(rayStart, rayDir, maxRayDistance, ref hitHandler);
 
             if (hitHandler.Hit)
             {

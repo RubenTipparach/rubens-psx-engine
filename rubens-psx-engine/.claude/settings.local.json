@@ -15,7 +15,10 @@
       "Bash(dotnet new:*)",
       "Bash(rmdir:*)",
       "Bash(rm:*)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "Bash(dir \"..ProceduralTerrain\" /b)",
+      "Bash(dir:*)",
+      "Read(//c/Users/santi/repos/rubens-psx-engine/ProceduralTerrain/**)"
     ],
     "deny": [],
     "ask": []
