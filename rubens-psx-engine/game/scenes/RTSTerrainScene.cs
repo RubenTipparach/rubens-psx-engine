@@ -18,6 +18,7 @@ namespace rubens_psx_engine.game.scenes
     {
         private TerrainData terrainData;
         private TerrainRenderer terrainRenderer;
+        private TerrainRenderingEntity materialTerrainRenderer;
         private RTSCamera rtsCamera;
         private Minimap minimap;
         private Effect terrainEffect;
@@ -36,11 +37,19 @@ namespace rubens_psx_engine.game.scenes
         private WaterSystem waterSystem;
         private Bridge bridge;
 
+        // Materials
+        private TerrainMaterial terrainMaterial;
+        private VertexLitStandardMaterial goldCubeMaterial;
+        private VertexLitStandardMaterial testCubeMaterial;
+        private VertexLitStandardMaterial workerMaterial;
+        private VertexLitStandardMaterial soldierMaterial;
+        private VertexLitStandardMaterial tankMaterial;
+
         // Center cube
-        private RenderingEntity centerCube;
+        private MaterialRenderingEntity centerCube;
 
         // Test cube using working Scene methods
-        private RenderingEntity testCube;
+        private MaterialRenderingEntity testCube;
 
         // Debug wireframe rendering
         private BasicEffect wireframeEffect;
@@ -53,6 +62,7 @@ namespace rubens_psx_engine.game.scenes
             InitializeLighting();
             InitializeGameSystems();
             InitializeWireframe();
+            InitializeMaterials();
             LoadContent();
         }
 
@@ -70,6 +80,43 @@ namespace rubens_psx_engine.game.scenes
             wireframeEffect = new BasicEffect(Globals.screenManager.getGraphicsDevice.GraphicsDevice);
             wireframeEffect.VertexColorEnabled = true;
             wireframeEffect.LightingEnabled = false;
+        }
+
+        private void InitializeMaterials()
+        {
+            // Initialize terrain material
+            terrainMaterial = new TerrainMaterial("textures/prototype/grass");
+            terrainMaterial.TextureTiling = new Vector2(10.0f, 10.0f);
+
+            // Initialize gold cube material with special tint
+            goldCubeMaterial = new VertexLitStandardMaterial("textures/prototype/gold");
+            goldCubeMaterial.TintColor = Color.Gold;
+
+            // Initialize test cube material
+            testCubeMaterial = new VertexLitStandardMaterial("textures/white");
+            testCubeMaterial.TintColor = Color.LimeGreen;
+
+            // Initialize unit materials with different colors and properties
+            workerMaterial = new VertexLitStandardMaterial("textures/white");
+            workerMaterial.TintColor = Color.CornflowerBlue;
+            workerMaterial.Roughness = 0.7f;
+
+            soldierMaterial = new VertexLitStandardMaterial("textures/white");
+            soldierMaterial.TintColor = Color.Crimson;
+            soldierMaterial.Roughness = 0.5f;
+
+            tankMaterial = new VertexLitStandardMaterial("textures/white");
+            tankMaterial.TintColor = Color.ForestGreen;
+            tankMaterial.Roughness = 0.3f;
+            tankMaterial.Metallic = 0.6f; // Make tanks more metallic
+
+            System.Console.WriteLine("Materials initialized:");
+            System.Console.WriteLine($"- Terrain: {terrainMaterial != null}");
+            System.Console.WriteLine($"- Gold Cube: {goldCubeMaterial != null}");
+            System.Console.WriteLine($"- Test Cube: {testCubeMaterial != null}");
+            System.Console.WriteLine($"- Worker: {workerMaterial != null}");
+            System.Console.WriteLine($"- Soldier: {soldierMaterial != null}");
+            System.Console.WriteLine($"- Tank: {tankMaterial != null}");
         }
 
         private void InitializeLighting()
@@ -208,11 +255,18 @@ namespace rubens_psx_engine.game.scenes
 
             terrainRenderer.LoadTerrain(terrainData, grassTexture);
 
+            // Create material-based terrain renderer
+            materialTerrainRenderer = new TerrainRenderingEntity(Globals.screenManager.getGraphicsDevice.GraphicsDevice, "textures/prototype/grass");
+            materialTerrainRenderer.LoadTerrain(terrainData);
+
             // Initialize water system with terrain
-            waterSystem.GenerateRiverGeometry(terrainData);
+            waterSystem.GenerateRiverGeometry(terrainData); // this doesnt work lol
 
             // Pass terrain data to unit manager
             unitManager.SetTerrainData(terrainData);
+
+            // Pass materials to unit manager
+            unitManager.SetUnitMaterials(workerMaterial, soldierMaterial, tankMaterial);
 
             // Create bridge across the river
             CreateBridge();
@@ -220,8 +274,7 @@ namespace rubens_psx_engine.game.scenes
             // Create center cube
             CreateCenterCube();
 
-            // Create test cube using known working method
-            CreateTestCube();
+
 
             // Create some initial units
             CreateInitialUnits();
@@ -403,48 +456,29 @@ namespace rubens_psx_engine.game.scenes
             gd.RasterizerState = RasterizerState.CullNone;
             gd.DepthStencilState = DepthStencilState.Default;
 
-            // Apply environment lighting
-            environmentLight.ApplyToEffect(terrainEffect);
-
-            // Apply all point lights (don't filter by distance for terrain)
-            var allActiveLights = new List<PointLight>();
-            if (mouseLight.IsEnabled) allActiveLights.Add(mouseLight);
-            if (sceneLights != null)
+            // Apply lighting to material-based terrain
+            if (materialTerrainRenderer != null)
             {
-                allActiveLights.AddRange(sceneLights.Where(l => l.IsEnabled));
+                // Apply environment lighting
+                materialTerrainRenderer.ApplyEnvironmentLight(environmentLight);
+
+                // Apply all point lights (don't filter by distance for terrain)
+                var allActiveLights = new List<PointLight>();
+                if (mouseLight.IsEnabled) allActiveLights.Add(mouseLight);
+                if (sceneLights != null)
+                {
+                    allActiveLights.AddRange(sceneLights.Where(l => l.IsEnabled));
+                }
+
+                // Apply point lights to terrain material
+                materialTerrainRenderer.ApplyPointLights(allActiveLights);
+
+                // Set terrain tiling
+                materialTerrainRenderer.SetTextureTiling(new Vector2(10.0f, 10.0f));
+
+                // Draw terrain using material system
+                materialTerrainRenderer.Draw(null, rtsCamera);
             }
-
-            // Apply up to 8 lights to the terrain shader
-            var positions = new Vector3[8];
-            var colors = new Vector3[8];
-            var ranges = new float[8];
-            var intensities = new float[8];
-
-            int lightCount = Math.Min(allActiveLights.Count, 8);
-            for (int i = 0; i < lightCount; i++)
-            {
-                var light = allActiveLights[i];
-                positions[i] = light.Position;
-                colors[i] = light.Color.ToVector3();
-                ranges[i] = light.Range;
-                intensities[i] = light.Intensity;
-            }
-
-            terrainEffect.Parameters["ActivePointLights"]?.SetValue(lightCount);
-            terrainEffect.Parameters["PointLightPositions"]?.SetValue(positions);
-            terrainEffect.Parameters["PointLightColors"]?.SetValue(colors);
-            terrainEffect.Parameters["PointLightRanges"]?.SetValue(ranges);
-            terrainEffect.Parameters["PointLightIntensities"]?.SetValue(intensities);
-
-            // Set texture tiling (10x10 as requested)
-            terrainEffect.Parameters["TextureTiling"]?.SetValue(new Vector2(10.0f, 10.0f));
-
-            terrainRenderer.Render(
-                world: Matrix.Identity,
-                view: rtsCamera.View,
-                projection: rtsCamera.Projection,
-                lightDirection: environmentLight.DirectionalLightDirection
-            );
 
             // Draw water
             waterSystem.Draw(Matrix.Identity, rtsCamera.View, rtsCamera.Projection);
@@ -487,17 +521,17 @@ namespace rubens_psx_engine.game.scenes
             int lineHeight = 20;
             Color textColor = Color.White;
 
-            spriteBatch.DrawString(font, "=== UNIT CONTROLS ===", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, "=== UNIT CONTROLS ===", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, "1: Create Worker | 2: Create Soldier | 3: Create Tank", new Vector2(10, y), Color.Yellow);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, "1: Create Worker | 2: Create Soldier | 3: Create Tank", new Vector2(10, y), Color.Yellow);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, "Left Click: Select | Right Click: Move | Ctrl+Click: Multi-select", new Vector2(10, y), Color.Yellow);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, "Left Click: Select | Right Click: Move | Ctrl+Click: Multi-select", new Vector2(10, y), Color.Yellow);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, $"Units: {unitManager.Units.Count} | Selected: {unitManager.SelectedUnits.Count}", new Vector2(10, y), Color.Cyan);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, $"Units: {unitManager.Units.Count} | Selected: {unitManager.SelectedUnits.Count}", new Vector2(10, y), Color.Cyan);
+            //y += lineHeight;
 
             // Unit type counts
             int workers = unitManager.GetUnitCount(UnitType.Worker);
@@ -515,33 +549,33 @@ namespace rubens_psx_engine.game.scenes
             int lineHeight = 20;
             Color textColor = Color.White;
 
-            // Draw lighting info
-            spriteBatch.DrawString(font, "=== LIGHTING CONTROLS ===", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //// Draw lighting info
+            //spriteBatch.DrawString(font, "=== LIGHTING CONTROLS ===", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, "F1-F4: Lighting Presets (Day/Sunset/Night/Overcast)", new Vector2(10, y), Color.Yellow);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, "F1-F4: Lighting Presets (Day/Sunset/Night/Overcast)", new Vector2(10, y), Color.Yellow);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, $"Directional Intensity: {environmentLight.DirectionalLightIntensity:F2} (Up/Down)", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, $"Directional Intensity: {environmentLight.DirectionalLightIntensity:F2} (Up/Down)", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, $"Ambient Intensity: {environmentLight.AmbientLightIntensity:F2} (Left/Right)", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, $"Ambient Intensity: {environmentLight.AmbientLightIntensity:F2} (Left/Right)", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, $"Dir Light Color: R:{environmentLight.DirectionalLightColor.R} G:{environmentLight.DirectionalLightColor.G} B:{environmentLight.DirectionalLightColor.B}", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, $"Dir Light Color: R:{environmentLight.DirectionalLightColor.R} G:{environmentLight.DirectionalLightColor.G} B:{environmentLight.DirectionalLightColor.B}", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, $"Ambient Color: R:{environmentLight.AmbientLightColor.R} G:{environmentLight.AmbientLightColor.G} B:{environmentLight.AmbientLightColor.B}", new Vector2(10, y), textColor);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, $"Ambient Color: R:{environmentLight.AmbientLightColor.R} G:{environmentLight.AmbientLightColor.G} B:{environmentLight.AmbientLightColor.B}", new Vector2(10, y), textColor);
+            //y += lineHeight;
 
-            y += lineHeight; // Extra space
-            spriteBatch.DrawString(font, $"Active Point Lights: {lightProcessor.ActivePointLights}/{lightProcessor.TotalPointLights}", new Vector2(10, y), Color.Cyan);
-            y += lineHeight;
+            //y += lineHeight; // Extra space
+            //spriteBatch.DrawString(font, $"Active Point Lights: {lightProcessor.ActivePointLights}/{lightProcessor.TotalPointLights}", new Vector2(10, y), Color.Cyan);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, "L: Toggle Scene Lights | M: Toggle Mouse Light", new Vector2(10, y), Color.Yellow);
-            y += lineHeight;
+            //spriteBatch.DrawString(font, "L: Toggle Scene Lights | M: Toggle Mouse Light", new Vector2(10, y), Color.Yellow);
+            //y += lineHeight;
 
-            spriteBatch.DrawString(font, "Space: Regenerate Terrain | C: Center Camera", new Vector2(10, y), Color.Gray);
+            //spriteBatch.DrawString(font, "Space: Regenerate Terrain | C: Center Camera", new Vector2(10, y), Color.Gray);
         }
 
         private void CreateBridge()
@@ -568,25 +602,16 @@ namespace rubens_psx_engine.game.scenes
             float terrainHeight = terrainData.GetHeightAt(centerPosition.X, centerPosition.Z);
             centerPosition.Y = terrainHeight + 2.0f; // Place cube 2 units above terrain
 
-            System.Console.WriteLine($"Creating cube at position: {centerPosition}, terrain size: {terrainWidth}x{terrainDepth}");
+            System.Console.WriteLine($"Creating gold cube at position: {centerPosition}, terrain size: {terrainWidth}x{terrainDepth}");
 
-            // Create cube entity using the SAME effect and texture as terrain and add to scene
-            centerCube = CreateRenderingEntity(centerPosition, "models/cube", "textures/prototype/grass", "shaders/surface/VertexLitStandard");
-            centerCube.Scale = new Vector3(1.0f, 1.0f, 1.0f); // Make it a proper 5x5x5 cube
-            centerCube.Color = new Vector3(1.0f, 1.0f, 0.0f); // Bright yellow color for visibility
+            // Create cube entity using MaterialRenderingEntity with gold material
+            centerCube = new MaterialRenderingEntity("models/cube", goldCubeMaterial);
+            centerCube.Position = centerPosition;
+            centerCube.Scale = new Vector3(0.2f, 0.2f, 0.2f);
+            AddRenderingEntity(centerCube);
         }
 
-        private void CreateTestCube()
-        {
-            // Create a test cube using the exact same method as GraphicsTestScene and add to scene
-            Vector3 testPosition = new Vector3(terrainData.Width * terrainData.Scale * 0.7f, 15.0f, terrainData.Height * terrainData.Scale * 0.7f);
-            testCube = CreateRenderingEntity(testPosition, "models/cube", "textures/white");
-            testCube.Scale = new Vector3(1.0f, 1.0f, 1.0f); // Large for visibility
-            testCube.Color = new Vector3(0.0f, 1.0f, 0.0f); // Bright green color
-            testCube.IsVisible = true;
 
-            System.Console.WriteLine($"Created test cube at position: {testCube.Position}, scale: {testCube.Scale}");
-        }
 
         private void CreateInitialUnits()
         {
@@ -602,7 +627,7 @@ namespace rubens_psx_engine.game.scenes
                     terrainDepth * 0.25f + i * 2
                 );
                 unitPos.Y = terrainData.GetHeightAt(unitPos.X, unitPos.Z) + 1.0f;
-                unitManager.CreateUnit(UnitType.Worker, unitPos, Color.Blue, $"Worker {i + 1}");
+                unitManager.CreateUnit(UnitType.Worker, unitPos, Color.Blue, $"Worker {i + 1}" );
             }
 
             // Create a soldier near the bridge
@@ -620,53 +645,16 @@ namespace rubens_psx_engine.game.scenes
             wireframeVertices.Clear();
             wireframeIndices.Clear();
 
-            // Draw bounding box for center cube
-            if (centerCube != null)
-            {
-                var cubeWorldMatrix = centerCube.GetWorldMatrix();
-                var actualBounds = GetModelBounds(centerCube.Model, cubeWorldMatrix);
-
-                // Calculate expected bounds based on position and scale
-                var expectedMin = centerCube.Position - centerCube.Scale * 0.5f;
-                var expectedMax = centerCube.Position + centerCube.Scale * 0.5f;
-                var expectedBounds = new BoundingBox(expectedMin, expectedMax);
-
-                CreateWireframeBox(actualBounds, Color.Yellow);
-                CreateWireframeBox(expectedBounds, Color.Orange); // Different color to distinguish
-
-                //System.Console.WriteLine($"=== CENTER CUBE DEBUG ===");
-                //System.Console.WriteLine($"Position: {centerCube.Position}");
-                //System.Console.WriteLine($"Scale: {centerCube.Scale}");
-                //System.Console.WriteLine($"EXPECTED bounds: Min:{expectedBounds.Min} Max:{expectedBounds.Max}");
-                //System.Console.WriteLine($"ACTUAL mesh bounds: Min:{actualBounds.Min} Max:{actualBounds.Max}");
-                //System.Console.WriteLine($"Bounds match: {Vector3.Distance(expectedBounds.Min, actualBounds.Min) < 0.1f && Vector3.Distance(expectedBounds.Max, actualBounds.Max) < 0.1f}");
-                //System.Console.WriteLine();
-            }
-
-            // Draw bounding boxes for all units
-            foreach (var unit in unitManager.Units)
+            // Draw bounding boxes only for selected units
+            foreach (var unit in unitManager.SelectedUnits)
             {
                 var unitScale = unit.GetPublicUnitScale();
                 var unitWorldMatrix = Matrix.CreateScale(unitScale) *
                                     Matrix.CreateTranslation(unit.Position);
                 var actualBounds = GetModelBounds(unit.GetModel(), unitWorldMatrix);
 
-                // Calculate expected bounds based on position and scale
-                var expectedMin = unit.Position - Vector3.One * unitScale * 0.5f;
-                var expectedMax = unit.Position + Vector3.One * unitScale * 0.5f;
-                var expectedBounds = new BoundingBox(expectedMin, expectedMax);
-
-                CreateWireframeBox(actualBounds, Color.Cyan);
-                CreateWireframeBox(expectedBounds, Color.Lime); // Different color to distinguish
-
-                //System.Console.WriteLine($"=== UNIT {unit.Name} DEBUG ===");
-                //System.Console.WriteLine($"Type: {unit.Type}");
-                //System.Console.WriteLine($"Position: {unit.Position}");
-                //System.Console.WriteLine($"Scale: {unitScale}");
-                //System.Console.WriteLine($"EXPECTED bounds: Min:{expectedBounds.Min} Max:{expectedBounds.Max}");
-                //System.Console.WriteLine($"ACTUAL mesh bounds: Min:{actualBounds.Min} Max:{actualBounds.Max}");
-                //System.Console.WriteLine($"Bounds match: {Vector3.Distance(expectedBounds.Min, actualBounds.Min) < 0.1f && Vector3.Distance(expectedBounds.Max, actualBounds.Max) < 0.1f}");
-                //System.Console.WriteLine();
+                // Only draw actual mesh bounds, no duplicate layer
+                CreateWireframeBox(actualBounds, Color.Yellow);
             }
 
             // Draw all wireframes

@@ -37,12 +37,12 @@ namespace rubens_psx_engine.game.units
         private RenderingEntity renderingEntity;
         private RenderingEntity healthBarBg;
         private RenderingEntity healthBarFg;
-        private float selectionBobTime;
-        private const float SELECTION_BOB_SPEED = 3.0f;
-        private const float SELECTION_BOB_HEIGHT = 0.5f;
 
         // Scale override
         public float ScaleOverride { get; set; } = 1.0f;
+
+        // Terrain conformance
+        private rubens_psx_engine.system.terrain.TerrainData terrainData;
 
         // Movement
         private bool isMoving;
@@ -58,7 +58,6 @@ namespace rubens_psx_engine.game.units
             ScaleOverride = scale;
             State = UnitState.Idle;
             IsSelected = false;
-            selectionBobTime = 0f;
             isMoving = false;
             moveProgress = 0f;
 
@@ -67,6 +66,26 @@ namespace rubens_psx_engine.game.units
 
             // Create unit mesh and material
             CreateUnitMesh();
+        }
+
+        public Unit(UnitType type, Vector3 position, Color teamColor, Material customMaterial, string name = "Unit", float scale = 1.0f)
+        {
+            Type = type;
+            Position = position;
+            TargetPosition = position;
+            TeamColor = teamColor;
+            Name = name;
+            ScaleOverride = scale;
+            State = UnitState.Idle;
+            IsSelected = false;
+            isMoving = false;
+            moveProgress = 0f;
+
+            // Set unit stats based on type
+            SetUnitStats();
+
+            // Create unit mesh with custom material
+            CreateUnitMeshWithMaterial(customMaterial);
         }
 
         private void SetUnitStats()
@@ -105,15 +124,27 @@ namespace rubens_psx_engine.game.units
             healthBarFg.Color = Vector3.UnitY; // Green
         }
 
+        private void CreateUnitMeshWithMaterial(Material material)
+        {
+            // Create MaterialRenderingEntity using custom material
+            var materialEntity = new MaterialRenderingEntity("models/cube", material);
+            materialEntity.Position = Position;
+            materialEntity.Scale = Vector3.One * GetUnitScale() * ScaleOverride;
+
+            // Store as base RenderingEntity for compatibility
+            renderingEntity = materialEntity;
+
+            // Create health bar entities (will be positioned dynamically)
+            healthBarBg = new RenderingEntity("models/cube", "textures/white", "shaders/surface/VertexLitStandard");
+            healthBarBg.Color = Vector3.UnitX; // Red
+
+            healthBarFg = new RenderingEntity("models/cube", "textures/white", "shaders/surface/VertexLitStandard");
+            healthBarFg.Color = Vector3.UnitY; // Green
+        }
+
         public void Update(GameTime gameTime)
         {
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-            // Update selection bob animation
-            if (IsSelected)
-            {
-                selectionBobTime += deltaTime * SELECTION_BOB_SPEED;
-            }
 
             // Handle movement
             if (State == UnitState.Moving || isMoving)
@@ -129,26 +160,29 @@ namespace rubens_psx_engine.game.units
         {
             if (renderingEntity == null) return;
 
-            // Calculate position with selection bob
-            Vector3 renderPosition = Position;
-            if (IsSelected)
-            {
-                renderPosition.Y += (float)Math.Sin(selectionBobTime) * SELECTION_BOB_HEIGHT;
-            }
+            // Conform to terrain height if terrain data is available
+            ConformToTerrain();
 
-            // Update rendering entity
-            renderingEntity.Position = renderPosition;
+            // Update rendering entity position and scale
+            renderingEntity.Position = Position;
             renderingEntity.Scale = Vector3.One * GetUnitScale() * ScaleOverride;
 
-            // Update color with selection highlight
-            Vector3 color = TeamColor.ToVector3();
-            if (IsSelected)
+            // Update color (simple team color, no fancy selection effects)
+            renderingEntity.Color = TeamColor.ToVector3();
+        }
+
+        private void ConformToTerrain()
+        {
+            if (terrainData != null)
             {
-                // Add white highlight when selected
-                color += Vector3.One * 0.3f * (float)Math.Sin(selectionBobTime * 2);
-                color = Vector3.Clamp(color, Vector3.Zero, Vector3.One);
+                float terrainHeight = terrainData.GetHeightAt(Position.X, Position.Z);
+                Position = new Vector3(Position.X, terrainHeight, Position.Z);
             }
-            renderingEntity.Color = color;
+        }
+
+        public void SetTerrainData(rubens_psx_engine.system.terrain.TerrainData terrain)
+        {
+            terrainData = terrain;
         }
 
         private void UpdateMovement(float deltaTime)
@@ -195,10 +229,6 @@ namespace rubens_psx_engine.game.units
         {
             IsSelected = selected;
             State = selected ? UnitState.Selected : UnitState.Idle;
-            if (!selected)
-            {
-                selectionBobTime = 0f;
-            }
         }
 
         public void Draw(rubens_psx_engine.RTSCamera camera)
@@ -233,7 +263,7 @@ namespace rubens_psx_engine.game.units
         private void DrawHealthBar(rubens_psx_engine.RTSCamera camera)
         {
             float healthPercentage = Health / MaxHealth;
-            Vector3 healthBarPosition = renderingEntity.Position + Vector3.Up * 2.0f;
+            Vector3 healthBarPosition = Position + Vector3.Up * 2.0f;
 
             // Health bar background (red)
             healthBarBg.Position = healthBarPosition;

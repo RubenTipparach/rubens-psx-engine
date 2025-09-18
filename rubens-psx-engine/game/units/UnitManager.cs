@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using rubens_psx_engine.entities;
 using rubens_psx_engine.system.terrain;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,11 @@ namespace rubens_psx_engine.game.units
         private TerrainData terrainData;
         private Texture2D pixelTexture;
 
+        // Unit materials
+        private Material workerMaterial;
+        private Material soldierMaterial;
+        private Material tankMaterial;
+
         // Selection box
         private bool isSelecting;
         private Vector2 selectionStart;
@@ -24,6 +30,7 @@ namespace rubens_psx_engine.game.units
 
         public IReadOnlyList<Unit> Units => units.AsReadOnly();
         public IReadOnlyList<Unit> SelectedUnits => selectedUnits.AsReadOnly();
+        float overallUnitSize = .02f;
 
         public UnitManager()
         {
@@ -45,6 +52,11 @@ namespace rubens_psx_engine.game.units
         {
             if (unit != null && !units.Contains(unit))
             {
+                // Pass terrain data to the unit for height conformance
+                if (terrainData != null)
+                {
+                    unit.SetTerrainData(terrainData);
+                }
                 units.Add(unit);
             }
         }
@@ -61,6 +73,20 @@ namespace rubens_psx_engine.game.units
         public void SetTerrainData(TerrainData terrain)
         {
             terrainData = terrain;
+
+            // Update all existing units with terrain data
+            foreach (var unit in units)
+            {
+                unit.SetTerrainData(terrain);
+            }
+        }
+
+        public void SetUnitMaterials(Material worker, Material soldier, Material tank)
+        {
+            workerMaterial = worker;
+            soldierMaterial = soldier;
+            tankMaterial = tank;
+            System.Console.WriteLine("Unit materials assigned to UnitManager");
         }
 
         public void CreateUnit(UnitType type, Vector3 position, Color teamColor, string name = null)
@@ -70,7 +96,21 @@ namespace rubens_psx_engine.game.units
                 name = $"{type} {units.Count + 1}";
             }
 
-            Unit newUnit = new Unit(type, position, teamColor, name);
+            // Get the appropriate material for this unit type
+            Material unitMaterial = GetMaterialForUnitType(type);
+
+            // Create the unit with material if available
+            Unit newUnit;
+            if (unitMaterial != null)
+            {
+                newUnit = new Unit(type, position, teamColor, unitMaterial, name, overallUnitSize);
+            }
+            else
+            {
+                // Fallback to default unit creation if no material available
+                newUnit = new Unit(type, position, teamColor, name, overallUnitSize);
+            }
+
             AddUnit(newUnit);
         }
 
@@ -94,7 +134,7 @@ namespace rubens_psx_engine.game.units
                 worldPosition.Y = 1.0f; // Default height if no terrain
             }
 
-            CreateUnit(type, worldPosition, teamColor, name);
+            CreateUnit(type, worldPosition, teamColor, name );
         }
 
         public void Update(GameTime gameTime, rubens_psx_engine.RTSCamera camera)
@@ -242,21 +282,21 @@ namespace rubens_psx_engine.game.units
             // Create worker with 1 key (smaller scale)
             if (keyboardState.IsKeyDown(Keys.D1) && !previousKeyboardState.IsKeyDown(Keys.D1))
             {
-                CreateUnitAtMousePosition(UnitType.Worker, worldPosition, Color.Blue, 0.8f);
+                CreateUnitAtMousePosition(UnitType.Worker, worldPosition, Color.Blue);
                 System.Console.WriteLine($"Created Worker at {worldPosition}");
             }
 
             // Create soldier with 2 key (normal scale)
             if (keyboardState.IsKeyDown(Keys.D2) && !previousKeyboardState.IsKeyDown(Keys.D2))
             {
-                CreateUnitAtMousePosition(UnitType.Soldier, worldPosition, Color.Red, 1.0f);
+                CreateUnitAtMousePosition(UnitType.Soldier, worldPosition, Color.Red);
                 System.Console.WriteLine($"Created Soldier at {worldPosition}");
             }
 
             // Create tank with 3 key (larger scale)
             if (keyboardState.IsKeyDown(Keys.D3) && !previousKeyboardState.IsKeyDown(Keys.D3))
             {
-                CreateUnitAtMousePosition(UnitType.Tank, worldPosition, Color.Green, 1.5f);
+                CreateUnitAtMousePosition(UnitType.Tank, worldPosition, Color.Green);
                 System.Console.WriteLine($"Created Tank at {worldPosition}");
             }
         }
@@ -328,18 +368,16 @@ namespace rubens_psx_engine.game.units
             selectedUnits.Clear();
         }
 
-        private void CreateUnitAtMousePosition(UnitType unitType, Vector3 worldPosition, Color teamColor, float scale = 1.0f)
-        {
-            // Adjust position to terrain height if terrain data is available
-            if (terrainData != null)
-            {
-                float terrainHeight = terrainData.GetHeightAt(worldPosition.X, worldPosition.Z);
-                worldPosition.Y = terrainHeight;
-            }
 
-            // Create the unit with specified scale
-            Unit newUnit = new Unit(unitType, worldPosition, teamColor, unitType.ToString(), scale);
-            AddUnit(newUnit);
+        private Material GetMaterialForUnitType(UnitType unitType)
+        {
+            return unitType switch
+            {
+                UnitType.Worker => workerMaterial,
+                UnitType.Soldier => soldierMaterial,
+                UnitType.Tank => tankMaterial,
+                _ => null
+            };
         }
 
         public void Draw(rubens_psx_engine.RTSCamera camera)
