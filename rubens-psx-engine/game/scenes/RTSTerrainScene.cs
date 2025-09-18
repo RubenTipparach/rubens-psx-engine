@@ -141,7 +141,8 @@ namespace rubens_psx_engine.game.scenes
                 gd,
                 Globals.screenManager.getSpriteBatch,
                 minimapSize, minimapSize,
-                gd.Viewport.Width - minimapSize - 10, 10
+                gd.Viewport.Width - minimapSize - 40,
+                gd.Viewport.Height - minimapSize - 40
             );
             minimap.SetTerrain(terrainData);
             minimap.SetCamera(rtsCamera);
@@ -171,7 +172,7 @@ namespace rubens_psx_engine.game.scenes
             terrainRenderer.LoadTerrain(terrainData, grassTexture);
 
             // Create scene lights after terrain is loaded
-            CreateSceneLights();
+            //CreateSceneLights();
         }
 
         public void Update(GameTime gameTime)
@@ -217,7 +218,7 @@ namespace rubens_psx_engine.game.scenes
             }
 
             // Toggle scene lights with L key
-            if (keyboardState.IsKeyDown(Keys.L))
+            if (keyboardState.IsKeyDown(Keys.L) && sceneLights != null)
             {
                 foreach (var light in sceneLights)
                 {
@@ -260,9 +261,44 @@ namespace rubens_psx_engine.game.scenes
             Vector2 mousePosition = new Vector2(mouseState.X, mouseState.Y);
             Vector3 worldPosition = rtsCamera.ScreenToWorld(mousePosition, 0);
 
-            // Get terrain height at mouse position
-            float terrainHeight = terrainData.GetHeightAt(worldPosition.X, worldPosition.Z);
-            mouseLight.Position = new Vector3(worldPosition.X, terrainHeight + 5.0f, worldPosition.Z);
+            // Calculate terrain bounds
+            float terrainWidth = terrainData.Width * terrainData.Scale;
+            float terrainDepth = terrainData.Height * terrainData.Scale;
+
+            // Clamp world position to terrain bounds
+            float clampedX = MathHelper.Clamp(worldPosition.X, 0, terrainWidth);
+            float clampedZ = MathHelper.Clamp(worldPosition.Z, 0, terrainDepth);
+
+            // Get terrain height at clamped position
+            float terrainHeightValue;
+            try
+            {
+                terrainHeightValue = terrainData.GetHeightAt(clampedX, clampedZ);
+
+                // Fallback if height is invalid
+                if (float.IsNaN(terrainHeightValue) || float.IsInfinity(terrainHeightValue))
+                {
+                    terrainHeightValue = 0.0f;
+                }
+            }
+            catch
+            {
+                // If GetHeightAt fails, use default height
+                terrainHeightValue = 0.0f;
+            }
+
+            // Update mouse light position (use original world position, not clamped)
+            mouseLight.Position = new Vector3(worldPosition.X, terrainHeightValue + 5.0f, worldPosition.Z);
+
+            // Keep light enabled
+            mouseLight.IsEnabled = true;
+
+            // Debug output every 30 frames (roughly twice per second)
+            if (System.Environment.TickCount % 500 < 17) // Approximate frame timing
+            {
+                System.Console.WriteLine($"Mouse light: Pos({mouseLight.Position.X:F1}, {mouseLight.Position.Y:F1}, {mouseLight.Position.Z:F1}) " +
+                                       $"Range({mouseLight.Range}) Intensity({mouseLight.Intensity}) Enabled({mouseLight.IsEnabled})");
+            }
         }
 
         private void HandleTerrainInteraction()
@@ -283,7 +319,7 @@ namespace rubens_psx_engine.game.scenes
 
             if (keyboardState.IsKeyDown(Keys.Space))
             {
-                GenerateTerrain();
+                //GenerateTerrain();
             }
 
             if (keyboardState.IsKeyDown(Keys.C))
@@ -305,13 +341,38 @@ namespace rubens_psx_engine.game.scenes
             gd.RasterizerState = RasterizerState.CullNone;
             gd.DepthStencilState = DepthStencilState.Default;
 
-            // Apply lighting using the light processor
-            Vector3 terrainCenter = new Vector3(
-                terrainData.Width * terrainData.Scale * 0.5f,
-                0,
-                terrainData.Height * terrainData.Scale * 0.5f
-            );
-            lightProcessor.ApplyLightingToEffect(terrainEffect, terrainCenter);
+            // Apply environment lighting
+            environmentLight.ApplyToEffect(terrainEffect);
+
+            // Apply all point lights (don't filter by distance for terrain)
+            var allActiveLights = new List<PointLight>();
+            if (mouseLight.IsEnabled) allActiveLights.Add(mouseLight);
+            if (sceneLights != null)
+            {
+                allActiveLights.AddRange(sceneLights.Where(l => l.IsEnabled));
+            }
+
+            // Apply up to 8 lights to the terrain shader
+            var positions = new Vector3[8];
+            var colors = new Vector3[8];
+            var ranges = new float[8];
+            var intensities = new float[8];
+
+            int lightCount = Math.Min(allActiveLights.Count, 8);
+            for (int i = 0; i < lightCount; i++)
+            {
+                var light = allActiveLights[i];
+                positions[i] = light.Position;
+                colors[i] = light.Color.ToVector3();
+                ranges[i] = light.Range;
+                intensities[i] = light.Intensity;
+            }
+
+            terrainEffect.Parameters["ActivePointLights"]?.SetValue(lightCount);
+            terrainEffect.Parameters["PointLightPositions"]?.SetValue(positions);
+            terrainEffect.Parameters["PointLightColors"]?.SetValue(colors);
+            terrainEffect.Parameters["PointLightRanges"]?.SetValue(ranges);
+            terrainEffect.Parameters["PointLightIntensities"]?.SetValue(intensities);
 
             // Set texture tiling (10x10 as requested)
             terrainEffect.Parameters["TextureTiling"]?.SetValue(new Vector2(10.0f, 10.0f));

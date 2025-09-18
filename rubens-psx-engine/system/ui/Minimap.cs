@@ -30,7 +30,7 @@ namespace rubens_psx_engine.system.ui
             
             // Create a 1x1 white pixel texture for drawing
             pixelTexture = new Texture2D(device, 1, 1);
-            pixelTexture.SetData(new[] { Color.White });
+            pixelTexture.SetData(new[] { new Color(0.3f,.3f,.4f, .5f)});
         }
 
         public void SetTerrain(TerrainData terrain)
