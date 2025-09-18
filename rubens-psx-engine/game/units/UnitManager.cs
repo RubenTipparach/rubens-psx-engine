@@ -394,6 +394,7 @@ namespace rubens_psx_engine.game.units
         {
             var spriteBatch = Globals.screenManager.getSpriteBatch;
             var font = Globals.screenManager.Content.Load<Microsoft.Xna.Framework.Graphics.SpriteFont>("fonts/Arial");
+            float labelScale = 0.5f; // Shrink labels by 50%
 
             foreach (var unit in units)
             {
@@ -409,7 +410,7 @@ namespace rubens_psx_engine.game.units
                     label += " [SELECTED]";
                 }
 
-                Vector2 textSize = font.MeasureString(label);
+                Vector2 textSize = font.MeasureString(label) * labelScale;
                 Vector2 textPos = screenPos - textSize * 0.5f;
 
                 // Draw background
@@ -419,7 +420,7 @@ namespace rubens_psx_engine.game.units
 
                 // Draw text - green if selected, team color if not
                 Color labelColor = unit.IsSelected ? Color.LimeGreen : unit.TeamColor;
-                spriteBatch.DrawString(font, label, textPos, labelColor);
+                spriteBatch.DrawString(font, label, textPos, labelColor, 0f, Vector2.Zero, labelScale, SpriteEffects.None, 0f);
             }
         }
 

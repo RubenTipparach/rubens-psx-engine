@@ -24,14 +24,19 @@ namespace rubens_psx_engine.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            if (InputManager.GetKeyboardClick(Keys.Escape))
-            {
-                ExitScreen();
-                return;
-            }
-
             camera.Update(gameTime);
             rtsScene.Update(gameTime);
+        }
+
+        public override void UpdateInput(GameTime gameTime)
+        {
+            if (!Globals.screenManager.IsActive)
+                return;
+
+            if (InputManager.GetKeyboardClick(Keys.Escape))
+            {
+                Globals.screenManager.AddScreen(new PauseMenu());
+            }
         }
 
         public override void Draw2D(GameTime gameTime)
