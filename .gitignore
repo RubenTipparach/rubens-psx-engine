@@ -10,3 +10,4 @@ rubens-psx-engine/Tools/TerrainGenerator/bin/
 rubens-psx-engine/Tools/TerrainGenerator/obj/
 ProceduralTerrain/obj/
 ProceduralTerrain/bin/
+*.log
