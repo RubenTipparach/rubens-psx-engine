@@ -137,6 +137,10 @@ namespace anakinsoft.game.scenes
             placeholder.AffineAmount = affine;
             placeholder.AmbientColor = new Vector3(.7f, .7f, .7f);
             //placeholder.Brightness = 1.0f; // Brighter
+            var placeholder2 = new VertexLitMaterial("textures/prototype/concrete");
+            placeholder.VertexJitterAmount = jitter;
+            placeholder.AffineAmount = affine;
+            placeholder.AmbientColor = new Vector3(.7f, .7f, .7f);
 
             // Create door materials
             var doorMat = new UnlitMaterial("textures/door");
@@ -190,19 +194,19 @@ namespace anakinsoft.game.scenes
                 Quaternion.Identity, wall, floor);
 
             // Upper corridors
-            CreateStaticRoom(new Vector3(0, 0, -32) * intervals,
+            CreateStaticMesh(new Vector3(0, 0, -32) * intervals,
                 rotateLevel, [wall, floor], "models/level/corridor_T_shape");
-            CreateStaticRoom(new Vector3(-8, 0, -32) * intervals,
+            CreateStaticMesh(new Vector3(-8, 0, -32) * intervals,
                 Quaternion.Identity, [wall, floor], "models/level/corridor_T_shape");
-            CreateStaticRoom(new Vector3(8, 0, -32) * intervals,
+            CreateStaticMesh(new Vector3(8, 0, -32) * intervals,
                 Quaternion.Identity, [wall, floor], "models/level/corridor_T_shape");
 
-            CreateStaticRoom(new Vector3(-16, 0, -32) * intervals,
+            CreateStaticMesh(new Vector3(-16, 0, -32) * intervals,
                 Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
 
 
             // Main Engines
-            CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
+            CreateStaticMesh(new Vector3(0, -4, 28) * intervals,
                 rotateLevel, [placeholder], "models/level/EngineRoom_1");
 
             CreatePhysicsMesh("models/level/EngineRoom_Railing", new Vector3(0, -4, 28) * intervals, rotateLevel,
@@ -211,26 +215,26 @@ namespace anakinsoft.game.scenes
             CreatePhysicsMesh("models/level/EngineRoom_Railing_2", new Vector3(0, -4, 28) * intervals, rotateLevel,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
 
-            CreateStaticRoom(new Vector3(0, -4, 28) * intervals,
+            CreateStaticMesh(new Vector3(0, -4, 28) * intervals,
                 rotateLevel, [placeholder], "models/level/EngineRoom_2");
 
             // Main Facilities
-            CreateStaticRoom(new Vector3(16, 0, -28) * intervals,
+            CreateStaticMesh(new Vector3(16, 0, -28) * intervals,
                 rotateLevel, [placeholder], "models/level/medical_room");
-            CreateStaticRoom(new Vector3(8, 0, -43) * intervals,
+            CreateStaticMesh(new Vector3(8, 0, -43) * intervals,
                 rotateLevel, [placeholder], "models/level/crew_quarters");
-            CreateStaticRoom(new Vector3(-9, 0, -54) * intervals,
+            CreateStaticMesh(new Vector3(-9, 0, -54) * intervals,
                 rotateLevel, [placeholder], "models/level/bathroom");
-            CreateStaticRoom(new Vector3(-20, 0, -28) * intervals,
+            CreateStaticMesh(new Vector3(-20, 0, -28) * intervals,
                 rotateLevel, [placeholder], "models/level/lab");
-            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+            CreateStaticMesh(new Vector3(-16, -2, -48) * intervals,
                 rotateLevel, [placeholder], "models/level/arborium");
 
             //bridge corridor
-            CreateStaticRoom(new Vector3(-16, 0, -78) * intervals,
+            CreateStaticMesh(new Vector3(-16, 0, -78) * intervals,
                 Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
 
-            CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
+            CreateStaticMesh(new Vector3(-16, -2, -48) * intervals,
                 rotateLevel, [placeholder], "models/level/arborium");
 
             CreatePhysicsMesh("models/level/arborium_railing", new Vector3(-16, -2, -48) * intervals, rotateLevel,
@@ -239,13 +243,13 @@ namespace anakinsoft.game.scenes
             //CreateStaticRoom(new Vector3(-16, -2, -48) * intervals,
             //    rotateLevel, [placeholder], "models/level/arborium");
 
-            CreateStaticRoom(new Vector3(-24, 0, -78) * intervals,
+            CreateStaticMesh(new Vector3(-24, 0, -78) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
                 [wall, floor, wall], "models/level/corridor");
-            CreateStaticRoom(new Vector3(-32, 0, -78) * intervals,
+            CreateStaticMesh(new Vector3(-32, 0, -78) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
                 [wall, floor, wall], "models/level/corridor");
-            CreateStaticRoom(new Vector3(-8, 0, -78) * intervals,
+            CreateStaticMesh(new Vector3(-8, 0, -78) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
                 [wall, floor, wall],  "models/level/corridor");
 
@@ -256,7 +260,7 @@ namespace anakinsoft.game.scenes
             //CreateCorridorWithMaterialsAndPhysics(new Vector3(-8, 0, -78) * intervals,
             //    Quaternion.CreateFromYawPitchRoll(0, 0, 0), wall, floor);
 
-            CreateStaticRoom(new Vector3(-4, 0, -78) * intervals,
+            CreateStaticMesh(new Vector3(-4, 0, -78) * intervals,
                 rotateLevel, [placeholder], "models/level/curved_hall");
             CreateCorridorWithMaterialsAndPhysics(new Vector3(16, 0, -102) * intervals,
                 Quaternion.Identity, wall, floor);
@@ -266,17 +270,159 @@ namespace anakinsoft.game.scenes
                 rotateLevel, wall, floor);
 
             // bridge
-            CreateStaticRoom(new Vector3(16, 4, -139) * intervals,
+            CreateStaticMesh(new Vector3(16, 4, -139) * intervals,
                 rotateLevel, [placeholder], "models/level/bridge_prep_rooms");
-            CreateStaticRoom(new Vector3(16, 4, -139) * intervals,
+            CreateStaticMesh(new Vector3(16, 4, -139) * intervals,
                 rotateLevel, [placeholder], "models/level/bridge");
-            CreateStaticRoom(new Vector3(16, 4, -126) * intervals,
+            CreateStaticMesh(new Vector3(16, 4, -126) * intervals,
                 Quaternion.Identity, [wall, floor], "models/level/corridor_X_shape");
             // Create physics ground for collision (visible for testing)
             //CreatePhysicsGround();
 
             // Create test cube in the middle of the scene
             //CreateTestCube();
+            MakeDoors(intervals, doorMat, frameMat);
+
+            MakeInteractiveDoor(intervals, doorMat_2, frameMat_2, doorMat_2A, doorMat_2B);
+
+            // medical furnishings
+            CreateStaticMesh(new Vector3(22, 0, -33) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180,0,0), [placeholder2], "models/props/medical_bed");
+            CreateStaticMesh(new Vector3(22, 0, -28) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), [placeholder2], "models/props/medical_bed");
+            CreateStaticMesh(new Vector3(22, 0, -23) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), [placeholder2], "models/props/medical_bed");
+            CreateStaticMesh(new Vector3(22, 0, -18) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), [placeholder2], "models/props/medical_bed");
+
+            CreateStaticMesh(new Vector3(24, 0, -35) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/medical_structure");
+            CreateStaticMesh(new Vector3(24, 0, -30) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/medical_structure");
+            CreateStaticMesh(new Vector3(24, 0, -25) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/medical_structure");
+            CreateStaticMesh(new Vector3(24, 0, -20) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/medical_structure");
+            CreateStaticMesh(new Vector3(24, 0, -15) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/medical_structure");
+
+            CreateStaticMesh(new Vector3(13, 0, -27) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), [placeholder2], "models/props/medical_desk");
+
+            // crew quarters beds
+            CreateStaticMesh(new Vector3(15, 0, -39) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -43) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -47) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -51) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -55) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -59) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -63) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(15, 0, -67) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+
+            CreateStaticMesh(new Vector3(10, 0, -65) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(10, 0, -64) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(10, 0, -61) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(6, 0, -65) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(6, 0, -64) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(6, 0, -61) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+
+            CreateStaticMesh(new Vector3(10, 0, -50) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(10, 0, -46) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(6, 0, -50) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(6, 0, -46) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/quarter_beds");
+
+            CreateStaticMesh(new Vector3(1, 0, -51) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(1, 0, -55) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(1, 0, -59) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(1, 0, -63) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+            CreateStaticMesh(new Vector3(1, 0, -67) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/quarter_beds");
+
+            // bathroom
+            CreateStaticMesh(new Vector3(-5, -0.1f, -45) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_sink");
+            CreateStaticMesh(new Vector3(-5, -0.1f, -44) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_sink");
+            CreateStaticMesh(new Vector3(-5, -0.1f, -43) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_sink");
+            CreateStaticMesh(new Vector3(-5, -0.1f, -42) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_sink");
+            CreateStaticMesh(new Vector3(-5, -0.1f, -41) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_sink");
+
+            CreateStaticMesh(new Vector3(-5.5f, -0.1f, -45) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/bathroom_stall");
+            CreateStaticMesh(new Vector3(-5.5f, -0.1f, -43) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/bathroom_stall");
+            CreateStaticMesh(new Vector3(-5.5f, -0.1f, -41) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), [placeholder2], "models/props/bathroom_stall");
+
+            CreateStaticMesh(new Vector3(-11f, -0.1f, -39) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
+            CreateStaticMesh(new Vector3(-11f, -0.1f, -41) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
+            CreateStaticMesh(new Vector3(-11f, -0.1f, -43) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
+            CreateStaticMesh(new Vector3(-11f, -0.1f, -45) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
+            CreateStaticMesh(new Vector3(-11f, -0.1f, -47) * intervals,
+                 QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
+
+            // laboratory
+        }
+
+        private void MakeInteractiveDoor(float intervals,
+            Material doorMat_2, Material frameMat_2, Material doorMat_2A, Material doorMat_2B)
+        {
+            CreateInteractiveDoor(new Vector3(0, -4, 49) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0),
+                "Door teleport to AC1", doorMat_2, frameMat_2,
+                (door) =>
+                {
+                    ChainUtilities.ExitGame("AC1");
+                }); //red
+
+            CreateInteractiveDoor(new Vector3(4.7042f, 2.3f, -140.06f) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 97.559f, 0, 0),
+                "Door teleport to AC2", doorMat_2A, frameMat_2,
+                (door) =>
+                {
+                    ChainUtilities.ExitGame("AC2");
+                }); //cyan
+
+            CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
+                "Door teleport to AA1", doorMat_2B, frameMat_2, (door) =>
+                {
+                    ChainUtilities.ExitGame("AA1");
+
+                });//green
+        }
+
+        private void MakeDoors(float intervals, Material doorMat, Material frameMat)
+        {
 
             // Door between first and second corridor sections
             CreateDoor(new Vector3(0, -4, 20) * intervals,
@@ -328,9 +474,9 @@ namespace anakinsoft.game.scenes
                 doorMat, frameMat);
             b3.Lock();
 
-             CreateDoor(new Vector3(-4, 0, -78) * intervals,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
-                doorMat, frameMat);
+            CreateDoor(new Vector3(-4, 0, -78) * intervals,
+               QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
+               doorMat, frameMat);
             CreateDoor(new Vector3(16, 0, -98) * intervals,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
                 doorMat, frameMat);
@@ -352,45 +498,6 @@ namespace anakinsoft.game.scenes
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
                 doorMat, frameMat);
 
-            // Create interactive doors for teleportation/special actions
-            //CreateInteractiveDoor(new Vector3(16, 0, -28) * intervals,
-            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0),
-            //    "Medical Bay", doorMat, frameMat);
-
-            //CreateInteractiveDoor(new Vector3(-20, 0, -24) * intervals,
-            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
-            //    "Laboratory", doorMat, frameMat);
-
-            //CreateInteractiveDoor(new Vector3(8, 0, -47) * intervals,
-            //    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0),
-            //    "Crew Quarters", doorMat, frameMat);
-
-            CreateInteractiveDoor(new Vector3(0, -4, 49) * intervals,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0),
-                "Door teleport to AC1", doorMat_2, frameMat_2,
-                (door) =>
-                {
-                    ChainUtilities.ExitGame("AC1");
-                }); //red
-
-            CreateInteractiveDoor(new Vector3(4.7042f, 2.3f, -140.06f) * intervals,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 97.559f, 0, 0),
-                "Door teleport to AC2", doorMat_2A, frameMat_2,
-                (door) =>
-                {
-                    ChainUtilities.ExitGame("AC2");
-                }); //cyan
-
-            CreateInteractiveDoor(new Vector3(27.347f, 2.3f, -139.97f) * intervals,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180 - 264.17f, 0, 0),
-                "Door teleport to AA1", doorMat_2B, frameMat_2, (door) =>
-                {
-                    ChainUtilities.ExitGame("AA1");
-
-                });//green
-
-
-
 
         }
 
@@ -408,7 +515,7 @@ namespace anakinsoft.game.scenes
             );
         }
 
-        private void CreateStaticRoom(Vector3 offset, Quaternion rotation, Material[] mats, string mesh, bool  flipPhys = false)
+        private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh, bool  flipPhys = false)
         {
             // Create three different materials for the corridor channels using actual texture files
 

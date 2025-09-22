@@ -83,7 +83,8 @@ scene:
   # - "interactiveTest" (Interactive Test Scene)
   # - "bepuInteraction" (BEPU Physics Interaction)
   # - "rtsTerrainTest"
-  defaultScene: "rtsTerrainTest"
+  # "terrain"
+  defaultScene: "corridor"
   
   # Whether to show scene selection menu on startup
   showSceneMenu: false

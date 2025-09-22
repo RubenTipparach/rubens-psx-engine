@@ -1,0 +1,45 @@
+game:
+  name: DERILICT
+  version: 1.0.0
+  developer: Rubens Studio
+dither:
+  renderWidth: 320
+  renderHeight: 180
+  strength: 0.8
+  colorLevels: 6
+  usePointSampling: true
+bloom:
+  preset: 6
+  threshold: 
+  intensity: 
+  blurAmount: 
+tint:
+  enabled: false
+  color:
+  - 1
+  - 1
+  - 1
+  - 1
+  intensity: 1
+rendering:
+  enablePostProcessing: true
+  scaleMode: nearest
+  maintainAspectRatio: true
+  antialiasing:
+    enabled: false
+    sampleCount: 4
+  uI:
+    useNativeResolution: true
+    scaleFactor: 1
+input:
+  lockMouse: false
+scene:
+  defaultScene: thirdPersonSandbox
+  showSceneMenu: false
+  directLevel: default
+development:
+  enableScreenshots: true
+  screenshotDirectory: screenshots
+  showStaticMeshDebug: false
+  openLogsOnExit: false
+  showErrorDialogs: true

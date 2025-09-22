@@ -18,7 +18,7 @@ namespace anakinsoft.game.scenes
         CorridorScene corridorScene;
 
         // Camera offset configuration
-        public Vector3 CameraOffset = new Vector3(0, 15, 0); // Y offset to mount camera above character center
+        public Vector3 CameraOffset = new Vector3(0, 17.5f, 0); // Y offset to mount camera above character center
         public Vector3 CameraLookOffset = new Vector3(0, -3, 0); // Additional offset for look direction
 
         public CorridorScreen()

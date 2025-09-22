@@ -14,7 +14,10 @@
       "Bash(start /B dotnet run:*)",
       "Bash(powershell:*)",
       "Bash(taskkill /F /IM rubens-psx-engine.exe)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []
