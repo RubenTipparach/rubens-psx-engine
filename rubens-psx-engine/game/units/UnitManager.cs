@@ -30,7 +30,6 @@ namespace rubens_psx_engine.game.units
 
         public IReadOnlyList<Unit> Units => units.AsReadOnly();
         public IReadOnlyList<Unit> SelectedUnits => selectedUnits.AsReadOnly();
-        float overallUnitSize = .02f;
 
         public UnitManager()
         {
@@ -89,7 +88,7 @@ namespace rubens_psx_engine.game.units
             System.Console.WriteLine("Unit materials assigned to UnitManager");
         }
 
-        public void CreateUnit(UnitType type, Vector3 position, Color teamColor, string name = null)
+        public void CreateUnit(UnitType type, Vector3 position, Color teamColor, float overallUnitSize, string name = null)
         {
             if (name == null)
             {

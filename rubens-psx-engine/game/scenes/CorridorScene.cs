@@ -391,6 +391,13 @@ namespace anakinsoft.game.scenes
                  QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0), [placeholder2], "models/props/bathroom_shower");
 
             // laboratory
+
+            CreateStaticMesh(new Vector3(-26, 0, -34) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0), [placeholder2], "models/props/lab_container");
+            CreateStaticMesh(new Vector3(-26, 0, -28) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0), [placeholder2], "models/props/lab_container");
+            CreateStaticMesh(new Vector3(-26, 0, -22) * intervals,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0), [placeholder2], "models/props/lab_container");
         }
 
         private void MakeInteractiveDoor(float intervals,

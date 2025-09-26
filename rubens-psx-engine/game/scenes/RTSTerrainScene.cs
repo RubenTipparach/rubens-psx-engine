@@ -56,6 +56,9 @@ namespace rubens_psx_engine.game.scenes
         private List<VertexPositionColor> wireframeVertices;
         private List<short> wireframeIndices;
 
+        float overallUnitSize = .02f;
+
+
         public RTSTerrainScene(RTSCamera camera) : base(null) // No physics needed for this scene
         {
             rtsCamera = camera;
@@ -627,7 +630,7 @@ namespace rubens_psx_engine.game.scenes
                     terrainDepth * 0.25f + i * 2
                 );
                 unitPos.Y = terrainData.GetHeightAt(unitPos.X, unitPos.Z) + 1.0f;
-                unitManager.CreateUnit(UnitType.Worker, unitPos, Color.Blue, $"Worker {i + 1}" );
+                unitManager.CreateUnit(UnitType.Worker, unitPos, Color.Blue, overallUnitSize, $"Worker {i + 1}" );
             }
 
             // Create a soldier near the bridge
@@ -637,7 +640,7 @@ namespace rubens_psx_engine.game.scenes
                 terrainDepth * 0.2f
             );
             soldierPos.Y = terrainData.GetHeightAt(soldierPos.X, soldierPos.Z) + 1.0f;
-            unitManager.CreateUnit(UnitType.Soldier, soldierPos, Color.Blue, "Guard");
+            unitManager.CreateUnit(UnitType.Soldier, soldierPos, Color.Blue, overallUnitSize, "Guard");
         }
 
         private void DrawDebugWireframes()
