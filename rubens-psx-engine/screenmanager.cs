@@ -296,9 +296,22 @@ namespace rubens_psx_engine
         protected override void Draw(GameTime gameTime)
         {
             // Always use RetroRenderer system now (BloomComponent is deprecated)
-            // Post-processing can be enabled/disabled via config
+            // Post-processing can be enabled/disabled via config or screen override
             var config = rubens_psx_engine.system.config.RenderingConfigManager.Config;
             bool usePostProcessing = config.Rendering.EnablePostProcessing;
+
+            // Check if the top screen overrides post-processing
+            if (screens.Count > 0 && screens[screens.Count - 1] != null)
+            {
+                var screenPostProcessingOverride = screens[screens.Count - 1].OverridePostProcessing();
+                if (screenPostProcessingOverride.HasValue)
+                {
+                    usePostProcessing = screenPostProcessingOverride.Value;
+                }
+            }
+
+            // Apply post-processing setting to RetroRenderer
+            retroRenderer.PostProcessStack.Enabled = usePostProcessing;
             bool useNativeUI = config.Rendering.UI.UseNativeResolution;
 
             // PHASE 1: Render 3D world (always use RetroRenderer for consistent behavior)

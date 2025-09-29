@@ -31,6 +31,10 @@ namespace rubens_psx_engine.system
                 "bepuInteraction" => new BepuInteractionScreen(),
                 "rtsTerrainTest" => new RTSTerrainScreen(),
                 "terrain" => new TerrainScreen(),
+                "proceduralPlanet" => new ProceduralPlanetTestScreen(),
+                "advancedPlanetEditor" => new AdvancedPlanetEditorScreen(),
+                "icosahedronPlanetEditor" => new IcosahedronPlanetEditorScreen(),
+                "advancedProceduralPlanet" => new AdvancedProceduralPlanetScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };
         }
@@ -89,7 +93,11 @@ namespace rubens_psx_engine.system
                 "interactiveTest",
                 "bepuInteraction",
                 "rtsTerrainTest",
-                "terrain"
+                "terrain",
+                "proceduralPlanet",
+                "advancedPlanetEditor",
+                "icosahedronPlanetEditor",
+                "advancedProceduralPlanet"
             };
         }
 
@@ -115,6 +123,10 @@ namespace rubens_psx_engine.system
                 "bepuInteraction" => "BEPU Physics Interaction",
                 "rtsTerrainTest" => "RTS Terrain Demo",
                 "terrain" => "Podracer Terrain Scene",
+                "proceduralPlanet" => "Procedural Planet Test",
+                "advancedPlanetEditor" => "Advanced Planet Editor",
+                "icosahedronPlanetEditor" => "Icosahedron Planet Editor",
+                "advancedProceduralPlanet" => "Advanced Procedural Planet",
                 _ => "Unknown Scene"
             };
         }

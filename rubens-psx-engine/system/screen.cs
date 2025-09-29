@@ -106,6 +106,14 @@ namespace rubens_psx_engine
             return null; // Return null to use global default
         }
 
+        /// <summary>
+        /// Override post-processing setting for this screen. Return null to use global config setting.
+        /// </summary>
+        public virtual bool? OverridePostProcessing()
+        {
+            return null; // Return null to use global config default
+        }
+
         #region IDisposable Implementation
         
         private bool disposed = false;

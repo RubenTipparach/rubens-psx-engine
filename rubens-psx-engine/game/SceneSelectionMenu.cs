@@ -30,7 +30,11 @@ namespace rubens_psx_engine
                 ("Wireframe Cube Test", "wireframeTest"),
                 ("Static Mesh Demo", "staticMeshDemo"),
                 ("Interactive Test Scene", "interactiveTest"),
-                ("BEPU Physics Interaction", "bepuInteraction")
+                ("BEPU Physics Interaction", "bepuInteraction"),
+                ("Procedural Planet Test", "proceduralPlanet"),
+                ("Advanced Planet Editor", "advancedPlanetEditor"),
+                ("Icosahedron Planet Editor", "icosahedronPlanetEditor"),
+                ("Advanced Procedural Planet", "advancedProceduralPlanet")
             };
 
             // Create buttons dynamically based on position in list

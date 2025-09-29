@@ -11,3 +11,5 @@ rubens-psx-engine/Tools/TerrainGenerator/obj/
 ProceduralTerrain/obj/
 ProceduralTerrain/bin/
 *.log
+nul
+rubens-psx-engine/heightmap_*

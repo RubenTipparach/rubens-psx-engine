@@ -84,7 +84,7 @@ scene:
   # - "bepuInteraction" (BEPU Physics Interaction)
   # - "rtsTerrainTest"
   # "terrain"
-  defaultScene: "corridor"
+  defaultScene: "advancedProceduralPlanet"
   
   # Whether to show scene selection menu on startup
   showSceneMenu: false

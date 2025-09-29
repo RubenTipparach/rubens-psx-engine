@@ -133,7 +133,7 @@ namespace rubens_psx_engine.game.units
                 worldPosition.Y = 1.0f; // Default height if no terrain
             }
 
-            CreateUnit(type, worldPosition, teamColor, name );
+            CreateUnit(type, worldPosition, teamColor, 1.0f, name);
         }
 
         public void Update(GameTime gameTime, rubens_psx_engine.RTSCamera camera)
