@@ -38,12 +38,16 @@ namespace anakinsoft.game.scenes
         private float planetNormalMapStrength = 0.5f;
         private float planetDayNightTransition = 0.5f;
         private float planetSpecularIntensity = 0.1f;
+        private float planetRotationSpeed = 0.0f;
         private float waterUVScale = 1.0f;
         private float waterWaveFrequency = 1.0f;
         private float waterWaveAmplitude = 1.0f;
         private float waterNormalStrength = 1.0f;
         private float waterDistortion = 1.0f;
         private float waterScrollSpeed = 1.0f;
+
+        // Rotation state
+        private float planetRotationAngle = 0.0f;
 
         public AdvancedProceduralPlanetScreen()
         {
@@ -179,9 +183,20 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(specularSlider);
 
+            // Planet Rotation Speed
+            var rotationSpeedSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 7, sliderWidth, sliderHeight),
+                -2.0f, 2.0f, 0.0f,
+                "Rotation Speed", font);
+            rotationSpeedSlider.ValueChanged += value =>
+            {
+                planetRotationSpeed = value;
+            };
+            sliders.Add(rotationSpeedSlider);
+
             // Water UV Scale
             var waterUVScaleSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 7, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Water UV Scale", font);
             waterUVScaleSlider.ValueChanged += value =>
@@ -192,7 +207,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Frequency
             var waterFreqSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Frequency", font);
             waterFreqSlider.ValueChanged += value =>
@@ -203,7 +218,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Amplitude
             var waterAmpSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Amplitude", font);
             waterAmpSlider.ValueChanged += value =>
@@ -214,7 +229,7 @@ namespace anakinsoft.game.scenes
 
             // Water Normal Strength
             var waterNormalSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Normal Str", font);
             waterNormalSlider.ValueChanged += value =>
@@ -225,7 +240,7 @@ namespace anakinsoft.game.scenes
 
             // Water Distortion
             var waterDistortionSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Distortion", font);
             waterDistortionSlider.ValueChanged += value =>
@@ -236,7 +251,7 @@ namespace anakinsoft.game.scenes
 
             // Water Scroll Speed
             var waterScrollSpeedSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 13, sliderWidth, sliderHeight),
                 0.0f, 5.0f, 1.0f,
                 "Wave Scroll Speed", font);
             waterScrollSpeedSlider.ValueChanged += value =>
@@ -254,6 +269,9 @@ namespace anakinsoft.game.scenes
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
+
+            // Update planet rotation
+            planetRotationAngle += planetRotationSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
         }
 
         public override void UpdateInput(GameTime gameTime)
@@ -378,8 +396,8 @@ namespace anakinsoft.game.scenes
             gd.DepthStencilState = DepthStencilState.Default;
             gd.BlendState = BlendState.Opaque;
 
-            // Draw planet (no rotation)
-            Matrix world = Matrix.Identity;
+            // Draw planet with rotation around Y axis
+            Matrix world = Matrix.CreateRotationY(planetRotationAngle);
 
             if (useVertexColoring || planetShader == null)
             {

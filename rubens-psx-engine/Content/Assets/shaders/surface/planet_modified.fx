@@ -37,9 +37,9 @@ float DayNightTransition = 0.5; // 0 to 1, controls terminator harshness (0=shar
 sampler HeightmapSampler = sampler_state
 {
     Texture = <HeightmapTexture>;
-    MinFilter = POINT;
-    MagFilter = POINT;
-    MipFilter = NONE;
+    MinFilter = LINEAR;
+    MagFilter = LINEAR;
+    MipFilter = LINEAR;
     AddressU = WRAP;
     AddressV = WRAP;
 };
@@ -160,17 +160,28 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     // Get terrain color based on height
     float3 terrainColor = GetTerrainColor(height);
 
-    // Calculate normal from heightmap using offset sampling
-    float ts = 1.0 / 1024.0;
-    float2 ox = float2(ts, 0);
-    float2 oy = float2(0, ts);
-    float hL = tex2D(HeightmapSampler, input.TexCoord - ox).r;
-    float hR = tex2D(HeightmapSampler, input.TexCoord + ox).r;
-    float hD = tex2D(HeightmapSampler, input.TexCoord - oy).r;
-    float hU = tex2D(HeightmapSampler, input.TexCoord + oy).r;
+    // Calculate normal from heightmap using screen-space derivatives
+    // Get world-space derivatives of position
+    float3 worldDerivativeX = ddx(input.WorldPosition);
+    float3 worldDerivativeY = ddy(input.WorldPosition);
 
-    // Calculate and blend normal in one step
-    float3 normal = normalize(lerp(input.WorldNormal, float3(hL - hR, 2.0, hD - hU), NormalMapStrength));
+    // Get height derivatives
+    float dHdx = ddx(height);
+    float dHdy = ddy(height);
+
+    // Calculate tangent-space gradient
+    float3 vertexNormal = normalize(input.WorldNormal);
+    float3 crossX = cross(vertexNormal, worldDerivativeX);
+    float3 crossY = cross(worldDerivativeY, vertexNormal);
+
+    float d = dot(worldDerivativeX, crossY);
+    float sgn = d < 0.0 ? -1.0 : 1.0;
+    float surface = sgn / max(0.00000001, abs(d));
+
+    float3 surfaceGrad = surface * (dHdx * crossY + dHdy * crossX);
+    float3 heightmapNormal = normalize(vertexNormal - NormalMapStrength * surfaceGrad);
+
+    float3 normal = heightmapNormal;
 
     float3 lightDir = normalize(-DirectionalLightDirection);
     float3 viewDir = normalize(CameraPosition - input.WorldPosition);
