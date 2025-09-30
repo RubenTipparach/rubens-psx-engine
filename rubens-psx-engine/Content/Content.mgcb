@@ -848,6 +848,12 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/File.fx;Assets/shaders/File
 
+#begin Assets/shaders/PlanetShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/PlanetShader.fx;shaders/PlanetShader
+
 #begin Assets/shaders/postprocess/BloomCombine.fx
 /importer:EffectImporter
 /processor:EffectProcessor
