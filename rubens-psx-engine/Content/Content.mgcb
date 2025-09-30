@@ -659,25 +659,6 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/models/props/medical_bed.fbx;Assets/models/props/medical_bed
 
-#begin Assets/models/props/medical_bed.fbx
-/importer:FbxImporter
-/processor:ModelProcessor
-/processorParam:ColorKeyColor=0,0,0,0
-/processorParam:ColorKeyEnabled=True
-/processorParam:DefaultEffect=BasicEffect
-/processorParam:GenerateMipmaps=True
-/processorParam:GenerateTangentFrames=False
-/processorParam:PremultiplyTextureAlpha=True
-/processorParam:PremultiplyVertexColors=True
-/processorParam:ResizeTexturesToPowerOfTwo=False
-/processorParam:RotationX=0
-/processorParam:RotationY=0
-/processorParam:RotationZ=0
-/processorParam:Scale=1
-/processorParam:SwapWindingOrder=False
-/processorParam:TextureFormat=Compressed
-/build:Assets/models/props/medical_bed.fbx;Assets/models/props/medical_bed
-
 #begin Assets/models/props/medical_desk.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
@@ -696,44 +677,6 @@
 /processorParam:SwapWindingOrder=False
 /processorParam:TextureFormat=Compressed
 /build:Assets/models/props/medical_desk.fbx;Assets/models/props/medical_desk
-
-#begin Assets/models/props/medical_desk.fbx
-/importer:FbxImporter
-/processor:ModelProcessor
-/processorParam:ColorKeyColor=0,0,0,0
-/processorParam:ColorKeyEnabled=True
-/processorParam:DefaultEffect=BasicEffect
-/processorParam:GenerateMipmaps=True
-/processorParam:GenerateTangentFrames=False
-/processorParam:PremultiplyTextureAlpha=True
-/processorParam:PremultiplyVertexColors=True
-/processorParam:ResizeTexturesToPowerOfTwo=False
-/processorParam:RotationX=0
-/processorParam:RotationY=0
-/processorParam:RotationZ=0
-/processorParam:Scale=1
-/processorParam:SwapWindingOrder=False
-/processorParam:TextureFormat=Compressed
-/build:Assets/models/props/medical_desk.fbx;Assets/models/props/medical_desk
-
-#begin Assets/models/props/medical_structure.fbx
-/importer:FbxImporter
-/processor:ModelProcessor
-/processorParam:ColorKeyColor=0,0,0,0
-/processorParam:ColorKeyEnabled=True
-/processorParam:DefaultEffect=BasicEffect
-/processorParam:GenerateMipmaps=True
-/processorParam:GenerateTangentFrames=False
-/processorParam:PremultiplyTextureAlpha=True
-/processorParam:PremultiplyVertexColors=True
-/processorParam:ResizeTexturesToPowerOfTwo=False
-/processorParam:RotationX=0
-/processorParam:RotationY=0
-/processorParam:RotationZ=0
-/processorParam:Scale=1
-/processorParam:SwapWindingOrder=False
-/processorParam:TextureFormat=Compressed
-/build:Assets/models/props/medical_structure.fbx;Assets/models/props/medical_structure
 
 #begin Assets/models/props/medical_structure.fbx
 /importer:FbxImporter
@@ -848,11 +791,6 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/File.fx;Assets/shaders/File
 
-#begin Assets/shaders/PlanetShader.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Assets/shaders/PlanetShader.fx;shaders/PlanetShader
 
 #begin Assets/shaders/postprocess/BloomCombine.fx
 /importer:EffectImporter
@@ -890,6 +828,12 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/BakedVertexLit.fx;Assets/shaders/surface/BakedVertexLit
 
+#begin Assets/shaders/surface/planet_modified.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/planet_modified.fx;Assets/shaders/surface/planet_modified
+
 #begin Assets/shaders/surface/Unlit.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -907,6 +851,12 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/VertexLitStandard.fx;Assets/shaders/surface/VertexLitStandard
+
+#begin Assets/shaders/WaterShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/WaterShader.fx;Assets/shaders/WaterShader
 
 #begin Assets/sound/click.wav
 /importer:WavImporter

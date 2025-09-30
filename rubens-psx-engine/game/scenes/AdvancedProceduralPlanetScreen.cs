@@ -24,7 +24,6 @@ namespace anakinsoft.game.scenes
 
         private ProceduralPlanetGenerator planetGenerator;
         private WaterSphereRenderer waterSphere;
-        private BasicEffect heightmapEffect;
         private BasicEffect vertexColorEffect;
         private Effect planetShader;
         private bool useVertexColoring = false;
@@ -34,6 +33,17 @@ namespace anakinsoft.game.scenes
         private List<Slider> sliders;
         private Texture2D pixelTexture;
         private bool showUI = true;
+
+        // Shader parameters
+        private float planetNormalMapStrength = 0.5f;
+        private float planetDayNightTransition = 0.5f;
+        private float planetSpecularIntensity = 0.1f;
+        private float waterUVScale = 1.0f;
+        private float waterWaveFrequency = 1.0f;
+        private float waterWaveAmplitude = 1.0f;
+        private float waterNormalStrength = 1.0f;
+        private float waterDistortion = 1.0f;
+        private float waterScrollSpeed = 1.0f;
 
         public AdvancedProceduralPlanetScreen()
         {
@@ -55,9 +65,16 @@ namespace anakinsoft.game.scenes
             vertexColorEffect.LightingEnabled = false;
 
             // Load custom planet shader
-            planetShader = Globals.screenManager.Content.Load<Effect>("shaders/surface/Unlit");
+            try
+            {
+                planetShader = Globals.screenManager.Content.Load<Effect>("shaders/surface/planet_modified");
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"Failed to load Planet shader: {ex.Message} " + ex.StackTrace );
+                planetShader = null;
+            }
 
-     
             // Create UI
             CreateUI(gd);
 
@@ -128,6 +145,105 @@ namespace anakinsoft.game.scenes
                 RegeneratePlanet();
             };
             sliders.Add(mountainHeightSlider);
+
+            // Planet Normal Map Strength
+            var normalMapStrengthSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
+                -10.0f, 10.0f, 0.5f,
+                "Normal Map Str", font);
+            normalMapStrengthSlider.ValueChanged += value =>
+            {
+                planetNormalMapStrength = value;
+            };
+            sliders.Add(normalMapStrengthSlider);
+
+            // Planet Day/Night Transition
+            var dayNightSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
+                0.0f, 1.0f, 0.5f,
+                "Day/Night Trans", font);
+            dayNightSlider.ValueChanged += value =>
+            {
+                planetDayNightTransition = value;
+            };
+            sliders.Add(dayNightSlider);
+
+            // Planet Specular Intensity
+            var specularSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
+                0.0f, 1.0f, 0.1f,
+                "Specular Intensity", font);
+            specularSlider.ValueChanged += value =>
+            {
+                planetSpecularIntensity = value;
+            };
+            sliders.Add(specularSlider);
+
+            // Water UV Scale
+            var waterUVScaleSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 7, sliderWidth, sliderHeight),
+                0.1f, 5.0f, 1.0f,
+                "Water UV Scale", font);
+            waterUVScaleSlider.ValueChanged += value =>
+            {
+                waterUVScale = value;
+            };
+            sliders.Add(waterUVScaleSlider);
+
+            // Water Wave Frequency
+            var waterFreqSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
+                0.1f, 5.0f, 1.0f,
+                "Wave Frequency", font);
+            waterFreqSlider.ValueChanged += value =>
+            {
+                waterWaveFrequency = value;
+            };
+            sliders.Add(waterFreqSlider);
+
+            // Water Wave Amplitude
+            var waterAmpSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
+                0.1f, 5.0f, 1.0f,
+                "Wave Amplitude", font);
+            waterAmpSlider.ValueChanged += value =>
+            {
+                waterWaveAmplitude = value;
+            };
+            sliders.Add(waterAmpSlider);
+
+            // Water Normal Strength
+            var waterNormalSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
+                0.0f, 3.0f, 1.0f,
+                "Wave Normal Str", font);
+            waterNormalSlider.ValueChanged += value =>
+            {
+                waterNormalStrength = value;
+            };
+            sliders.Add(waterNormalSlider);
+
+            // Water Distortion
+            var waterDistortionSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
+                0.0f, 3.0f, 1.0f,
+                "Wave Distortion", font);
+            waterDistortionSlider.ValueChanged += value =>
+            {
+                waterDistortion = value;
+            };
+            sliders.Add(waterDistortionSlider);
+
+            // Water Scroll Speed
+            var waterScrollSpeedSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
+                0.0f, 5.0f, 1.0f,
+                "Wave Scroll Speed", font);
+            waterScrollSpeedSlider.ValueChanged += value =>
+            {
+                waterScrollSpeed = value;
+            };
+            sliders.Add(waterScrollSpeedSlider);
         }
 
         private void RegeneratePlanet()
@@ -218,6 +334,7 @@ namespace anakinsoft.game.scenes
                                 "ESC = Menu\\n\\n" +
                                 "Features: High-LOD terrain mesh\\n" +
                                 "Custom terrain shader with gradients\\n" +
+                                "Simple directional lighting (sun)\\n" +
                                 "Separate animated water sphere\\n" +
                                 "Pure terrain heightmaps (no water data)";
 
@@ -239,7 +356,7 @@ namespace anakinsoft.game.scenes
             getSpriteBatch.DrawString(Globals.fontNTR, seedText, seedPos, Color.Yellow);
 
             // Draw current rendering mode
-            string modeText = $"Rendering Mode: {(useVertexColoring ? "Vertex Colors (Height Map)" : (planetShader != null ? "Custom Planet Shader" : "Basic Heightmap Texture"))}";
+            string modeText = $"Rendering Mode: {(useVertexColoring ? "Vertex Colors (Height Map)" : (planetShader != null ? "Planet Shader (Directional Light)" : "Basic Heightmap Texture"))}";
             Vector2 modePos = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 60);
             getSpriteBatch.DrawString(Globals.fontNTR, modeText, modePos + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, modeText, modePos, Color.Orange);
@@ -264,7 +381,7 @@ namespace anakinsoft.game.scenes
             // Draw planet (no rotation)
             Matrix world = Matrix.Identity;
 
-            if (useVertexColoring)
+            if (useVertexColoring || planetShader == null)
             {
                 // Use vertex color effect for height visualization
                 vertexColorEffect.World = world;
@@ -278,10 +395,14 @@ namespace anakinsoft.game.scenes
                 planetShader.Parameters["World"].SetValue(world);
                 planetShader.Parameters["View"].SetValue(camera.View);
                 planetShader.Parameters["Projection"].SetValue(camera.Projection);
-                planetShader.Parameters["WorldInverseTranspose"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
-                planetShader.Parameters["CameraPosition"].SetValue(camera.Position);
-                planetShader.Parameters["HeightmapTexture"].SetValue(planetGenerator.HeightmapTexture);
-                planetShader.Parameters["NormalMapTexture"].SetValue(planetGenerator.NormalMapTexture);
+                planetShader.Parameters["WorldInverseTranspose"]?.SetValue(Matrix.Transpose(Matrix.Invert(world)));
+                planetShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
+                planetShader.Parameters["HeightmapTexture"]?.SetValue(planetGenerator.HeightmapTexture);
+
+                // Set user-controllable parameters
+                planetShader.Parameters["NormalMapStrength"]?.SetValue(planetNormalMapStrength);
+                planetShader.Parameters["DayNightTransition"]?.SetValue(planetDayNightTransition);
+                planetShader.Parameters["SpecularIntensity"]?.SetValue(planetSpecularIntensity);
 
                 planetGenerator.Draw(gd, world, camera.View, camera.Projection, planetShader, false);
             }
@@ -289,7 +410,8 @@ namespace anakinsoft.game.scenes
             // Draw water sphere if enabled
             if (showWater)
             {
-                waterSphere.Draw(gd, world, camera.View, camera.Projection, gameTime, planetGenerator.Parameters);
+                waterSphere.Draw(gd, world, camera.View, camera.Projection, gameTime, planetGenerator.Parameters,
+                    waterUVScale, waterWaveFrequency, waterWaveAmplitude, waterNormalStrength, waterDistortion, waterScrollSpeed);
             }
         }
 
@@ -299,7 +421,6 @@ namespace anakinsoft.game.scenes
             {
                 planetGenerator?.Dispose();
                 waterSphere?.Dispose();
-                heightmapEffect?.Dispose();
                 vertexColorEffect?.Dispose();
                 planetShader?.Dispose();
                 pixelTexture?.Dispose();

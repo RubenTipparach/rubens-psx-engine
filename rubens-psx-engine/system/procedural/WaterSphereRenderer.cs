@@ -34,14 +34,14 @@ namespace rubens_psx_engine.system.procedural
             fallbackEffect.DiffuseColor = new Vector3(0.1f, 0.3f, 0.6f); // Water blue
             fallbackEffect.Alpha = 0.7f; // Transparency
 
-            // Try to load water shader
+           // Try to load water shader
             try
             {
                 waterShader = rubens_psx_engine.Globals.screenManager.Content.Load<Effect>("shaders/WaterShader");
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Failed to load water shader: {ex.Message}");
+                System.Console.WriteLine($"Failed to load water shader: {ex.Message} " + ex.StackTrace);
                 waterShader = null;
             }
         }
@@ -154,8 +154,9 @@ namespace rubens_psx_engine.system.procedural
 
         private Vector2 GetUVForSpherePosition(Vector3 spherePos)
         {
-            float u = 0.5f + MathF.Atan2(spherePos.Z, spherePos.X) / (2.0f * MathF.PI);
-            float v = 0.5f - MathF.Asin(spherePos.Y) / MathF.PI;
+            // Proper spherical UV mapping
+            float u = MathF.Atan2(spherePos.X, spherePos.Z) / (2.0f * MathF.PI) + 0.5f;
+            float v = MathF.Asin(MathHelper.Clamp(spherePos.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
             return new Vector2(u, v);
         }
 
@@ -167,7 +168,8 @@ namespace rubens_psx_engine.system.procedural
             GenerateWaterSphere(3); // Regenerate with current radius
         }
 
-        public void Draw(GraphicsDevice device, Matrix world, Matrix view, Matrix projection, GameTime gameTime, PlanetParameters parameters)
+        public void Draw(GraphicsDevice device, Matrix world, Matrix view, Matrix projection, GameTime gameTime, PlanetParameters parameters,
+            float uvScale = 1.0f, float waveFrequency = 1.0f, float waveAmplitude = 1.0f, float normalStrength = 1.0f, float distortion = 1.0f, float scrollSpeed = 1.0f)
         {
             device.SetVertexBuffer(vertexBuffer);
             device.Indices = indexBuffer;
@@ -199,8 +201,15 @@ namespace rubens_psx_engine.system.procedural
                 // Set water-specific parameters
                 waterShader.Parameters["WaterTransparency"]?.SetValue(0.7f);
                 waterShader.Parameters["WaveHeight"]?.SetValue(0.02f);
-                waterShader.Parameters["WaveFrequency"]?.SetValue(15.0f);
                 waterShader.Parameters["WaveSpeed"]?.SetValue(2.0f);
+
+                // Set user-controllable parameters
+                waterShader.Parameters["WaveUVScale"]?.SetValue(uvScale);
+                waterShader.Parameters["WaveFrequency"]?.SetValue(waveFrequency);
+                waterShader.Parameters["WaveAmplitude"]?.SetValue(waveAmplitude);
+                waterShader.Parameters["WaveNormalStrength"]?.SetValue(normalStrength);
+                waterShader.Parameters["WaveDistortion"]?.SetValue(distortion);
+                waterShader.Parameters["WaveScrollSpeed"]?.SetValue(scrollSpeed);
 
                 foreach (var pass in waterShader.CurrentTechnique.Passes)
                 {
