@@ -10,9 +10,11 @@ namespace anakinsoft.system.cameras
         private float moveSpeed = 20f;
         private float fastMoveSpeed = 60f;
         private float rotationSpeed = 0.003f;
+        private float rollSpeed = 1.5f;
 
         private Vector3 velocity;
         private float friction = 0.9f;
+        private float roll = 0f;
 
         private bool isRightMouseDown = false;
         private Point lastMousePosition;
@@ -37,6 +39,10 @@ namespace anakinsoft.system.cameras
             Vector3 directionToPlanet = Vector3.Normalize(position- Vector3.Zero);
             yaw = MathF.Atan2(directionToPlanet.X, directionToPlanet.Z);
             pitch = MathF.Asin(-directionToPlanet.Y);
+
+            NearFarPlane = new Vector2(.001f, 1000f);
+            float aspectRatio = graphicsDevice.Viewport.AspectRatio;
+            Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, NearFarPlane.X, NearFarPlane.Y);
 
             UpdateVectors();
         }
@@ -127,11 +133,17 @@ namespace anakinsoft.system.cameras
             if (keyboardState.IsKeyDown(Keys.D))
                 moveVector += Right;
 
-            // Up/Down (Q/E or Space/Ctrl)
-            if (keyboardState.IsKeyDown(Keys.Q) || keyboardState.IsKeyDown(Keys.Space))
+            // Up/Down (Space/Ctrl)
+            if (keyboardState.IsKeyDown(Keys.Space))
                 moveVector += Vector3.Up;
-            if (keyboardState.IsKeyDown(Keys.E) || keyboardState.IsKeyDown(Keys.LeftControl))
+            if (keyboardState.IsKeyDown(Keys.LeftControl))
                 moveVector -= Vector3.Up;
+
+            // Camera Roll (Q/E)
+            if (keyboardState.IsKeyDown(Keys.Q))
+                roll += rollSpeed * deltaTime;
+            if (keyboardState.IsKeyDown(Keys.E))
+                roll -= rollSpeed * deltaTime;
 
             // Normalize and apply speed
             if (moveVector != Vector3.Zero)
@@ -143,8 +155,8 @@ namespace anakinsoft.system.cameras
 
         private void UpdateVectors()
         {
-            // Use the same coordinate system as base Camera class
-            Forward = Vector3.Normalize(Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(yaw, pitch, 0)));
+            // Use the same coordinate system as base Camera class with roll support
+            Forward = Vector3.Normalize(Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(yaw, pitch, roll)));
             Right = Vector3.Normalize(Vector3.Cross(Forward, Vector3.Up));
             Up = Vector3.Normalize(Vector3.Cross(Right, Forward));
 

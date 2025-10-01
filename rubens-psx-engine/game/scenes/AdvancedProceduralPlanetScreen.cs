@@ -23,11 +23,20 @@ namespace anakinsoft.game.scenes
         }
 
         private ProceduralPlanetGenerator planetGenerator;
+        private ChunkedPlanetRenderer chunkedPlanet;
         private WaterSphereRenderer waterSphere;
-        private BasicEffect vertexColorEffect;
         private Effect planetShader;
         private bool useVertexColoring = false;
         private bool showWater = true;
+        private bool useChunkedRenderer = true;
+        private bool showWireframe = false;
+
+        // Performance monitoring
+        private int frameCount = 0;
+        private double elapsedTime = 0;
+        private float currentFPS = 0;
+        private float minFPS = float.MaxValue;
+        private float maxFPS = 0;
 
         // UI
         private List<Slider> sliders;
@@ -56,17 +65,14 @@ namespace anakinsoft.game.scenes
             // Create editor camera positioned to look at planet
             camera = new EditorCamera(gd, new Vector3(0, 15, 60));
 
-            // Create procedural planet generator
+            // Create procedural planet generator (old system)
             planetGenerator = new ProceduralPlanetGenerator(gd, radius: 20f, heightmapResolution: 1024);
+
+            // Create chunked planet renderer (new LOD system)
+            chunkedPlanet = new ChunkedPlanetRenderer(gd, planetGenerator, radius: 20f);
 
             // Create water sphere at ocean level
             waterSphere = new WaterSphereRenderer(gd, 20f * 1.01f, 3); // Slightly larger than terrain
-
-            // Create effects for different rendering modes
-            vertexColorEffect = new BasicEffect(gd);
-            vertexColorEffect.VertexColorEnabled = true;
-            vertexColorEffect.TextureEnabled = false;
-            vertexColorEffect.LightingEnabled = false;
 
             // Load custom planet shader
             try
@@ -270,8 +276,27 @@ namespace anakinsoft.game.scenes
         {
             base.Update(gameTime);
 
+            // Update FPS counter
+            frameCount++;
+            elapsedTime += gameTime.ElapsedGameTime.TotalSeconds;
+            if (elapsedTime >= 1.0)
+            {
+                currentFPS = (float)(frameCount / elapsedTime);
+                minFPS = Math.Min(minFPS, currentFPS);
+                maxFPS = Math.Max(maxFPS, currentFPS);
+                frameCount = 0;
+                elapsedTime = 0;
+            }
+
             // Update planet rotation
             planetRotationAngle += planetRotationSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            // Update chunked planet LOD
+            if (useChunkedRenderer && chunkedPlanet != null)
+            {
+                BoundingFrustum frustum = new BoundingFrustum(camera.View * camera.Projection);
+                chunkedPlanet.UpdateChunks(camera.Position, frustum);
+            }
         }
 
         public override void UpdateInput(GameTime gameTime)
@@ -333,30 +358,53 @@ namespace anakinsoft.game.scenes
             {
                 showWater = !showWater;
             }
+
+            // C key to toggle between chunked and old renderer
+            if (InputManager.GetKeyboardClick(Keys.C))
+            {
+                useChunkedRenderer = !useChunkedRenderer;
+            }
+
+            // W key to toggle wireframe
+            if (InputManager.GetKeyboardClick(Keys.X))
+            {
+                showWireframe = !showWireframe;
+            }
         }
 
         public override void Draw2D(GameTime gameTime)
         {
             if (!showUI) return;
 
-            // Draw instructions
-            string instructions = "Advanced Procedural Planet\\n\\n" +
-                                "Hold Right Mouse + Move = Rotate camera\\n" +
-                                "WASD/QE = Move camera\\n" +
-                                "Mouse Wheel = Speed\\n" +
-                                "R = Random seed\\n" +
-                                "Tab = Toggle UI\\n" +
-                                "V = Toggle vertex/shader mode\\n" +
-                                "O = Toggle water sphere (Ocean)\\n" +
-                                "S = Save heightmap to disk\\n" +
-                                "ESC = Menu\\n\\n" +
-                                "Features: High-LOD terrain mesh\\n" +
-                                "Custom terrain shader with gradients\\n" +
-                                "Simple directional lighting (sun)\\n" +
-                                "Separate animated water sphere\\n" +
-                                "Pure terrain heightmaps (no water data)";
+            // Draw performance stats
+            int activeChunkCount = useChunkedRenderer && chunkedPlanet != null ? chunkedPlanet.GetActiveChunkCount() : 0;
+            string perfStats = $"FPS: {currentFPS:F1} (Min: {minFPS:F1}, Max: {maxFPS:F1})\n" +
+                              $"Chunks: {activeChunkCount}\n" +
+                              $"Renderer: {(useChunkedRenderer ? "Chunked LOD" : "Static Mesh")}\n" +
+                              $"Wireframe: {(showWireframe ? "ON" : "OFF")}";
 
-            Vector2 position = new Vector2(20, 20);
+            Vector2 perfPosition = new Vector2(20, 20);
+            getSpriteBatch.DrawString(Globals.fontNTR, perfStats, perfPosition + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, perfStats, perfPosition, Color.Lime);
+
+            // Draw instructions
+            string instructions = "Advanced Procedural Planet\n\n" +
+                                "Hold Right Mouse + Move = Rotate camera\n" +
+                                "WASD/QE = Move camera\n" +
+                                "Mouse Wheel = Speed\n" +
+                                "R = Random seed\n" +
+                                "Tab = Toggle UI\n" +
+                                "V = Toggle vertex/shader mode\n" +
+                                "C = Toggle chunked LOD\n" +
+                                "X = Toggle wireframe\n" +
+                                "O = Toggle water sphere (Ocean)\n" +
+                                "S = Save heightmap to disk\n" +
+                                "ESC = Menu\n\n" +
+                                "Features: Dynamic LOD chunks\n" +
+                                "Backface culling\n" +
+                                "Distance-based subdivision";
+
+            Vector2 position = new Vector2(20, 120);
             getSpriteBatch.DrawString(Globals.fontNTR, instructions, position + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, instructions, position, Color.White);
 
@@ -373,8 +421,14 @@ namespace anakinsoft.game.scenes
             getSpriteBatch.DrawString(Globals.fontNTR, seedText, seedPos + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, seedText, seedPos, Color.Yellow);
 
+            // Draw renderer info
+            string rendererText = $"Renderer: {(useChunkedRenderer ? $"Chunked LOD ({chunkedPlanet?.GetActiveChunkCount() ?? 0} chunks)" : "Static Mesh")}";
+            Vector2 rendererPos = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 90);
+            getSpriteBatch.DrawString(Globals.fontNTR, rendererText, rendererPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, rendererText, rendererPos, Color.Cyan);
+
             // Draw current rendering mode
-            string modeText = $"Rendering Mode: {(useVertexColoring ? "Vertex Colors (Height Map)" : (planetShader != null ? "Planet Shader (Directional Light)" : "Basic Heightmap Texture"))}";
+            string modeText = $"Mode: {(useVertexColoring ? "Vertex Colors" : "Shader")} | Wireframe: {(showWireframe ? "ON" : "OFF")}";
             Vector2 modePos = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 60);
             getSpriteBatch.DrawString(Globals.fontNTR, modeText, modePos + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, modeText, modePos, Color.Orange);
@@ -399,30 +453,45 @@ namespace anakinsoft.game.scenes
             // Draw planet with rotation around Y axis
             Matrix world = Matrix.CreateRotationY(planetRotationAngle);
 
-            if (useVertexColoring || planetShader == null)
+            if (planetShader != null)
             {
-                // Use vertex color effect for height visualization
-                vertexColorEffect.World = world;
-                vertexColorEffect.View = camera.View;
-                vertexColorEffect.Projection = camera.Projection;
-                planetGenerator.Draw(gd, world, camera.View, camera.Projection, vertexColorEffect, true);
-            }
-            else
-            {
-                // Use custom planet shader with heightmap
-                planetShader.Parameters["World"].SetValue(world);
-                planetShader.Parameters["View"].SetValue(camera.View);
-                planetShader.Parameters["Projection"].SetValue(camera.Projection);
-                planetShader.Parameters["WorldInverseTranspose"]?.SetValue(Matrix.Transpose(Matrix.Invert(world)));
-                planetShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
-                planetShader.Parameters["HeightmapTexture"]?.SetValue(planetGenerator.HeightmapTexture);
-
-                // Set user-controllable parameters
+                // Set common shader parameters
                 planetShader.Parameters["NormalMapStrength"]?.SetValue(planetNormalMapStrength);
                 planetShader.Parameters["DayNightTransition"]?.SetValue(planetDayNightTransition);
                 planetShader.Parameters["SpecularIntensity"]?.SetValue(planetSpecularIntensity);
+                planetShader.Parameters["UseVertexColoring"]?.SetValue(useVertexColoring);
 
-                planetGenerator.Draw(gd, world, camera.View, camera.Projection, planetShader, false);
+                if (useChunkedRenderer)
+                {
+                    // Use chunked LOD renderer
+                    chunkedPlanet.Draw(gd, world, camera.View, camera.Projection, planetShader, showWireframe);
+                }
+                else
+                {
+                    // Use old static mesh renderer
+                    var previousRasterizer = gd.RasterizerState;
+                    if (showWireframe)
+                    {
+                        var wireframeState = new RasterizerState();
+                        wireframeState.FillMode = FillMode.WireFrame;
+                        wireframeState.CullMode = CullMode.CullCounterClockwiseFace;
+                        gd.RasterizerState = wireframeState;
+                    }
+
+                    planetShader.Parameters["World"].SetValue(world);
+                    planetShader.Parameters["View"].SetValue(camera.View);
+                    planetShader.Parameters["Projection"].SetValue(camera.Projection);
+                    planetShader.Parameters["WorldInverseTranspose"]?.SetValue(Matrix.Transpose(Matrix.Invert(world)));
+                    planetShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
+                    planetShader.Parameters["HeightmapTexture"]?.SetValue(planetGenerator.HeightmapTexture);
+
+                    planetGenerator.Draw(gd, world, camera.View, camera.Projection, planetShader, false);
+
+                    if (showWireframe)
+                    {
+                        gd.RasterizerState = previousRasterizer;
+                    }
+                }
             }
 
             // Draw water sphere if enabled
@@ -438,8 +507,8 @@ namespace anakinsoft.game.scenes
             if (disposing)
             {
                 planetGenerator?.Dispose();
+                chunkedPlanet?.Dispose();
                 waterSphere?.Dispose();
-                vertexColorEffect?.Dispose();
                 planetShader?.Dispose();
                 pixelTexture?.Dispose();
             }

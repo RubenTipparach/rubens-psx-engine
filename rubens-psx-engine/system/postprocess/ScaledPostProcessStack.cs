@@ -117,15 +117,15 @@ namespace rubens_psx_engine.system.postprocess
         /// </summary>
         public void BeginScene()
         {
-            if (!Enabled || !isInitialized) 
+            if (!Enabled || !isInitialized)
             {
-                // If disabled, still need to render at low resolution for consistency
-                graphicsDevice.SetRenderTarget(lowResSceneTarget);
+                // If disabled, render directly to backbuffer at native resolution
+                // No low-res buffer needed for full quality rendering
                 return;
             }
-            
+
             graphicsDevice.SetRenderTarget(lowResSceneTarget);
-            
+
             // Set viewport to render resolution
             var viewport = new Viewport(0, 0, renderResolution.X, renderResolution.Y);
             graphicsDevice.Viewport = viewport;
@@ -136,8 +136,10 @@ namespace rubens_psx_engine.system.postprocess
         /// </summary>
         public void EndScene()
         {
-            if (!isInitialized)
+            if (!Enabled || !isInitialized)
             {
+                // If disabled, scene was rendered directly to backbuffer
+                // Just restore the render target
                 graphicsDevice.SetRenderTarget(null);
                 return;
             }
@@ -145,13 +147,6 @@ namespace rubens_psx_engine.system.postprocess
             // Restore display viewport
             var displayViewport = new Viewport(0, 0, displayResolution.X, displayResolution.Y);
             graphicsDevice.Viewport = displayViewport;
-
-            if (!Enabled)
-            {
-                // Just scale the low-res scene to display resolution
-                ScaleToDisplay(lowResSceneTarget);
-                return;
-            }
 
             var enabledEffects = effects.Where(e => e.Enabled).ToList();
             if (!enabledEffects.Any())

@@ -683,6 +683,23 @@ namespace rubens_psx_engine.system.procedural
             138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
         };
 
+        /// <summary>
+        /// Sample heightmap at specific UV coordinates (public accessor for chunks)
+        /// </summary>
+        public float SampleHeightAtUV(float u, float v)
+        {
+            if (heightmapData == null)
+                return 0.5f;
+
+            int x = (int)(u * (HeightmapResolution - 1));
+            int y = (int)(v * (HeightmapResolution - 1));
+
+            x = MathHelper.Clamp(x, 0, HeightmapResolution - 1);
+            y = MathHelper.Clamp(y, 0, HeightmapResolution - 1);
+
+            return heightmapData[x, y];
+        }
+
         public void Dispose()
         {
             texturedVertexBuffer?.Dispose();

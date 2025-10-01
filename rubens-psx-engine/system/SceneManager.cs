@@ -31,9 +31,6 @@ namespace rubens_psx_engine.system
                 "bepuInteraction" => new BepuInteractionScreen(),
                 "rtsTerrainTest" => new RTSTerrainScreen(),
                 "terrain" => new TerrainScreen(),
-                "proceduralPlanet" => new ProceduralPlanetTestScreen(),
-                "advancedPlanetEditor" => new AdvancedPlanetEditorScreen(),
-                "icosahedronPlanetEditor" => new IcosahedronPlanetEditorScreen(),
                 "advancedProceduralPlanet" => new AdvancedProceduralPlanetScreen(),
                 _ => new ThirdPersonSandboxScreen() // Default fallback
             };

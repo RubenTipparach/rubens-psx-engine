@@ -18,10 +18,12 @@ namespace rubens_psx_engine
         public Matrix View => Matrix.CreateLookAt(Position, Target, Up);
         public Matrix Projection { get; protected set; }
 
+        public Vector2 NearFarPlane = new Vector2(1, 10000f);
+
         public Camera(GraphicsDevice graphicsDevice)
         {
             float aspectRatio = graphicsDevice.Viewport.AspectRatio;
-            Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, 1f, 10000f);
+            Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, NearFarPlane.X, NearFarPlane.Y);
         }
 
         public virtual void Update(GameTime gameTime)
