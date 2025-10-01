@@ -285,6 +285,7 @@ namespace rubens_psx_engine.system.procedural
             }
 
             // Create vertices with heightmap displacement
+            var vertexData = new List<(Vector3 position, Vector3 normal, Vector2 uv, Color color)>();
             for (int i = 0; i < subdivVertices.Count; i++)
             {
                 Vector3 normalizedPos = Vector3.Normalize(subdivVertices[i]);
@@ -298,15 +299,120 @@ namespace rubens_psx_engine.system.procedural
                 // Calculate UV coordinates
                 Vector2 texCoord = GetUVForSpherePosition(normalizedPos);
 
-                // Add textured vertex
-                texturedVertices.Add(new VertexPositionNormalTexture(position, normalizedPos, texCoord));
-
-                // Add colored vertex with height-based color
+                // Store vertex data
                 Color heightColor = GetHeightColor(height);
-                coloredVertices.Add(new VertexPositionColor(position, heightColor));
+                vertexData.Add((position, normalizedPos, texCoord, heightColor));
             }
 
-            // Use subdivision indices directly
+            // Fix UV seams by duplicating vertices where triangles cross seam boundaries
+            // Use a per-triangle remap to handle multiple fixes per vertex
+            for (int triIndex = 0; triIndex < subdivIndices.Count; triIndex += 3)
+            {
+                int i0 = subdivIndices[triIndex];
+                int i1 = subdivIndices[triIndex + 1];
+                int i2 = subdivIndices[triIndex + 2];
+
+                Vector2 uv0 = vertexData[i0].uv;
+                Vector2 uv1 = vertexData[i1].uv;
+                Vector2 uv2 = vertexData[i2].uv;
+
+                // Check if triangle crosses the UV seam (U wraps from ~1.0 to ~0.0)
+                float maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
+                float minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
+                bool crossesSeam = (maxU - minU) > 0.5f;
+
+                if (crossesSeam)
+                {
+                    // Determine which side of the seam has more vertices (that's the "correct" side)
+                    float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                    // Fix vertices that are far from average
+                    if (MathF.Abs(uv0.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i0];
+                        newData.uv.X = uv0.X < 0.5f ? uv0.X + 1.0f : uv0.X - 1.0f;
+                        i0 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    if (MathF.Abs(uv1.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i1];
+                        newData.uv.X = uv1.X < 0.5f ? uv1.X + 1.0f : uv1.X - 1.0f;
+                        i1 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    if (MathF.Abs(uv2.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i2];
+                        newData.uv.X = uv2.X < 0.5f ? uv2.X + 1.0f : uv2.X - 1.0f;
+                        i2 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    subdivIndices[triIndex] = i0;
+                    subdivIndices[triIndex + 1] = i1;
+                    subdivIndices[triIndex + 2] = i2;
+                }
+
+                // Also check for pole issues (vertices near v=0 or v=1)
+                float maxV = MathF.Max(MathF.Max(uv0.Y, uv1.Y), uv2.Y);
+                float minV = MathF.Min(MathF.Min(uv0.Y, uv1.Y), uv2.Y);
+
+                if (maxV > 0.95f || minV < 0.05f)
+                {
+                    // Near pole - ensure vertices are duplicated if they have significantly different U coords
+                    if ((maxV > 0.95f || minV < 0.05f) && (maxU - minU) > 0.3f)
+                    {
+                        // Average the U coordinates for pole vertices
+                        float targetU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                        if (uv0.Y > 0.95f || uv0.Y < 0.05f)
+                        {
+                            if (MathF.Abs(uv0.X - targetU) > 0.1f)
+                            {
+                                var newData = vertexData[subdivIndices[triIndex]];
+                                newData.uv.X = targetU;
+                                subdivIndices[triIndex] = vertexData.Count;
+                                vertexData.Add(newData);
+                            }
+                        }
+
+                        if (uv1.Y > 0.95f || uv1.Y < 0.05f)
+                        {
+                            if (MathF.Abs(uv1.X - targetU) > 0.1f)
+                            {
+                                var newData = vertexData[subdivIndices[triIndex + 1]];
+                                newData.uv.X = targetU;
+                                subdivIndices[triIndex + 1] = vertexData.Count;
+                                vertexData.Add(newData);
+                            }
+                        }
+
+                        if (uv2.Y > 0.95f || uv2.Y < 0.05f)
+                        {
+                            if (MathF.Abs(uv2.X - targetU) > 0.1f)
+                            {
+                                var newData = vertexData[subdivIndices[triIndex + 2]];
+                                newData.uv.X = targetU;
+                                subdivIndices[triIndex + 2] = vertexData.Count;
+                                vertexData.Add(newData);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Build final vertex buffers from fixed vertex data
+            for (int i = 0; i < vertexData.Count; i++)
+            {
+                var data = vertexData[i];
+                texturedVertices.Add(new VertexPositionNormalTexture(data.position, data.normal, data.uv));
+                coloredVertices.Add(new VertexPositionColor(data.position, data.color));
+            }
+
+            // Use subdivision indices
             indices.AddRange(subdivIndices);
 
             // Create vertex buffers

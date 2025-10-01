@@ -58,8 +58,8 @@ namespace rubens_psx_engine.system.procedural
                 SubdivideIcosahedron(ref vertices, ref indices);
             }
 
-            // Create vertex buffer with positions, normals, and texture coordinates
-            var sphereVertices = new VertexPositionNormalTexture[vertices.Count];
+            // Create vertex data list
+            var vertexData = new List<(Vector3 position, Vector3 normal, Vector2 uv)>();
             for (int i = 0; i < vertices.Count; i++)
             {
                 Vector3 normalizedPos = Vector3.Normalize(vertices[i]);
@@ -68,17 +68,133 @@ namespace rubens_psx_engine.system.procedural
                 // Calculate UV coordinates for the sphere
                 Vector2 texCoord = GetUVForSpherePosition(normalizedPos);
 
-                sphereVertices[i] = new VertexPositionNormalTexture(
-                    position,
-                    normalizedPos, // Normal points outward
-                    texCoord
-                );
+                vertexData.Add((position, normalizedPos, texCoord));
+            }
+
+            // Fix UV seams by duplicating vertices where triangles cross seam boundaries
+            for (int triIndex = 0; triIndex < indices.Count; triIndex += 3)
+            {
+                int i0 = indices[triIndex];
+                int i1 = indices[triIndex + 1];
+                int i2 = indices[triIndex + 2];
+
+                Vector2 uv0 = vertexData[i0].uv;
+                Vector2 uv1 = vertexData[i1].uv;
+                Vector2 uv2 = vertexData[i2].uv;
+
+                // Check if triangle crosses the UV seam using min/max range
+                float maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
+                float minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
+                bool crossesSeam = (maxU - minU) > 0.5f;
+
+                if (crossesSeam)
+                {
+                    // Calculate average U to determine which vertices need adjustment
+                    float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                    // Fix vertex 0 if it's far from average
+                    if (MathF.Abs(uv0.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i0];
+                        newData.uv.X = uv0.X < 0.5f ? uv0.X + 1.0f : uv0.X - 1.0f;
+                        i0 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    // Fix vertex 1 if it's far from average
+                    if (MathF.Abs(uv1.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i1];
+                        newData.uv.X = uv1.X < 0.5f ? uv1.X + 1.0f : uv1.X - 1.0f;
+                        i1 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    // Fix vertex 2 if it's far from average
+                    if (MathF.Abs(uv2.X - avgU) > 0.4f)
+                    {
+                        var newData = vertexData[i2];
+                        newData.uv.X = uv2.X < 0.5f ? uv2.X + 1.0f : uv2.X - 1.0f;
+                        i2 = vertexData.Count;
+                        vertexData.Add(newData);
+                    }
+
+                    indices[triIndex] = i0;
+                    indices[triIndex + 1] = i1;
+                    indices[triIndex + 2] = i2;
+                }
+
+                // Handle pole singularities
+                float maxV = MathF.Max(MathF.Max(uv0.Y, uv1.Y), uv2.Y);
+                float minV = MathF.Min(MathF.Min(uv0.Y, uv1.Y), uv2.Y);
+
+                // If triangle is near a pole (top or bottom)
+                if (maxV > 0.95f || minV < 0.05f)
+                {
+                    // Get current indices (might have been updated from seam fix)
+                    i0 = indices[triIndex];
+                    i1 = indices[triIndex + 1];
+                    i2 = indices[triIndex + 2];
+
+                    uv0 = vertexData[i0].uv;
+                    uv1 = vertexData[i1].uv;
+                    uv2 = vertexData[i2].uv;
+
+                    // Check if U coordinates are divergent near pole
+                    maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
+                    minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
+
+                    if ((maxU - minU) > 0.5f)
+                    {
+                        // Average U coordinate for pole vertices
+                        float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                        // Adjust vertices near poles to use averaged U
+                        if (uv0.Y > 0.95f || uv0.Y < 0.05f)
+                        {
+                            var newData = vertexData[i0];
+                            newData.uv.X = avgU;
+                            i0 = vertexData.Count;
+                            vertexData.Add(newData);
+                        }
+
+                        if (uv1.Y > 0.95f || uv1.Y < 0.05f)
+                        {
+                            var newData = vertexData[i1];
+                            newData.uv.X = avgU;
+                            i1 = vertexData.Count;
+                            vertexData.Add(newData);
+                        }
+
+                        if (uv2.Y > 0.95f || uv2.Y < 0.05f)
+                        {
+                            var newData = vertexData[i2];
+                            newData.uv.X = avgU;
+                            i2 = vertexData.Count;
+                            vertexData.Add(newData);
+                        }
+
+                        indices[triIndex] = i0;
+                        indices[triIndex + 1] = i1;
+                        indices[triIndex + 2] = i2;
+                    }
+                }
+            }
+
+            // Build final vertex array from fixed vertex data
+            var sphereVertices = new VertexPositionNormalTexture[vertexData.Count];
+            for (int i = 0; i < vertexData.Count; i++)
+            {
+                var data = vertexData[i];
+                sphereVertices[i] = new VertexPositionNormalTexture(data.position, data.normal, data.uv);
             }
 
             // Create buffers
+            vertexBuffer?.Dispose();
             vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), sphereVertices.Length, BufferUsage.WriteOnly);
             vertexBuffer.SetData(sphereVertices);
 
+            indexBuffer?.Dispose();
             indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.WriteOnly);
             indexBuffer.SetData(indices.ToArray());
 
