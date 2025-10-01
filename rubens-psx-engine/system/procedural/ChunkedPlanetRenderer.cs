@@ -63,20 +63,62 @@ namespace rubens_psx_engine.system.procedural
             //    return;
             //}
 
-            // Check if chunk faces away from camera (backface culling)
-            Vector3 chunkCenter = chunk.GetCenterPosition();
-            Vector3 toCameraDir = Vector3.Normalize(cameraPosition - chunkCenter);
-            Vector3 chunkNormal = Vector3.Normalize(chunkCenter);
+            // Check if camera is far enough to skip LOD and culling
+            float distanceToCenter = Vector3.Distance(cameraPosition, Vector3.Zero);
+            bool cameraFarAway = distanceToCenter > Radius * 3.0f; // 3x radius threshold
 
-            // If chunk faces away from camera, don't render it (with some tolerance for edge chunks)
-            if (Vector3.Dot(toCameraDir, chunkNormal) < -0.2f)
+            // When camera is close, only cull chunks on the opposite hemisphere
+            // Calculate camera direction from planet center
+            Vector3 cameraDir = Vector3.Normalize(cameraPosition);
+
+            // Check if chunk center is on the back hemisphere (more than 90 degrees away from camera direction)
+            Vector3 chunkCenter = chunk.GetCenterPosition();
+            Vector3 chunkDir = Vector3.Normalize(chunkCenter);
+            float hemisphereAlignment = Vector3.Dot(cameraDir, chunkDir);
+
+            // Only cull if chunk is clearly on the back hemisphere (dot < 0)
+            if (!cameraFarAway && hemisphereAlignment < -0.2f)
             {
-                chunk.Dispose();
-                return;
+                // Chunk is on back hemisphere, check if it's fully hidden
+                // Check all corners to see if any are visible
+                Vector3[] corners = chunk.GetCornerPositions();
+                bool anyPointVisible = false;
+
+                // Check center first
+                Vector3 toCameraDir = Vector3.Normalize(cameraPosition - chunkCenter);
+                Vector3 centerNormal = Vector3.Normalize(chunkCenter);
+                if (Vector3.Dot(toCameraDir, centerNormal) > -0.1f)
+                {
+                    anyPointVisible = true;
+                }
+
+                // Check corners if center wasn't visible
+                if (!anyPointVisible)
+                {
+                    foreach (Vector3 corner in corners)
+                    {
+                        toCameraDir = Vector3.Normalize(cameraPosition - corner);
+                        Vector3 cornerNormal = Vector3.Normalize(corner);
+
+                        // Check if this corner faces the camera
+                        if (Vector3.Dot(toCameraDir, cornerNormal) > -0.1f)
+                        {
+                            anyPointVisible = true;
+                            break;
+                        }
+                    }
+                }
+
+                // If no points are visible, cull the chunk
+                if (!anyPointVisible)
+                {
+                    chunk.Dispose();
+                    return;
+                }
             }
 
             // Check if we should subdivide this chunk
-            if (chunk.ShouldSubdivide(cameraPosition))
+            if (!cameraFarAway && chunk.ShouldSubdivide(cameraPosition))
             {
                 chunk.Dispose();
 

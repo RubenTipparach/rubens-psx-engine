@@ -48,6 +48,8 @@ namespace anakinsoft.game.scenes
         private float planetDayNightTransition = 0.5f;
         private float planetSpecularIntensity = 0.1f;
         private float planetRotationSpeed = 0.0f;
+        private float noiseScale = 10.0f;
+        private float noiseStrength = 0.05f;
         private float waterUVScale = 1.0f;
         private float waterWaveFrequency = 1.0f;
         private float waterWaveAmplitude = 1.0f;
@@ -67,6 +69,9 @@ namespace anakinsoft.game.scenes
 
             // Create procedural planet generator (old system)
             planetGenerator = new ProceduralPlanetGenerator(gd, radius: 20f, heightmapResolution: 1024);
+
+            // Set planet context for height-based speed scaling
+            camera.SetPlanetContext(planetGenerator, 20f);
 
             // Create chunked planet renderer (new LOD system)
             chunkedPlanet = new ChunkedPlanetRenderer(gd, planetGenerator, radius: 20f);
@@ -200,9 +205,31 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(rotationSpeedSlider);
 
+            // Noise Scale
+            var noiseScaleSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
+                0.1f, 50.0f, 10.0f,
+                "Noise Scale", font);
+            noiseScaleSlider.ValueChanged += value =>
+            {
+                noiseScale = value;
+            };
+            sliders.Add(noiseScaleSlider);
+
+            // Noise Strength
+            var noiseStrengthSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
+                0.0f, 0.5f, 0.05f,
+                "Noise Strength", font);
+            noiseStrengthSlider.ValueChanged += value =>
+            {
+                noiseStrength = value;
+            };
+            sliders.Add(noiseStrengthSlider);
+
             // Water UV Scale
             var waterUVScaleSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Water UV Scale", font);
             waterUVScaleSlider.ValueChanged += value =>
@@ -213,7 +240,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Frequency
             var waterFreqSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Frequency", font);
             waterFreqSlider.ValueChanged += value =>
@@ -224,7 +251,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Amplitude
             var waterAmpSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Amplitude", font);
             waterAmpSlider.ValueChanged += value =>
@@ -235,7 +262,7 @@ namespace anakinsoft.game.scenes
 
             // Water Normal Strength
             var waterNormalSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 13, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Normal Str", font);
             waterNormalSlider.ValueChanged += value =>
@@ -246,7 +273,7 @@ namespace anakinsoft.game.scenes
 
             // Water Distortion
             var waterDistortionSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 14, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Distortion", font);
             waterDistortionSlider.ValueChanged += value =>
@@ -257,7 +284,7 @@ namespace anakinsoft.game.scenes
 
             // Water Scroll Speed
             var waterScrollSpeedSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 13, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 15, sliderWidth, sliderHeight),
                 0.0f, 5.0f, 1.0f,
                 "Wave Scroll Speed", font);
             waterScrollSpeedSlider.ValueChanged += value =>
@@ -296,6 +323,39 @@ namespace anakinsoft.game.scenes
             {
                 BoundingFrustum frustum = new BoundingFrustum(camera.View * camera.Projection);
                 chunkedPlanet.UpdateChunks(camera.Position, frustum);
+            }
+
+            // Apply height collision for camera
+            ApplyCameraHeightCollision();
+        }
+
+        private void ApplyCameraHeightCollision()
+        {
+            float planetRadius = 20f;
+            float minHeightAboveTerrain = 0.5f; // Minimum distance above terrain
+
+            // Get normalized position on sphere
+            Vector3 direction = Vector3.Normalize(camera.Position);
+
+            // Convert to spherical UV coordinates
+            float u = MathF.Atan2(direction.X, direction.Z) / (2.0f * MathF.PI) + 0.5f;
+            float v = MathF.Asin(MathHelper.Clamp(direction.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
+
+            // Sample height from heightmap (0-1 range)
+            float heightSample = planetGenerator.SampleHeightAtUV(u, v);
+
+            // Calculate terrain height at this position
+            // Height sample is normalized (0-1), multiply by max terrain displacement
+            float maxTerrainHeight = planetRadius * 0.3f; // Adjust based on your terrain settings
+            float terrainHeight = planetRadius + (heightSample - 0.5f) * maxTerrainHeight;
+
+            float currentDistance = camera.Position.Length();
+            float minDistanceFromCenter = terrainHeight + minHeightAboveTerrain;
+
+            if (currentDistance < minDistanceFromCenter)
+            {
+                // Push camera away to maintain minimum distance above terrain
+                camera.Position = direction * minDistanceFromCenter;
             }
         }
 
@@ -438,6 +498,17 @@ namespace anakinsoft.game.scenes
             Vector2 resolutionPos = new Vector2(20, Globals.screenManager.Window.ClientBounds.Height - 30);
             getSpriteBatch.DrawString(Globals.fontNTR, resolutionText, resolutionPos + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, resolutionText, resolutionPos, Color.Cyan);
+
+            // Draw camera height above ground (bottom center)
+            float heightAboveGround = camera.GetHeightAboveGround(planetGenerator, 20f);
+            string heightText = $"Height: {heightAboveGround:F2}m";
+            Vector2 heightTextSize = Globals.fontNTR.MeasureString(heightText);
+            Vector2 heightPos = new Vector2(
+                (Globals.screenManager.Window.ClientBounds.Width - heightTextSize.X) / 2,
+                Globals.screenManager.Window.ClientBounds.Height - 40
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, heightText, heightPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, heightText, heightPos, Color.Yellow);
         }
 
         public override void Draw3D(GameTime gameTime)
@@ -460,6 +531,8 @@ namespace anakinsoft.game.scenes
                 planetShader.Parameters["DayNightTransition"]?.SetValue(planetDayNightTransition);
                 planetShader.Parameters["SpecularIntensity"]?.SetValue(planetSpecularIntensity);
                 planetShader.Parameters["UseVertexColoring"]?.SetValue(useVertexColoring);
+                planetShader.Parameters["NoiseScale"]?.SetValue(noiseScale);
+                planetShader.Parameters["NoiseStrength"]?.SetValue(noiseStrength);
 
                 if (useChunkedRenderer)
                 {

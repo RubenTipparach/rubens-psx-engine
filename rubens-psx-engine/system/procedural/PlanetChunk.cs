@@ -191,6 +191,37 @@ namespace rubens_psx_engine.system.procedural
 
         public Vector3 GetCenterPosition() => centerPosition;
 
+        public Vector3[] GetCornerPositions()
+        {
+            // Calculate the 4 corners of the chunk
+            Vector3 axisA = new Vector3(LocalUp.Y, LocalUp.Z, LocalUp.X);
+            Vector3 axisB = Vector3.Cross(LocalUp, axisA);
+
+            Vector3[] corners = new Vector3[4];
+
+            // Bottom-left (0, 0)
+            Vector2 cubePos = ChunkOffset;
+            Vector3 pointOnCube = LocalUp + (cubePos.X * 2f - 1f) * axisA + (cubePos.Y * 2f - 1f) * axisB;
+            corners[0] = Vector3.Normalize(pointOnCube) * planetRadius;
+
+            // Bottom-right (1, 0)
+            cubePos = ChunkOffset + new Vector2(ChunkSize, 0);
+            pointOnCube = LocalUp + (cubePos.X * 2f - 1f) * axisA + (cubePos.Y * 2f - 1f) * axisB;
+            corners[1] = Vector3.Normalize(pointOnCube) * planetRadius;
+
+            // Top-left (0, 1)
+            cubePos = ChunkOffset + new Vector2(0, ChunkSize);
+            pointOnCube = LocalUp + (cubePos.X * 2f - 1f) * axisA + (cubePos.Y * 2f - 1f) * axisB;
+            corners[2] = Vector3.Normalize(pointOnCube) * planetRadius;
+
+            // Top-right (1, 1)
+            cubePos = ChunkOffset + new Vector2(ChunkSize, ChunkSize);
+            pointOnCube = LocalUp + (cubePos.X * 2f - 1f) * axisA + (cubePos.Y * 2f - 1f) * axisB;
+            corners[3] = Vector3.Normalize(pointOnCube) * planetRadius;
+
+            return corners;
+        }
+
         public bool ShouldSubdivide(Vector3 cameraPosition)
         {
             float distanceToCamera = Vector3.Distance(centerPosition, cameraPosition);
