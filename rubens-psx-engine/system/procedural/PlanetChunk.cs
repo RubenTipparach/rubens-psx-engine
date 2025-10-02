@@ -396,13 +396,34 @@ namespace rubens_psx_engine.system.procedural
         {
             float distanceToCamera = Vector3.Distance(centerPosition, cameraPosition);
 
+            // Calculate minimum chunk size to prevent too much detail
+            // At LOD 0, size is 1.0 (entire cube face side)
+            // Each subdivision halves the size
+            float currentChunkSize = ChunkSize * planetRadius * 2.0f; // Approximate size in world units
+            const float MIN_CHUNK_SIZE = 0.1f; // Minimum 0.1 meter chunks
+
+            if (currentChunkSize <= MIN_CHUNK_SIZE)
+            {
+                return false; // Don't subdivide further
+            }
+
+            // Calculate height above ground for adaptive LOD
+            float distanceFromPlanetCenter = cameraPosition.Length();
+            float heightAboveSurface = distanceFromPlanetCenter - planetRadius;
+
+            // Scale LOD distance based on height above ground
+            // When close to ground: INCREASE detail (lower threshold)
+            // When far from ground: DECREASE detail (higher threshold)
+            float heightThreshold = 10.0f; // Transition height
+            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.0f, 1.0f);
+            float heightMultiplier = 1.0f - (heightFactor * 0.5f); // Ranges from 1.0 (close) to 0.5 (far)
+
             // Distance-based subdivision that creates smaller chunks near camera
-            // Expanded radius for more gradual transitions and visible detail in distance
-            float baseThreshold = planetRadius * 8.0f; // Expanded for wider LOD range
+            float baseThreshold = planetRadius * 8.0f * heightMultiplier; // Multiply by height factor
             float lodMultiplier = MathF.Pow(0.5f, LODLevel); // Each level halves the threshold
             float threshold = baseThreshold * lodMultiplier;
 
-            return distanceToCamera < threshold && LODLevel < 10; // Max LOD level 10 for more detail levels
+            return distanceToCamera < threshold && LODLevel < 12; // Increased max LOD for ground-level detail
         }
 
         public void Draw(GraphicsDevice device)

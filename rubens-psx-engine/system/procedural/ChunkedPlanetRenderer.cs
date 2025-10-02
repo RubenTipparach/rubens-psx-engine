@@ -48,6 +48,22 @@ namespace rubens_psx_engine.system.procedural
         private Dictionary<ChunkKey, PlanetChunk> chunkCache;
         private HashSet<ChunkKey> currentFrameChunks;
 
+        // Performance limits
+        private const int MAX_CHUNKS_PER_FRAME = 5000; // Limit total chunks to prevent performance issues
+        private int chunksGeneratedThisFrame = 0;
+
+        // Chunk prioritization
+        private struct ChunkCandidate
+        {
+            public Vector3 LocalUp;
+            public Vector2 Offset;
+            public float Size;
+            public int LODLevel;
+            public float DistanceToCamera;
+        }
+        private List<ChunkCandidate> chunkCandidates;
+        private Vector3 currentCameraPosition;
+
         // The 6 cube face directions
         private static readonly Vector3[] CubeFaces = new Vector3[]
         {
@@ -67,6 +83,7 @@ namespace rubens_psx_engine.system.procedural
             activeChunks = new List<PlanetChunk>();
             chunkCache = new Dictionary<ChunkKey, PlanetChunk>();
             currentFrameChunks = new HashSet<ChunkKey>();
+            chunkCandidates = new List<ChunkCandidate>();
         }
 
         public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum)
@@ -74,11 +91,26 @@ namespace rubens_psx_engine.system.procedural
             // Clear active chunks list but don't dispose - we'll reuse from cache
             activeChunks.Clear();
             currentFrameChunks.Clear();
+            chunksGeneratedThisFrame = 0; // Reset chunk counter
+            chunkCandidates.Clear(); // Clear candidate list
+            currentCameraPosition = cameraPosition;
 
-            // Generate chunks for each cube face
+            // PASS 1: Collect all chunk candidates
             foreach (var faceNormal in CubeFaces)
             {
-                GenerateChunksRecursive(faceNormal, Vector2.Zero, 1.0f, 0, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(faceNormal, Vector2.Zero, 1.0f, 0, cameraPosition, frustum);
+            }
+
+            // PASS 2: Sort candidates by distance to camera (closest first)
+            chunkCandidates.Sort((a, b) => a.DistanceToCamera.CompareTo(b.DistanceToCamera));
+
+            // PASS 3: Generate chunks in priority order (closest first)
+            foreach (var candidate in chunkCandidates)
+            {
+                if (chunksGeneratedThisFrame >= MAX_CHUNKS_PER_FRAME)
+                    break; // Hit limit, stop generating
+
+                GenerateChunk(candidate.LocalUp, candidate.Offset, candidate.Size, candidate.LODLevel);
             }
 
             // Remove unused chunks from cache
@@ -99,6 +131,12 @@ namespace rubens_psx_engine.system.procedural
 
         private void GenerateChunksRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 cameraPosition, BoundingFrustum frustum)
         {
+            // Check if we've hit the chunk limit for this frame
+            if (chunksGeneratedThisFrame >= MAX_CHUNKS_PER_FRAME)
+            {
+                return; // Stop generating more chunks to maintain performance
+            }
+
             // Check cache first
             var key = new ChunkKey(localUp, offset, size, lodLevel);
 
@@ -115,6 +153,8 @@ namespace rubens_psx_engine.system.procedural
                 chunkCache[key] = chunk;
                 currentFrameChunks.Add(key);
             }
+
+            chunksGeneratedThisFrame++; // Increment counter
 
             // DISABLED: Frustum culling for performance testing
             //if (frustum != null && frustum.Contains(chunk.Bounds) == ContainmentType.Disjoint)
@@ -193,6 +233,92 @@ namespace rubens_psx_engine.system.procedural
                 // Use this chunk
                 activeChunks.Add(chunk);
             }
+        }
+
+        private void CollectChunkCandidatesRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 cameraPosition, BoundingFrustum frustum)
+        {
+            // Create temporary chunk to check subdivision
+            Vector3 axisA = new Vector3(localUp.Y, localUp.Z, localUp.X);
+            Vector3 axisB = Vector3.Cross(localUp, axisA);
+            Vector3 centerPos = localUp * Radius + (axisA * (offset.X + size * 0.5f - 0.5f) + axisB * (offset.Y + size * 0.5f - 0.5f)) * Radius * 2.0f;
+
+            float distanceToCamera = Vector3.Distance(centerPos, cameraPosition);
+
+            // Check minimum chunk size (same as PlanetChunk.ShouldSubdivide)
+            float currentChunkSize = size * Radius * 2.0f;
+            const float MIN_CHUNK_SIZE = 0.1f;
+
+            if (currentChunkSize <= MIN_CHUNK_SIZE)
+            {
+                // Add as candidate without subdividing
+                chunkCandidates.Add(new ChunkCandidate
+                {
+                    LocalUp = localUp,
+                    Offset = offset,
+                    Size = size,
+                    LODLevel = lodLevel,
+                    DistanceToCamera = distanceToCamera
+                });
+                return;
+            }
+
+            // Calculate if should subdivide (same logic as PlanetChunk.ShouldSubdivide)
+            float distanceFromPlanetCenter = cameraPosition.Length();
+            float heightAboveSurface = distanceFromPlanetCenter - Radius;
+            float heightThreshold = 2.0f; // Dense detail only below 2 units above ground
+            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.5f, 1.0f);
+            float heightMultiplier = 1.0f / heightFactor;
+            float baseThreshold = Radius * 8.0f * heightMultiplier;
+            float lodMultiplier = MathF.Pow(0.5f, lodLevel);
+            float threshold = baseThreshold * lodMultiplier;
+
+            bool shouldSubdivide = distanceToCamera < threshold && lodLevel < 12;
+
+            if (shouldSubdivide)
+            {
+                // Subdivide into 4 child chunks
+                float childSize = size * 0.5f;
+                int childLOD = lodLevel + 1;
+
+                CollectChunkCandidatesRecursive(localUp, offset, childSize, childLOD, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, 0), childSize, childLOD, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(0, childSize), childSize, childLOD, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, childSize), childSize, childLOD, cameraPosition, frustum);
+            }
+            else
+            {
+                // Add this chunk as a candidate
+                chunkCandidates.Add(new ChunkCandidate
+                {
+                    LocalUp = localUp,
+                    Offset = offset,
+                    Size = size,
+                    LODLevel = lodLevel,
+                    DistanceToCamera = distanceToCamera
+                });
+            }
+        }
+
+        private void GenerateChunk(Vector3 localUp, Vector2 offset, float size, int lodLevel)
+        {
+            var key = new ChunkKey(localUp, offset, size, lodLevel);
+
+            PlanetChunk chunk;
+            if (chunkCache.TryGetValue(key, out chunk))
+            {
+                // Reuse cached chunk
+                currentFrameChunks.Add(key);
+            }
+            else
+            {
+                // Create new chunk and cache it
+                chunk = new PlanetChunk(graphicsDevice, planetGenerator, localUp, offset, size, lodLevel, Radius);
+                chunkCache[key] = chunk;
+                currentFrameChunks.Add(key);
+            }
+
+            chunksGeneratedThisFrame++;
+            activeChunks.Add(chunk);
         }
 
         public void Draw(GraphicsDevice device, Matrix world, Matrix view, Matrix projection, Effect shader, bool wireframe)
