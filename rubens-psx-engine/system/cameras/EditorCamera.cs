@@ -188,13 +188,13 @@ namespace anakinsoft.system.cameras
                 moveVector -= up;
 
             // Camera Roll (Q/E) - rotate orientation around forward axis
-            if (keyboardState.IsKeyDown(Keys.Q))
+            if (keyboardState.IsKeyDown(Keys.E))
             {
                 Quaternion rollRotation = Quaternion.CreateFromAxisAngle(forward, rollSpeed * deltaTime);
                 orientation = rollRotation * orientation;
                 orientation.Normalize();
             }
-            if (keyboardState.IsKeyDown(Keys.E))
+            if (keyboardState.IsKeyDown(Keys.Q))
             {
                 Quaternion rollRotation = Quaternion.CreateFromAxisAngle(forward, -rollSpeed * deltaTime);
                 orientation = rollRotation * orientation;
