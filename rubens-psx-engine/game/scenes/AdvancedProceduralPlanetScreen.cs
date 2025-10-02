@@ -68,16 +68,16 @@ namespace anakinsoft.game.scenes
             camera = new EditorCamera(gd, new Vector3(0, 15, 60));
 
             // Create procedural planet generator (old system)
-            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 20f, heightmapResolution: 1024);
+            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 50f, heightmapResolution: 1024);
 
             // Set planet context for height-based speed scaling
-            camera.SetPlanetContext(planetGenerator, 20f);
+            camera.SetPlanetContext(planetGenerator, 50f);
 
             // Create chunked planet renderer (new LOD system)
-            chunkedPlanet = new ChunkedPlanetRenderer(gd, planetGenerator, radius: 20f);
+            chunkedPlanet = new ChunkedPlanetRenderer(gd, planetGenerator, radius: 50f);
 
-            // Create water sphere at ocean level
-            waterSphere = new WaterSphereRenderer(gd, 20f * 1.01f, 3); // Slightly larger than terrain
+            // Create water sphere at ocean level (matches base planet radius at height 0)
+            waterSphere = new WaterSphereRenderer(gd, 45, 3);
 
             // Load custom planet shader
             try
@@ -331,7 +331,7 @@ namespace anakinsoft.game.scenes
 
         private void ApplyCameraHeightCollision()
         {
-            float planetRadius = 20f;
+            float planetRadius = 50f;
             float minHeightAboveTerrain = 0.5f; // Minimum distance above terrain
 
             // Get normalized position on sphere
@@ -500,7 +500,7 @@ namespace anakinsoft.game.scenes
             getSpriteBatch.DrawString(Globals.fontNTR, resolutionText, resolutionPos, Color.Cyan);
 
             // Draw camera height above ground (bottom center)
-            float heightAboveGround = camera.GetHeightAboveGround(planetGenerator, 20f);
+            float heightAboveGround = camera.GetHeightAboveGround(planetGenerator, 50f);
             string heightText = $"Height: {heightAboveGround:F2}m";
             Vector2 heightTextSize = Globals.fontNTR.MeasureString(heightText);
             Vector2 heightPos = new Vector2(
@@ -534,37 +534,8 @@ namespace anakinsoft.game.scenes
                 planetShader.Parameters["NoiseScale"]?.SetValue(noiseScale);
                 planetShader.Parameters["NoiseStrength"]?.SetValue(noiseStrength);
 
-                if (useChunkedRenderer)
-                {
-                    // Use chunked LOD renderer
-                    chunkedPlanet.Draw(gd, world, camera.View, camera.Projection, planetShader, showWireframe);
-                }
-                else
-                {
-                    // Use old static mesh renderer
-                    var previousRasterizer = gd.RasterizerState;
-                    if (showWireframe)
-                    {
-                        var wireframeState = new RasterizerState();
-                        wireframeState.FillMode = FillMode.WireFrame;
-                        wireframeState.CullMode = CullMode.CullCounterClockwiseFace;
-                        gd.RasterizerState = wireframeState;
-                    }
-
-                    planetShader.Parameters["World"].SetValue(world);
-                    planetShader.Parameters["View"].SetValue(camera.View);
-                    planetShader.Parameters["Projection"].SetValue(camera.Projection);
-                    planetShader.Parameters["WorldInverseTranspose"]?.SetValue(Matrix.Transpose(Matrix.Invert(world)));
-                    planetShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
-                    planetShader.Parameters["HeightmapTexture"]?.SetValue(planetGenerator.HeightmapTexture);
-
-                    planetGenerator.Draw(gd, world, camera.View, camera.Projection, planetShader, false);
-
-                    if (showWireframe)
-                    {
-                        gd.RasterizerState = previousRasterizer;
-                    }
-                }
+                // Always use chunked LOD renderer
+                chunkedPlanet.Draw(gd, world, camera.View, camera.Projection, planetShader, showWireframe);
             }
 
             // Draw water sphere if enabled

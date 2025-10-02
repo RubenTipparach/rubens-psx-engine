@@ -48,151 +48,84 @@ namespace rubens_psx_engine.system.procedural
 
         private void GenerateWaterSphere(int subdivisionLevel)
         {
-            // Create icosahedron base for the water sphere
-            var vertices = new List<Vector3>(GetIcosahedronVertices());
-            var indices = new List<int>(GetIcosahedronIndices());
+            // Use cube-to-sphere mapping like PlanetChunk for consistent geometry
+            // Generate 6 cube faces and map to sphere
+            var vertices = new List<VertexPositionNormalTexture>();
+            var indices = new List<int>();
 
-            // Subdivide to create smoother sphere
-            for (int i = 0; i < subdivisionLevel; i++)
+            int resolution = 32; // Resolution per face (can be adjusted)
+
+            // Define the 6 cube face directions
+            Vector3[] faceDirections = new Vector3[]
             {
-                SubdivideIcosahedron(ref vertices, ref indices);
-            }
+                new Vector3(0, 1, 0),  // Top
+                new Vector3(0, -1, 0), // Bottom
+                new Vector3(1, 0, 0),  // Right
+                new Vector3(-1, 0, 0), // Left
+                new Vector3(0, 0, 1),  // Front
+                new Vector3(0, 0, -1)  // Back
+            };
 
-            // Create vertex data list
-            var vertexData = new List<(Vector3 position, Vector3 normal, Vector2 uv)>();
-            for (int i = 0; i < vertices.Count; i++)
+            foreach (var localUp in faceDirections)
             {
-                Vector3 normalizedPos = Vector3.Normalize(vertices[i]);
-                Vector3 position = normalizedPos * currentRadius;
+                // Calculate perpendicular axes for this face
+                Vector3 axisA = new Vector3(localUp.Y, localUp.Z, localUp.X);
+                Vector3 axisB = Vector3.Cross(localUp, axisA);
 
-                // Calculate UV coordinates for the sphere
-                Vector2 texCoord = GetUVForSpherePosition(normalizedPos);
+                int vertexOffset = vertices.Count;
 
-                vertexData.Add((position, normalizedPos, texCoord));
-            }
-
-            // Fix UV seams by duplicating vertices where triangles cross seam boundaries
-            for (int triIndex = 0; triIndex < indices.Count; triIndex += 3)
-            {
-                int i0 = indices[triIndex];
-                int i1 = indices[triIndex + 1];
-                int i2 = indices[triIndex + 2];
-
-                Vector2 uv0 = vertexData[i0].uv;
-                Vector2 uv1 = vertexData[i1].uv;
-                Vector2 uv2 = vertexData[i2].uv;
-
-                // Check if triangle crosses the UV seam using min/max range
-                float maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
-                float minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
-                bool crossesSeam = (maxU - minU) > 0.5f;
-
-                if (crossesSeam)
+                // Generate grid of vertices for this face
+                for (int y = 0; y <= resolution; y++)
                 {
-                    // Calculate average U to determine which vertices need adjustment
-                    float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
-
-                    // Fix vertex 0 if it's far from average
-                    if (MathF.Abs(uv0.X - avgU) > 0.4f)
+                    for (int x = 0; x <= resolution; x++)
                     {
-                        var newData = vertexData[i0];
-                        newData.uv.X = uv0.X < 0.5f ? uv0.X + 1.0f : uv0.X - 1.0f;
-                        i0 = vertexData.Count;
-                        vertexData.Add(newData);
-                    }
+                        float xPercent = x / (float)resolution;
+                        float yPercent = y / (float)resolution;
 
-                    // Fix vertex 1 if it's far from average
-                    if (MathF.Abs(uv1.X - avgU) > 0.4f)
-                    {
-                        var newData = vertexData[i1];
-                        newData.uv.X = uv1.X < 0.5f ? uv1.X + 1.0f : uv1.X - 1.0f;
-                        i1 = vertexData.Count;
-                        vertexData.Add(newData);
-                    }
+                        // Map to cube face coordinates [-1, 1]
+                        Vector3 pointOnCube = localUp + (xPercent * 2f - 1f) * axisA + (yPercent * 2f - 1f) * axisB;
 
-                    // Fix vertex 2 if it's far from average
-                    if (MathF.Abs(uv2.X - avgU) > 0.4f)
-                    {
-                        var newData = vertexData[i2];
-                        newData.uv.X = uv2.X < 0.5f ? uv2.X + 1.0f : uv2.X - 1.0f;
-                        i2 = vertexData.Count;
-                        vertexData.Add(newData);
-                    }
+                        // Normalize to get point on sphere
+                        Vector3 pointOnSphere = Vector3.Normalize(pointOnCube);
 
-                    indices[triIndex] = i0;
-                    indices[triIndex + 1] = i1;
-                    indices[triIndex + 2] = i2;
+                        // Scale by radius
+                        Vector3 position = pointOnSphere * currentRadius;
+
+                        // Calculate UV for texturing
+                        Vector2 uv = GetSphericalUV(pointOnSphere);
+
+                        vertices.Add(new VertexPositionNormalTexture(position, pointOnSphere, uv));
+                    }
                 }
 
-                // Handle pole singularities
-                float maxV = MathF.Max(MathF.Max(uv0.Y, uv1.Y), uv2.Y);
-                float minV = MathF.Min(MathF.Min(uv0.Y, uv1.Y), uv2.Y);
-
-                // If triangle is near a pole (top or bottom)
-                if (maxV > 0.95f || minV < 0.05f)
+                // Generate indices for this face
+                for (int y = 0; y < resolution; y++)
                 {
-                    // Get current indices (might have been updated from seam fix)
-                    i0 = indices[triIndex];
-                    i1 = indices[triIndex + 1];
-                    i2 = indices[triIndex + 2];
-
-                    uv0 = vertexData[i0].uv;
-                    uv1 = vertexData[i1].uv;
-                    uv2 = vertexData[i2].uv;
-
-                    // Check if U coordinates are divergent near pole
-                    maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
-                    minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
-
-                    if ((maxU - minU) > 0.5f)
+                    for (int x = 0; x < resolution; x++)
                     {
-                        // Average U coordinate for pole vertices
-                        float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+                        int i0 = vertexOffset + y * (resolution + 1) + x;
+                        int i1 = i0 + 1;
+                        int i2 = i0 + (resolution + 1);
+                        int i3 = i2 + 1;
 
-                        // Adjust vertices near poles to use averaged U
-                        if (uv0.Y > 0.95f || uv0.Y < 0.05f)
-                        {
-                            var newData = vertexData[i0];
-                            newData.uv.X = avgU;
-                            i0 = vertexData.Count;
-                            vertexData.Add(newData);
-                        }
+                        indices.Add(i0);
+                        indices.Add(i2);
+                        indices.Add(i1);
 
-                        if (uv1.Y > 0.95f || uv1.Y < 0.05f)
-                        {
-                            var newData = vertexData[i1];
-                            newData.uv.X = avgU;
-                            i1 = vertexData.Count;
-                            vertexData.Add(newData);
-                        }
-
-                        if (uv2.Y > 0.95f || uv2.Y < 0.05f)
-                        {
-                            var newData = vertexData[i2];
-                            newData.uv.X = avgU;
-                            i2 = vertexData.Count;
-                            vertexData.Add(newData);
-                        }
-
-                        indices[triIndex] = i0;
-                        indices[triIndex + 1] = i1;
-                        indices[triIndex + 2] = i2;
+                        indices.Add(i1);
+                        indices.Add(i2);
+                        indices.Add(i3);
                     }
                 }
             }
 
-            // Build final vertex array from fixed vertex data
-            var sphereVertices = new VertexPositionNormalTexture[vertexData.Count];
-            for (int i = 0; i < vertexData.Count; i++)
-            {
-                var data = vertexData[i];
-                sphereVertices[i] = new VertexPositionNormalTexture(data.position, data.normal, data.uv);
-            }
+            // Fix UV seams
+            FixUVSeams(vertices, indices);
 
             // Create buffers
             vertexBuffer?.Dispose();
-            vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), sphereVertices.Length, BufferUsage.WriteOnly);
-            vertexBuffer.SetData(sphereVertices);
+            vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), vertices.Count, BufferUsage.WriteOnly);
+            vertexBuffer.SetData(vertices.ToArray());
 
             indexBuffer?.Dispose();
             indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.WriteOnly);
@@ -201,76 +134,73 @@ namespace rubens_psx_engine.system.procedural
             primitiveCount = indices.Count / 3;
         }
 
-        private Vector3[] GetIcosahedronVertices()
+        private void FixUVSeams(List<VertexPositionNormalTexture> vertices, List<int> indices)
         {
-            float t = (1.0f + MathF.Sqrt(5.0f)) / 2.0f; // Golden ratio
-
-            return new Vector3[]
-            {
-                new Vector3(-1, t, 0), new Vector3(1, t, 0), new Vector3(-1, -t, 0), new Vector3(1, -t, 0),
-                new Vector3(0, -1, t), new Vector3(0, 1, t), new Vector3(0, -1, -t), new Vector3(0, 1, -t),
-                new Vector3(t, 0, -1), new Vector3(t, 0, 1), new Vector3(-t, 0, -1), new Vector3(-t, 0, 1)
-            };
-        }
-
-        private int[] GetIcosahedronIndices()
-        {
-            return new int[]
-            {
-                0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
-                1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
-                3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
-                4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1
-            };
-        }
-
-        private void SubdivideIcosahedron(ref List<Vector3> vertices, ref List<int> indices)
-        {
-            var newVertices = new List<Vector3>(vertices);
-            var newIndices = new List<int>();
-            var midpointCache = new Dictionary<(int, int), int>();
-
+            // Fix UV seams by duplicating vertices where triangles cross the UV wrap boundary
             for (int i = 0; i < indices.Count; i += 3)
             {
-                int v1 = indices[i];
-                int v2 = indices[i + 1];
-                int v3 = indices[i + 2];
+                int i0 = indices[i];
+                int i1 = indices[i + 1];
+                int i2 = indices[i + 2];
 
-                int m1 = GetMidpoint(v1, v2, newVertices, midpointCache);
-                int m2 = GetMidpoint(v2, v3, newVertices, midpointCache);
-                int m3 = GetMidpoint(v3, v1, newVertices, midpointCache);
+                Vector2 uv0 = vertices[i0].TextureCoordinate;
+                Vector2 uv1 = vertices[i1].TextureCoordinate;
+                Vector2 uv2 = vertices[i2].TextureCoordinate;
 
-                newIndices.AddRange(new[] { v1, m3, m1 });
-                newIndices.AddRange(new[] { v2, m1, m2 });
-                newIndices.AddRange(new[] { v3, m2, m3 });
-                newIndices.AddRange(new[] { m1, m3, m2 });
+                // Check if triangle crosses the UV seam (U wraps from 1 to 0)
+                float maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
+                float minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
+                bool crossesSeam = (maxU - minU) > 0.5f;
+
+                if (crossesSeam)
+                {
+                    // Duplicate vertices that are on the wrong side of the seam
+                    // Average U coordinate to determine which side of the seam we're on
+                    float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                    // Fix vertex 0 if needed
+                    if (MathF.Abs(uv0.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i0];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv0.X < 0.5f ? uv0.X + 1.0f : uv0.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i0 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Fix vertex 1 if needed
+                    if (MathF.Abs(uv1.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i1];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv1.X < 0.5f ? uv1.X + 1.0f : uv1.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i1 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Fix vertex 2 if needed
+                    if (MathF.Abs(uv2.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i2];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv2.X < 0.5f ? uv2.X + 1.0f : uv2.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i2 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Update indices to point to new vertices
+                    indices[i] = i0;
+                    indices[i + 1] = i1;
+                    indices[i + 2] = i2;
+                }
             }
-
-            vertices = newVertices;
-            indices = newIndices;
         }
 
-        private int GetMidpoint(int i1, int i2, List<Vector3> vertices, Dictionary<(int, int), int> cache)
+        private Vector2 GetSphericalUV(Vector3 spherePos)
         {
-            var key = i1 < i2 ? (i1, i2) : (i2, i1);
-
-            if (cache.TryGetValue(key, out int cachedIndex))
-                return cachedIndex;
-
-            Vector3 v1 = vertices[i1];
-            Vector3 v2 = vertices[i2];
-            Vector3 midpoint = Vector3.Normalize((v1 + v2) / 2.0f);
-
-            int newIndex = vertices.Count;
-            vertices.Add(midpoint);
-            cache[key] = newIndex;
-
-            return newIndex;
-        }
-
-        private Vector2 GetUVForSpherePosition(Vector3 spherePos)
-        {
-            // Proper spherical UV mapping
             float u = MathF.Atan2(spherePos.X, spherePos.Z) / (2.0f * MathF.PI) + 0.5f;
             float v = MathF.Asin(MathHelper.Clamp(spherePos.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
             return new Vector2(u, v);

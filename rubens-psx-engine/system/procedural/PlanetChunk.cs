@@ -135,6 +135,9 @@ namespace rubens_psx_engine.system.procedural
                 }
             }
 
+            // Fix UV seams by duplicating vertices where triangles cross the UV wrap boundary
+            FixUVSeams(ref vertices, ref indices);
+
             // Create buffers
             if (vertices.Count > 0)
             {
@@ -179,6 +182,71 @@ namespace rubens_psx_engine.system.procedural
             float u = MathF.Atan2(spherePos.X, spherePos.Z) / (2.0f * MathF.PI) + 0.5f;
             float v = MathF.Asin(MathHelper.Clamp(spherePos.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
             return new Vector2(u, v);
+        }
+
+        private void FixUVSeams(ref List<VertexPositionNormalTexture> vertices, ref List<int> indices)
+        {
+            // Fix UV seams by duplicating vertices where triangles cross the UV wrap boundary
+            for (int i = 0; i < indices.Count; i += 3)
+            {
+                int i0 = indices[i];
+                int i1 = indices[i + 1];
+                int i2 = indices[i + 2];
+
+                Vector2 uv0 = vertices[i0].TextureCoordinate;
+                Vector2 uv1 = vertices[i1].TextureCoordinate;
+                Vector2 uv2 = vertices[i2].TextureCoordinate;
+
+                // Check if triangle crosses the UV seam (U wraps from 1 to 0)
+                float maxU = MathF.Max(MathF.Max(uv0.X, uv1.X), uv2.X);
+                float minU = MathF.Min(MathF.Min(uv0.X, uv1.X), uv2.X);
+                bool crossesSeam = (maxU - minU) > 0.5f;
+
+                if (crossesSeam)
+                {
+                    // Duplicate vertices that are on the wrong side of the seam
+                    // Average U coordinate to determine which side of the seam we're on
+                    float avgU = (uv0.X + uv1.X + uv2.X) / 3.0f;
+
+                    // Fix vertex 0 if needed
+                    if (MathF.Abs(uv0.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i0];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv0.X < 0.5f ? uv0.X + 1.0f : uv0.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i0 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Fix vertex 1 if needed
+                    if (MathF.Abs(uv1.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i1];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv1.X < 0.5f ? uv1.X + 1.0f : uv1.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i1 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Fix vertex 2 if needed
+                    if (MathF.Abs(uv2.X - avgU) > 0.4f)
+                    {
+                        var newVertex = vertices[i2];
+                        var newUV = newVertex.TextureCoordinate;
+                        newUV.X = uv2.X < 0.5f ? uv2.X + 1.0f : uv2.X - 1.0f;
+                        newVertex.TextureCoordinate = newUV;
+                        i2 = vertices.Count;
+                        vertices.Add(newVertex);
+                    }
+
+                    // Update indices to point to new vertices
+                    indices[i] = i0;
+                    indices[i + 1] = i1;
+                    indices[i + 2] = i2;
+                }
+            }
         }
 
         private void CalculateBounds()

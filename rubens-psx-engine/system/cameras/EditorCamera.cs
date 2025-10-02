@@ -25,6 +25,10 @@ namespace anakinsoft.system.cameras
         private rubens_psx_engine.system.procedural.ProceduralPlanetGenerator planetGenerator;
         private float planetRadius = 20f;
 
+        // Frustum update state
+        private int currentFrustumLevel = -1; // -1 = uninitialized, 0 = ground, 1 = transition, 2 = space
+        private float aspectRatio;
+
         public float MoveSpeed
         {
             get => moveSpeed;
@@ -56,7 +60,7 @@ namespace anakinsoft.system.cameras
             orientation = Quaternion.CreateFromRotationMatrix(lookMatrix);
 
             NearFarPlane = new Vector2(.001f, 1000f);
-            float aspectRatio = graphicsDevice.Viewport.AspectRatio;
+            aspectRatio = graphicsDevice.Viewport.AspectRatio;
             Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, NearFarPlane.X, NearFarPlane.Y);
 
             UpdateVectors();
@@ -80,6 +84,9 @@ namespace anakinsoft.system.cameras
             Position += velocity * deltaTime;
             velocity *= friction;
             UpdateVectors();
+
+            // Update frustum based on height above ground
+            UpdateFrustumBasedOnHeight();
 
             base.Update(gameTime);
         }
@@ -238,6 +245,81 @@ namespace anakinsoft.system.cameras
 
             // Return height above ground
             return cameraDistance - terrainHeight;
+        }
+
+        private void UpdateFrustumBasedOnHeight()
+        {
+            if (planetGenerator == null)
+                return;
+
+            float heightAboveGround = GetHeightAboveGround(planetGenerator, planetRadius);
+
+            // Determine which level we should be at with hysteresis
+            int targetLevel;
+
+            if (currentFrustumLevel == -1)
+            {
+                // First time - initialize based on current height
+                if (heightAboveGround < 10f)
+                    targetLevel = 0; // Ground
+                else if (heightAboveGround < 100f)
+                    targetLevel = 1; // Transition
+                else
+                    targetLevel = 2; // Space
+            }
+            else
+            {
+                // Use hysteresis to prevent flickering at boundaries
+                if (currentFrustumLevel == 0) // Currently at ground level
+                {
+                    targetLevel = heightAboveGround > 15f ? 1 : 0; // Need to go 5 units above threshold
+                }
+                else if (currentFrustumLevel == 1) // Currently at transition level
+                {
+                    if (heightAboveGround < 8f)
+                        targetLevel = 0; // Drop to ground (2 units hysteresis)
+                    else if (heightAboveGround > 110f)
+                        targetLevel = 2; // Move to space (10 units hysteresis)
+                    else
+                        targetLevel = 1; // Stay in transition
+                }
+                else // currentFrustumLevel == 2, currently at space level
+                {
+                    targetLevel = heightAboveGround < 90f ? 1 : 2; // Need to drop 10 units below threshold
+                }
+            }
+
+            // Only update if level changed
+            if (targetLevel != currentFrustumLevel)
+            {
+                currentFrustumLevel = targetLevel;
+
+                float nearPlane, farPlane;
+
+                if (currentFrustumLevel == 0)
+                {
+                    // Ground level
+                    nearPlane = 0.001f;
+                    farPlane = 1000f;
+                }
+                else if (currentFrustumLevel == 1)
+                {
+                    // Transition level
+                    nearPlane = 0.1f;
+                    farPlane = 3000f;
+                }
+                else
+                {
+                    // Space level
+                    nearPlane = 10f;
+                    farPlane = 10000f;
+                }
+
+                NearFarPlane = new Vector2(nearPlane, farPlane);
+
+                // Update projection matrix with new planes (using stored aspect ratio)
+                Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspectRatio, nearPlane, farPlane);
+            }
         }
 
         private void UpdateVectors()
