@@ -23,8 +23,9 @@ namespace rubens_psx_engine.system.procedural
         private ProceduralPlanetGenerator planetGenerator;
         private float planetRadius;
         private Vector3 centerPosition;
+        private ChunkNeighborInfo neighborInfo;
 
-        public PlanetChunk(GraphicsDevice gd, ProceduralPlanetGenerator generator, Vector3 localUp, Vector2 offset, float size, int lodLevel, float radius)
+        public PlanetChunk(GraphicsDevice gd, ProceduralPlanetGenerator generator, Vector3 localUp, Vector2 offset, float size, int lodLevel, float radius, ChunkNeighborInfo neighbors = null)
         {
             graphicsDevice = gd;
             planetGenerator = generator;
@@ -33,6 +34,7 @@ namespace rubens_psx_engine.system.procedural
             ChunkSize = size;
             LODLevel = lodLevel;
             planetRadius = radius;
+            neighborInfo = neighbors ?? new ChunkNeighborInfo();
 
             GenerateMesh();
             CalculateBounds();
@@ -99,9 +101,10 @@ namespace rubens_psx_engine.system.procedural
                     // Sample height from existing heightmap
                     float height = SampleHeightFromGenerator(pointOnSphere);
 
-                    // Apply height offset (matching ProceduralPlanetGenerator scale)
-                    float heightScale = planetRadius * 0.1f; // 10% of radius
-                    Vector3 position = pointOnSphere * (planetRadius + (height - 0.5f) * heightScale * 2f);
+                    // Apply height offset using slider value (height can be negative for underwater)
+                    // Use the generator's MountainHeight parameter which is controlled by the slider
+                    float heightScale = planetRadius * 0.1f * planetGenerator.Parameters.MountainHeight;
+                    Vector3 position = pointOnSphere * (planetRadius + height * heightScale);
 
                     sumPosition += position;
 
@@ -114,6 +117,9 @@ namespace rubens_psx_engine.system.procedural
 
             // Calculate center position for backface culling
             centerPosition = sumPosition / vertices.Count;
+
+            // Stitch edge vertices to match coarser neighbors (eliminates T-junctions)
+            StitchEdgesToNeighbors(vertices, resolution);
 
             // Generate indices for triangle list
             for (int y = 0; y < resolution; y++)
@@ -153,21 +159,107 @@ namespace rubens_psx_engine.system.procedural
             }
         }
 
+        private void StitchEdgesToNeighbors(List<VertexPositionNormalTexture> vertices, int resolution)
+        {
+            // Stitch edges to neighbors with lower LOD by averaging vertex positions
+            // This eliminates T-junctions: vertices that don't exist in the coarser neighbor
+            // are moved to lie exactly on the line between their neighbors
+
+            // Left edge (x = 0)
+            if (neighborInfo.LeftNeighborLOD >= 0 && neighborInfo.LeftNeighborLOD < LODLevel)
+            {
+                int neighborRes = GetResolutionForLOD(neighborInfo.LeftNeighborLOD);
+                int ratio = resolution / neighborRes;
+
+                for (int y = 0; y <= resolution; y++)
+                {
+                    // Skip vertices that exist in both resolutions
+                    if (y % ratio != 0)
+                    {
+                        int idx = y * (resolution + 1);
+                        int prevIdx = (y / ratio) * ratio * (resolution + 1);
+                        int nextIdx = ((y / ratio) + 1) * ratio * (resolution + 1);
+
+                        // Average position with neighbors
+                        var v = vertices[idx];
+                        v.Position = (vertices[prevIdx].Position + vertices[nextIdx].Position) * 0.5f;
+                        v.Normal = Vector3.Normalize((vertices[prevIdx].Normal + vertices[nextIdx].Normal) * 0.5f);
+                        vertices[idx] = v;
+                    }
+                }
+            }
+
+            // Right edge (x = resolution)
+            if (neighborInfo.RightNeighborLOD >= 0 && neighborInfo.RightNeighborLOD < LODLevel)
+            {
+                int neighborRes = GetResolutionForLOD(neighborInfo.RightNeighborLOD);
+                int ratio = resolution / neighborRes;
+
+                for (int y = 0; y <= resolution; y++)
+                {
+                    if (y % ratio != 0)
+                    {
+                        int idx = y * (resolution + 1) + resolution;
+                        int prevIdx = (y / ratio) * ratio * (resolution + 1) + resolution;
+                        int nextIdx = ((y / ratio) + 1) * ratio * (resolution + 1) + resolution;
+
+                        var v = vertices[idx];
+                        v.Position = (vertices[prevIdx].Position + vertices[nextIdx].Position) * 0.5f;
+                        v.Normal = Vector3.Normalize((vertices[prevIdx].Normal + vertices[nextIdx].Normal) * 0.5f);
+                        vertices[idx] = v;
+                    }
+                }
+            }
+
+            // Bottom edge (y = 0)
+            if (neighborInfo.BottomNeighborLOD >= 0 && neighborInfo.BottomNeighborLOD < LODLevel)
+            {
+                int neighborRes = GetResolutionForLOD(neighborInfo.BottomNeighborLOD);
+                int ratio = resolution / neighborRes;
+
+                for (int x = 0; x <= resolution; x++)
+                {
+                    if (x % ratio != 0)
+                    {
+                        int idx = x;
+                        int prevIdx = (x / ratio) * ratio;
+                        int nextIdx = ((x / ratio) + 1) * ratio;
+
+                        var v = vertices[idx];
+                        v.Position = (vertices[prevIdx].Position + vertices[nextIdx].Position) * 0.5f;
+                        v.Normal = Vector3.Normalize((vertices[prevIdx].Normal + vertices[nextIdx].Normal) * 0.5f);
+                        vertices[idx] = v;
+                    }
+                }
+            }
+
+            // Top edge (y = resolution)
+            if (neighborInfo.TopNeighborLOD >= 0 && neighborInfo.TopNeighborLOD < LODLevel)
+            {
+                int neighborRes = GetResolutionForLOD(neighborInfo.TopNeighborLOD);
+                int ratio = resolution / neighborRes;
+
+                for (int x = 0; x <= resolution; x++)
+                {
+                    if (x % ratio != 0)
+                    {
+                        int idx = resolution * (resolution + 1) + x;
+                        int prevIdx = resolution * (resolution + 1) + (x / ratio) * ratio;
+                        int nextIdx = resolution * (resolution + 1) + ((x / ratio) + 1) * ratio;
+
+                        var v = vertices[idx];
+                        v.Position = (vertices[prevIdx].Position + vertices[nextIdx].Position) * 0.5f;
+                        v.Normal = Vector3.Normalize((vertices[prevIdx].Normal + vertices[nextIdx].Normal) * 0.5f);
+                        vertices[idx] = v;
+                    }
+                }
+            }
+        }
+
         private float SampleHeightFromGenerator(Vector3 normalizedDirection)
         {
-            // Use same UV calculation as ProceduralPlanetGenerator
-            float theta = MathF.Atan2(normalizedDirection.X, normalizedDirection.Z);
-            float phi = MathF.Asin(MathHelper.Clamp(normalizedDirection.Y, -1f, 1f));
-
-            float u = 0.5f + theta / (2f * MathF.PI);
-            float v = 0.5f + phi / MathF.PI;
-
-            // Wrap u coordinate
-            u = u - MathF.Floor(u);
-            v = MathHelper.Clamp(v, 0f, 1f);
-
-            // Sample from planet generator's heightmap
-            return planetGenerator.SampleHeightAtUV(u, v);
+            // Use procedural sampling to avoid texture quantization artifacts
+            return planetGenerator.SampleHeightAtPosition(normalizedDirection);
         }
 
         private int GetResolutionForLOD(int lod)
@@ -179,8 +271,18 @@ namespace rubens_psx_engine.system.procedural
 
         private Vector2 GetSphericalUV(Vector3 spherePos)
         {
-            float u = MathF.Atan2(spherePos.X, spherePos.Z) / (2.0f * MathF.PI) + 0.5f;
-            float v = MathF.Asin(MathHelper.Clamp(spherePos.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
+            // Match heightmap generation exactly (ProceduralPlanetGenerator.cs lines 128-136)
+            // X = sin(phi) * cos(theta), Y = cos(phi), Z = sin(phi) * sin(theta)
+            // Invert: phi = acos(Y), theta = atan2(Z, X)
+
+            float phi = MathF.Acos(MathHelper.Clamp(spherePos.Y, -1.0f, 1.0f)); // [0, PI]
+            float theta = MathF.Atan2(spherePos.Z, spherePos.X); // [-PI, PI]
+
+            // Convert back to UV
+            float u = theta / (2.0f * MathF.PI); // [-0.5, 0.5]
+            if (u < 0) u += 1.0f; // [0, 1]
+            float v = phi / MathF.PI; // [0, 1]
+
             return new Vector2(u, v);
         }
 
@@ -296,11 +398,11 @@ namespace rubens_psx_engine.system.procedural
 
             // Distance-based subdivision that creates smaller chunks near camera
             // Expanded radius for more gradual transitions and visible detail in distance
-            float baseThreshold = planetRadius * 4.0f; // Expanded from 2.0 to 4.0 for more distant LOD transitions
+            float baseThreshold = planetRadius * 8.0f; // Expanded for wider LOD range
             float lodMultiplier = MathF.Pow(0.5f, LODLevel); // Each level halves the threshold
             float threshold = baseThreshold * lodMultiplier;
 
-            return distanceToCamera < threshold && LODLevel < 8; // Max LOD level 8 for extreme closeups
+            return distanceToCamera < threshold && LODLevel < 10; // Max LOD level 10 for more detail levels
         }
 
         public void Draw(GraphicsDevice device)

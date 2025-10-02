@@ -6,6 +6,36 @@ using System.Collections.Generic;
 namespace rubens_psx_engine.system.procedural
 {
     /// <summary>
+    /// Chunk key for caching
+    /// </summary>
+    public struct ChunkKey : IEquatable<ChunkKey>
+    {
+        public Vector3 LocalUp;
+        public Vector2 Offset;
+        public float Size;
+        public int LODLevel;
+
+        public ChunkKey(Vector3 localUp, Vector2 offset, float size, int lodLevel)
+        {
+            LocalUp = localUp;
+            Offset = offset;
+            Size = size;
+            LODLevel = lodLevel;
+        }
+
+        public bool Equals(ChunkKey other)
+        {
+            return LocalUp == other.LocalUp &&
+                   Offset == other.Offset &&
+                   MathF.Abs(Size - other.Size) < 0.0001f &&
+                   LODLevel == other.LODLevel;
+        }
+
+        public override bool Equals(object obj) => obj is ChunkKey other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(LocalUp, Offset, Size, LODLevel);
+    }
+
+    /// <summary>
     /// Renders a planet using dynamic LOD chunks
     /// </summary>
     public class ChunkedPlanetRenderer : IDisposable
@@ -15,6 +45,8 @@ namespace rubens_psx_engine.system.procedural
         private GraphicsDevice graphicsDevice;
         private ProceduralPlanetGenerator planetGenerator;
         private List<PlanetChunk> activeChunks;
+        private Dictionary<ChunkKey, PlanetChunk> chunkCache;
+        private HashSet<ChunkKey> currentFrameChunks;
 
         // The 6 cube face directions
         private static readonly Vector3[] CubeFaces = new Vector3[]
@@ -33,28 +65,56 @@ namespace rubens_psx_engine.system.procedural
             planetGenerator = generator;
             Radius = radius;
             activeChunks = new List<PlanetChunk>();
+            chunkCache = new Dictionary<ChunkKey, PlanetChunk>();
+            currentFrameChunks = new HashSet<ChunkKey>();
         }
 
         public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum)
         {
-            // Clear old chunks
-            foreach (var chunk in activeChunks)
-            {
-                chunk.Dispose();
-            }
+            // Clear active chunks list but don't dispose - we'll reuse from cache
             activeChunks.Clear();
+            currentFrameChunks.Clear();
 
             // Generate chunks for each cube face
             foreach (var faceNormal in CubeFaces)
             {
                 GenerateChunksRecursive(faceNormal, Vector2.Zero, 1.0f, 0, cameraPosition, frustum);
             }
+
+            // Remove unused chunks from cache
+            var keysToRemove = new List<ChunkKey>();
+            foreach (var kvp in chunkCache)
+            {
+                if (!currentFrameChunks.Contains(kvp.Key))
+                {
+                    kvp.Value.Dispose();
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+            foreach (var key in keysToRemove)
+            {
+                chunkCache.Remove(key);
+            }
         }
 
         private void GenerateChunksRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 cameraPosition, BoundingFrustum frustum)
         {
-            // Create chunk
-            var chunk = new PlanetChunk(graphicsDevice, planetGenerator, localUp, offset, size, lodLevel, Radius);
+            // Check cache first
+            var key = new ChunkKey(localUp, offset, size, lodLevel);
+
+            PlanetChunk chunk;
+            if (chunkCache.TryGetValue(key, out chunk))
+            {
+                // Reuse cached chunk
+                currentFrameChunks.Add(key);
+            }
+            else
+            {
+                // Create new chunk and cache it
+                chunk = new PlanetChunk(graphicsDevice, planetGenerator, localUp, offset, size, lodLevel, Radius);
+                chunkCache[key] = chunk;
+                currentFrameChunks.Add(key);
+            }
 
             // DISABLED: Frustum culling for performance testing
             //if (frustum != null && frustum.Contains(chunk.Bounds) == ContainmentType.Disjoint)
@@ -109,10 +169,9 @@ namespace rubens_psx_engine.system.procedural
                     }
                 }
 
-                // If no points are visible, cull the chunk
+                // If no points are visible, cull the chunk (don't add to active list)
                 if (!anyPointVisible)
                 {
-                    chunk.Dispose();
                     return;
                 }
             }
@@ -120,9 +179,7 @@ namespace rubens_psx_engine.system.procedural
             // Check if we should subdivide this chunk
             if (!cameraFarAway && chunk.ShouldSubdivide(cameraPosition))
             {
-                chunk.Dispose();
-
-                // Subdivide into 4 child chunks
+                // Subdivide into 4 child chunks (don't dispose - chunk stays in cache)
                 float childSize = size * 0.5f;
                 int childLOD = lodLevel + 1;
 
@@ -181,6 +238,18 @@ namespace rubens_psx_engine.system.procedural
 
         public int GetActiveChunkCount() => activeChunks.Count;
 
+        public void ClearCache()
+        {
+            // Dispose all cached chunks
+            foreach (var chunk in chunkCache.Values)
+            {
+                chunk.Dispose();
+            }
+            chunkCache.Clear();
+            activeChunks.Clear();
+            currentFrameChunks.Clear();
+        }
+
         public void Dispose()
         {
             foreach (var chunk in activeChunks)
@@ -188,6 +257,12 @@ namespace rubens_psx_engine.system.procedural
                 chunk.Dispose();
             }
             activeChunks.Clear();
+
+            foreach (var chunk in chunkCache.Values)
+            {
+                chunk.Dispose();
+            }
+            chunkCache.Clear();
         }
     }
 }

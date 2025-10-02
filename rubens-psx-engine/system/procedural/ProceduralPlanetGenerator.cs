@@ -144,50 +144,116 @@ namespace rubens_psx_engine.system.procedural
 
         private float GetPlanetHeight(Vector3 directionFromPlanetCenter)
         {
-            // Enhanced terrain height function - no water data, pure terrain elevation
-            float elevation = 0f;
+            Vector3 pos = directionFromPlanetCenter;
 
-            // Continental base using Perlin noise
-            float continents = 0f;
-            continents += PerlinNoise3D(directionFromPlanetCenter * Parameters.ContinentFrequency + new Vector3(Parameters.Seed)) * 1.0f;
-            continents += PerlinNoise3D(directionFromPlanetCenter * Parameters.ContinentFrequency * 2f + new Vector3(Parameters.Seed * 1.3f)) * 0.5f;
+            // Domain warping for more organic, archipelago-like shapes
+            float warpStrength = 0.25f;
+            Vector3 warp = new Vector3(
+                PerlinNoise3D(pos * 1.2f + new Vector3(Parameters.Seed)),
+                PerlinNoise3D(pos * 1.2f + new Vector3(Parameters.Seed + 100)),
+                PerlinNoise3D(pos * 1.2f + new Vector3(Parameters.Seed + 200))
+            ) * warpStrength;
+            pos += warp;
+
+            // Continental base - more frequent for islands
+            float continents = FractalNoise(pos, Parameters.ContinentFrequency * 1.5f, 5, 2.2f, 0.55f, Parameters.Seed);
             continents = (continents + 1.0f) * 0.5f; // Normalize to [0,1]
 
-            // Apply Worley noise for more realistic terrain shapes
-            float worleyNoise = WorleyNoise3D(directionFromPlanetCenter * Parameters.WorleyFrequency + new Vector3(Parameters.Seed * 2));
-            continents = MathF.Pow(continents * (1f + worleyNoise * Parameters.WorleyStrength), 2.2f);
+            // Adjust for 60% land coverage - gentle power curve with significant boost
+            continents = MathF.Pow(continents, 0.9f) * 1.9f;
+            continents = MathHelper.Clamp(continents, 0f, 1f);
 
-            // Base terrain elevation (always positive, no ocean depths)
-            elevation = Math.Max(0.01f, continents * Parameters.ContinentHeight);
+            // Worley noise for island/archipelago patterns
+            float worley = WorleyNoise3D(pos * Parameters.WorleyFrequency * 1.8f + new Vector3(Parameters.Seed * 2));
+            continents = continents * (0.6f + worley * Parameters.WorleyStrength * 0.8f);
 
-            // Mountain ranges using multiple octaves of Perlin noise
-            float mountains = 0f;
-            mountains += PerlinNoise3D(directionFromPlanetCenter * Parameters.MountainFrequency + new Vector3(Parameters.Seed * 3)) * 0.7f;
-            mountains += PerlinNoise3D(directionFromPlanetCenter * Parameters.MountainFrequency * 2f + new Vector3(Parameters.Seed * 3.7f)) * 0.3f;
-            mountains += PerlinNoise3D(directionFromPlanetCenter * Parameters.MountainFrequency * 4f + new Vector3(Parameters.Seed * 4.1f)) * 0.15f;
-            mountains = Math.Max(0, mountains);
+            // Base elevation with more variation
+            float elevation = continents * Parameters.ContinentHeight;
 
-            // Apply mountains to terrain based on continental height
-            float terrainMask = Math.Min(1f, elevation / (Parameters.ContinentHeight * 0.5f));
-            terrainMask = MathF.Pow(terrainMask, 1.5f);
-            mountains *= terrainMask;
-            elevation += mountains * Parameters.MountainHeight;
+            // More permissive terrain mask for mountains everywhere
+            float terrainMask = MathHelper.Clamp((continents - 0.2f) / 0.8f, 0f, 1f);
+            terrainMask = MathF.Pow(terrainMask, 0.8f);
 
-            // Fine details using high-frequency noise
-            float details = 0f;
-            details += PerlinNoise3D(directionFromPlanetCenter * Parameters.DetailFrequency + new Vector3(Parameters.Seed * 5)) * 0.03f;
-            details += PerlinNoise3D(directionFromPlanetCenter * Parameters.DetailFrequency * 2f + new Vector3(Parameters.Seed * 5.3f)) * 0.015f;
-            elevation += details * terrainMask;
+            // Dramatic mountain ranges using ridged multi-fractal
+            float mountains = RidgedNoise(pos, Parameters.MountainFrequency * 1.2f, 4, 2.3f, 0.5f, Parameters.Seed + 1000);
+            mountains = MathF.Pow(mountains, 1.8f); // Very sharp peaks
 
-            // Polar ice caps
-            float polarFactor = Math.Abs(directionFromPlanetCenter.Y);
-            if (polarFactor > 0.8f)
+            // Mountain detail layer
+            float mountainDetail1 = RidgedNoise(pos, Parameters.MountainFrequency * 3.5f, 3, 2.1f, 0.5f, Parameters.Seed + 2000);
+            mountains = mountains * (0.8f + mountainDetail1 * 0.2f);
+
+            // Significant mountain contribution
+            elevation += mountains * Parameters.MountainHeight * 1.5f * terrainMask;
+
+            // Rolling hills using billowy noise
+            float hills = FractalNoise(pos, Parameters.DetailFrequency * 0.7f, 3, 2.1f, 0.6f, Parameters.Seed + 3000);
+            hills = MathF.Abs(hills); // Billow effect
+            elevation += hills * 0.25f * terrainMask;
+
+            // Fine surface details for texture
+            float details = FractalNoise(pos, Parameters.DetailFrequency * 2.0f, 2, 2.0f, 0.5f, Parameters.Seed + 4000);
+            elevation += details * 0.05f * terrainMask;
+
+            // Deeper valleys using inverted ridged noise
+            float valleys = RidgedNoise(pos, Parameters.MountainFrequency * 0.8f, 3, 2.0f, 0.5f, Parameters.Seed + 5000);
+            valleys = 1.0f - valleys;
+            elevation -= valleys * 0.15f * terrainMask * continents;
+
+            // Polar regions - don't flatten, just slight ice caps
+            float polarFactor = MathF.Abs(directionFromPlanetCenter.Y);
+            if (polarFactor > 0.85f)
             {
-                float iceFactor = (polarFactor - 0.8f) / 0.2f;
-                elevation = Math.Max(elevation, 0.02f * iceFactor);
+                float polarBlend = (polarFactor - 0.85f) / 0.15f;
+                elevation += polarBlend * 0.1f; // Slight ice cap elevation
             }
 
-            return elevation;
+            return elevation; // Allow negative values for underwater terrain
+        }
+
+        /// <summary>
+        /// Multi-octave fractal noise (standard Perlin)
+        /// </summary>
+        private float FractalNoise(Vector3 pos, float frequency, int octaves, float lacunarity, float persistence, int seed)
+        {
+            float result = 0f;
+            float amplitude = 1f;
+            float maxAmplitude = 0f;
+
+            for (int i = 0; i < octaves; i++)
+            {
+                result += PerlinNoise3D(pos * frequency + new Vector3(seed + i * 123)) * amplitude;
+                maxAmplitude += amplitude;
+
+                frequency *= lacunarity;
+                amplitude *= persistence;
+            }
+
+            return result / maxAmplitude;
+        }
+
+        /// <summary>
+        /// Ridged multi-fractal noise for mountain ranges
+        /// </summary>
+        private float RidgedNoise(Vector3 pos, float frequency, int octaves, float lacunarity, float persistence, int seed)
+        {
+            float result = 0f;
+            float amplitude = 1f;
+            float maxAmplitude = 0f;
+
+            for (int i = 0; i < octaves; i++)
+            {
+                float noise = PerlinNoise3D(pos * frequency + new Vector3(seed + i * 456));
+                noise = 1.0f - MathF.Abs(noise); // Ridge operation
+                noise = noise * noise; // Sharpen ridges
+
+                result += noise * amplitude;
+                maxAmplitude += amplitude;
+
+                frequency *= lacunarity;
+                amplitude *= persistence;
+            }
+
+            return result / maxAmplitude;
         }
 
         private void CreateHeightmapTexture()
@@ -195,14 +261,32 @@ namespace rubens_psx_engine.system.procedural
             heightmapTexture?.Dispose();
             heightmapTexture = new Texture2D(graphicsDevice, HeightmapResolution, HeightmapResolution);
 
+            // Find min/max for normalization
+            float minHeight = float.MaxValue;
+            float maxHeight = float.MinValue;
+
+            for (int y = 0; y < HeightmapResolution; y++)
+            {
+                for (int x = 0; x < HeightmapResolution; x++)
+                {
+                    float height = heightmapData[x, y];
+                    minHeight = MathF.Min(minHeight, height);
+                    maxHeight = MathF.Max(maxHeight, height);
+                }
+            }
+
+            // Ensure we have a good range
+            float range = maxHeight - minHeight;
+            if (range < 0.001f) range = 1.0f;
+
             Color[] heightColors = new Color[HeightmapResolution * HeightmapResolution];
             for (int y = 0; y < HeightmapResolution; y++)
             {
                 for (int x = 0; x < HeightmapResolution; x++)
                 {
                     float height = heightmapData[x, y];
-                    // Normalize height to [0,1] for texture storage (pure terrain data, no negative values)
-                    float normalizedHeight = height / 1.2f; // Adjust range for pure terrain heights
+                    // Normalize to [0,1] using actual min/max for full gradient range
+                    float normalizedHeight = (height - minHeight) / range;
                     normalizedHeight = MathHelper.Clamp(normalizedHeight, 0f, 1f);
 
                     byte heightValue = (byte)(normalizedHeight * 255);
@@ -684,7 +768,17 @@ namespace rubens_psx_engine.system.procedural
         };
 
         /// <summary>
+        /// Sample height procedurally at 3D sphere position - bypasses texture quantization
+        /// </summary>
+        public float SampleHeightAtPosition(Vector3 spherePosition)
+        {
+            return GetPlanetHeight(spherePosition);
+        }
+
+        /// <summary>
         /// Sample heightmap at specific UV coordinates (public accessor for chunks)
+        /// WARNING: This samples from texture and may have quantization artifacts
+        /// Consider using SampleHeightAtPosition for higher precision
         /// </summary>
         public float SampleHeightAtUV(float u, float v)
         {

@@ -83,57 +83,59 @@ struct VertexShaderOutput
 // Terrain gradient function - interpolates between terrain colors based on height
 float3 GetTerrainColor(float height)
 {
-    // Terrain gradient key colors for height-based interpolation
-    float3 beachColor = float3(0.96, 0.64, 0.38);      // SandyBrown
-    float3 lowlandColor = float3(0.0, 0.5, 0.0);       // Green
-    float3 midlandColor = float3(0.34, 0.68, 0.16);    // ForestGreen
-    float3 highlandColor = float3(0.54, 0.27, 0.07);   // SaddleBrown
-    float3 mountainColor = float3(0.41, 0.41, 0.41);   // DimGray
-    float3 peakColor = float3(1.0, 1.0, 1.0);          // White
+    // Enhanced terrain color palette
+    float3 mudColor = float3(0.35, 0.25, 0.15);        // Dark mud (underwater/coast)
+    float3 sandColor = float3(0.96, 0.84, 0.66);       // Light sand (narrow beach)
+    float3 grassColor = float3(0.2, 0.6, 0.2);         // Vibrant grass
+    float3 darkGrassColor = float3(0.15, 0.45, 0.15);  // Darker grass (highlands)
+    float3 rockyColor = float3(0.5, 0.45, 0.4);        // Rocky gray-brown
+    float3 mountainColor = float3(0.4, 0.4, 0.4);      // Mountain rock
+    float3 snowColor = float3(0.95, 0.95, 1.0);        // Snow/ice caps
 
-    // Define height thresholds for color transitions
-    float beachThreshold = 0.1;
-    float lowlandThreshold = 0.25;
-    float midlandThreshold = 0.5;
-    float highlandThreshold = 0.7;
-    float mountainThreshold = 0.85;
+    // Refined height thresholds for more realistic terrain
+    float waterLine = 0.48;         // Below this is mud (underwater)
+    float sandStart = 0.48;         // Narrow sand band
+    float sandEnd = 0.52;           // End of sand, start of grass
+    float grassEnd = 0.65;          // Grass dominates most terrain
+    float rockyStart = 0.65;        // Rocky mountainsides begin
+    float mountainStart = 0.80;     // High mountains
+    float snowStart = 0.90;         // Ice caps on peaks
 
     float3 color;
 
-    if (height < beachThreshold)
+    if (height < waterLine)
     {
-        // Beach to lowland transition
-        float t = height / beachThreshold;
-        color = lerp(beachColor, lowlandColor, t);
+        // Underwater - mud
+        color = mudColor;
     }
-    else if (height < lowlandThreshold)
+    else if (height < sandEnd)
     {
-        // Lowland to midland transition
-        float t = (height - beachThreshold) / (lowlandThreshold - beachThreshold);
-        color = lerp(lowlandColor, midlandColor, t);
+        // Narrow sand beach band
+        float t = (height - sandStart) / (sandEnd - sandStart);
+        color = lerp(mudColor, sandColor, saturate(t * 2.0)); // Sharp transition
     }
-    else if (height < midlandThreshold)
+    else if (height < grassEnd)
     {
-        // Midland to highland transition
-        float t = (height - lowlandThreshold) / (midlandThreshold - lowlandThreshold);
-        color = lerp(midlandColor, highlandColor, t);
+        // Grass dominates - most of terrain
+        float t = (height - sandEnd) / (grassEnd - sandEnd);
+        color = lerp(grassColor, darkGrassColor, t);
     }
-    else if (height < highlandThreshold)
+    else if (height < mountainStart)
     {
-        // Highland to mountain transition
-        float t = (height - midlandThreshold) / (highlandThreshold - midlandThreshold);
-        color = lerp(highlandColor, mountainColor, t);
+        // Rocky mountainsides
+        float t = (height - rockyStart) / (mountainStart - rockyStart);
+        color = lerp(rockyColor, mountainColor, t);
     }
-    else if (height < mountainThreshold)
+    else if (height < snowStart)
     {
-        // Mountain to peak transition
-        float t = (height - highlandThreshold) / (mountainThreshold - highlandThreshold);
-        color = lerp(mountainColor, peakColor, t);
+        // High mountains
+        float t = (height - mountainStart) / (snowStart - mountainStart);
+        color = lerp(mountainColor, snowColor, t * t); // Gradual snow appearance
     }
     else
     {
-        // Pure peak color
-        color = peakColor;
+        // Ice caps
+        color = snowColor;
     }
 
     return color;

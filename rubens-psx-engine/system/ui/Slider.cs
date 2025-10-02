@@ -15,11 +15,18 @@ namespace rubens_psx_engine.system.ui
         private float currentValue;
         private string label;
         private SpriteFont font;
+        private bool needsRegeneration;
 
         public float Value
         {
             get => currentValue;
             set => currentValue = MathHelper.Clamp(value, minValue, maxValue);
+        }
+
+        public bool NeedsRegeneration
+        {
+            get => needsRegeneration;
+            set => needsRegeneration = value;
         }
 
         public event Action<float> ValueChanged;
@@ -81,6 +88,14 @@ namespace rubens_psx_engine.system.ui
 
             // Draw slider handle
             spriteBatch.Draw(pixelTexture, sliderBounds, isDragging ? Color.White : Color.LightGray);
+
+            // Draw red indicator if needs regeneration
+            if (needsRegeneration)
+            {
+                int dotRadius = 6;
+                Rectangle dotRect = new Rectangle(bounds.X - dotRadius * 2 - 5, bounds.Y + bounds.Height / 2 - dotRadius, dotRadius * 2, dotRadius * 2);
+                spriteBatch.Draw(pixelTexture, dotRect, Color.Red);
+            }
 
             // Draw label and value
             string text = $"{label}: {currentValue:F2}";

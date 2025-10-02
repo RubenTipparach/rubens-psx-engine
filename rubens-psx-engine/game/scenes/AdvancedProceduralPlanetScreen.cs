@@ -42,6 +42,10 @@ namespace anakinsoft.game.scenes
         private List<Slider> sliders;
         private Texture2D pixelTexture;
         private bool showUI = true;
+        private Rectangle regenerateButton;
+        private bool regenerateButtonHovered = false;
+        private Rectangle saveButton;
+        private bool saveButtonHovered = false;
 
         // Shader parameters
         private float planetNormalMapStrength = 0.5f;
@@ -67,8 +71,8 @@ namespace anakinsoft.game.scenes
             // Create editor camera positioned to look at planet
             camera = new EditorCamera(gd, new Vector3(0, 15, 60));
 
-            // Create procedural planet generator (old system)
-            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 50f, heightmapResolution: 1024);
+            // Create procedural planet generator (old system) - 512 for fast startup
+            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 50f, heightmapResolution: 512);
 
             // Set planet context for height-based speed scaling
             camera.SetPlanetContext(planetGenerator, 50f);
@@ -77,7 +81,7 @@ namespace anakinsoft.game.scenes
             chunkedPlanet = new ChunkedPlanetRenderer(gd, planetGenerator, radius: 50f);
 
             // Create water sphere at ocean level (matches base planet radius at height 0)
-            waterSphere = new WaterSphereRenderer(gd, 45, 3);
+            waterSphere = new WaterSphereRenderer(gd, 50, 3);
 
             // Load custom planet shader
             try
@@ -112,27 +116,37 @@ namespace anakinsoft.game.scenes
             int sliderWidth = 200;
             int x = Globals.screenManager.Window.ClientBounds.Width - sliderWidth - 20;
 
-            // Continent Frequency
+            // Regenerate button
+            int buttonWidth = 150;
+            int buttonHeight = 35;
+            regenerateButton = new Rectangle(x + (sliderWidth - buttonWidth) / 2, startY, buttonWidth, buttonHeight);
+            startY += buttonHeight + 10;
+
+            // Save heightmap button
+            saveButton = new Rectangle(x + (sliderWidth - buttonWidth) / 2, startY, buttonWidth, buttonHeight);
+            startY += buttonHeight + 20;
+
+            // Continent Frequency (needs regeneration)
             var continentSlider = new Slider(
                 new Rectangle(x, startY, sliderWidth, sliderHeight),
                 0.1f, 3.0f, planetGenerator.Parameters.ContinentFrequency,
                 "Continent Freq", font);
+            continentSlider.NeedsRegeneration = true;
             continentSlider.ValueChanged += value =>
             {
                 planetGenerator.Parameters.ContinentFrequency = value;
-                RegeneratePlanet();
             };
             sliders.Add(continentSlider);
 
-            // Mountain Frequency
+            // Mountain Frequency (needs regeneration)
             var mountainSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing, sliderWidth, sliderHeight),
                 0.5f, 8.0f, planetGenerator.Parameters.MountainFrequency,
                 "Mountain Freq", font);
+            mountainSlider.NeedsRegeneration = true;
             mountainSlider.ValueChanged += value =>
             {
                 planetGenerator.Parameters.MountainFrequency = value;
-                RegeneratePlanet();
             };
             sliders.Add(mountainSlider);
 
@@ -144,20 +158,18 @@ namespace anakinsoft.game.scenes
             oceanSlider.ValueChanged += value =>
             {
                 planetGenerator.Parameters.OceanLevel = value;
-                // Only update water sphere, not terrain
                 waterSphere.UpdateWaterLevel(value);
             };
             sliders.Add(oceanSlider);
 
-            // Mountain Height
+            // Mountain Height (just changes scale, no regen) - 10x range
             var mountainHeightSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
-                0.1f, 1.0f, planetGenerator.Parameters.MountainHeight,
+                0.1f, 10.0f, planetGenerator.Parameters.MountainHeight,
                 "Mountain Height", font);
             mountainHeightSlider.ValueChanged += value =>
             {
                 planetGenerator.Parameters.MountainHeight = value;
-                RegeneratePlanet();
             };
             sliders.Add(mountainHeightSlider);
 
@@ -297,6 +309,12 @@ namespace anakinsoft.game.scenes
         private void RegeneratePlanet()
         {
             planetGenerator.GeneratePlanet();
+
+            // Clear chunk cache to force regeneration
+            if (chunkedPlanet != null)
+            {
+                chunkedPlanet.ClearCache();
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -374,6 +392,23 @@ namespace anakinsoft.game.scenes
                 {
                     slider.Update(gameTime);
                 }
+
+                // Handle UI buttons
+                var mouseState = Mouse.GetState();
+                var mousePos = new Point(mouseState.X, mouseState.Y);
+
+                regenerateButtonHovered = regenerateButton.Contains(mousePos);
+                saveButtonHovered = saveButton.Contains(mousePos);
+
+                if (regenerateButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    RegeneratePlanet();
+                }
+
+                if (saveButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    planetGenerator.SaveHeightmapToDisk();
+                }
             }
 
             // Handle escape key
@@ -405,12 +440,6 @@ namespace anakinsoft.game.scenes
             if (InputManager.GetKeyboardClick(Keys.Tab))
             {
                 showUI = !showUI;
-            }
-
-            // S key to save heightmap to disk
-            if (InputManager.GetKeyboardClick(Keys.S))
-            {
-                planetGenerator.SaveHeightmapToDisk();
             }
 
             // O key to toggle water sphere (O for Ocean)
@@ -467,6 +496,32 @@ namespace anakinsoft.game.scenes
             Vector2 position = new Vector2(20, 120);
             getSpriteBatch.DrawString(Globals.fontNTR, instructions, position + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, instructions, position, Color.White);
+
+            // Draw regenerate button
+            Color regenButtonColor = regenerateButtonHovered ? Color.Orange : Color.DarkOrange;
+            getSpriteBatch.Draw(pixelTexture, regenerateButton, regenButtonColor);
+
+            string regenButtonText = "REGENERATE";
+            Vector2 regenButtonTextSize = Globals.fontNTR.MeasureString(regenButtonText);
+            Vector2 regenButtonTextPos = new Vector2(
+                regenerateButton.X + (regenerateButton.Width - regenButtonTextSize.X) / 2,
+                regenerateButton.Y + (regenerateButton.Height - regenButtonTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, regenButtonText, regenButtonTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, regenButtonText, regenButtonTextPos, Color.White);
+
+            // Draw save button
+            Color saveButtonColor = saveButtonHovered ? Color.LightGreen : Color.DarkGreen;
+            getSpriteBatch.Draw(pixelTexture, saveButton, saveButtonColor);
+
+            string saveButtonText = "SAVE";
+            Vector2 saveButtonTextSize = Globals.fontNTR.MeasureString(saveButtonText);
+            Vector2 saveButtonTextPos = new Vector2(
+                saveButton.X + (saveButton.Width - saveButtonTextSize.X) / 2,
+                saveButton.Y + (saveButton.Height - saveButtonTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, saveButtonText, saveButtonTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, saveButtonText, saveButtonTextPos, Color.White);
 
             // Draw sliders
             foreach (var slider in sliders)
