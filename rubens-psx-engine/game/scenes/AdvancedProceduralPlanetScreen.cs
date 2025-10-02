@@ -48,7 +48,8 @@ namespace anakinsoft.game.scenes
         private bool saveButtonHovered = false;
 
         // Shader parameters
-        private float planetNormalMapStrength = 0.5f;
+        private float planetNormalMapStrength = 0.15f;
+        private float planetDetailNormalStrength = 0.3f;
         private float planetDayNightTransition = 0.5f;
         private float planetSpecularIntensity = 0.1f;
         private float planetRotationSpeed = 0.0f;
@@ -72,7 +73,7 @@ namespace anakinsoft.game.scenes
             camera = new EditorCamera(gd, new Vector3(0, 15, 60));
 
             // Create procedural planet generator (old system) - 512 for fast startup
-            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 50f, heightmapResolution: 512);
+            planetGenerator = new ProceduralPlanetGenerator(gd, radius: 50f, heightmapResolution: 1024);
 
             // Set planet context for height-based speed scaling
             camera.SetPlanetContext(planetGenerator, 50f);
@@ -173,20 +174,31 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(mountainHeightSlider);
 
-            // Planet Normal Map Strength
+            // Planet Normal Map Strength (terrain normals)
             var normalMapStrengthSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
                 -10.0f, 10.0f, 0.5f,
-                "Normal Map Str", font);
+                "Terrain Normal", font);
             normalMapStrengthSlider.ValueChanged += value =>
             {
                 planetNormalMapStrength = value;
             };
             sliders.Add(normalMapStrengthSlider);
 
+            // Planet Detail Normal Strength (fine surface details)
+            var detailNormalStrengthSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
+                0.0f, 10.0f, 0.3f,
+                "Detail Normal", font);
+            detailNormalStrengthSlider.ValueChanged += value =>
+            {
+                planetDetailNormalStrength = value;
+            };
+            sliders.Add(detailNormalStrengthSlider);
+
             // Planet Day/Night Transition
             var dayNightSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 1.0f, 0.5f,
                 "Day/Night Trans", font);
             dayNightSlider.ValueChanged += value =>
@@ -583,6 +595,7 @@ namespace anakinsoft.game.scenes
             {
                 // Set common shader parameters
                 planetShader.Parameters["NormalMapStrength"]?.SetValue(planetNormalMapStrength);
+                planetShader.Parameters["DetailNormalStrength"]?.SetValue(planetDetailNormalStrength);
                 planetShader.Parameters["DayNightTransition"]?.SetValue(planetDayNightTransition);
                 planetShader.Parameters["SpecularIntensity"]?.SetValue(planetSpecularIntensity);
                 planetShader.Parameters["UseVertexColoring"]?.SetValue(useVertexColoring);

@@ -31,7 +31,8 @@ float SpecularPower = 16.0;
 float SpecularIntensity = 0.1;
 
 // Normal map parameters
-float NormalMapStrength = 0.5;  // 0-1 range for blending
+float NormalMapStrength = 0.5;  // 0-1 range for terrain normals (large scale features)
+float DetailNormalStrength = 0.3; // 0-1 range for detail normals (fine surface details)
 float DayNightTransition = 0.5; // 0 to 1, controls terminator harshness (0=sharp, 1=gradual)
 
 // Detail noise parameters
@@ -222,17 +223,12 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float3 heightBasedColor = GetTerrainColor(height);
     float3 terrainColor = lerp(heightBasedColor, input.Color.rgb, UseVertexColoring ? 1.0 : 0.0);
 
-    // Calculate normal from heightmap + noise detail using screen-space derivatives
+    // Calculate normals from heightmap using screen-space derivatives
 
     // Get world-space derivatives of position
     float3 worldDerivativeX = ddx(input.WorldPosition);
     float3 worldDerivativeY = ddy(input.WorldPosition);
 
-    // Get height derivatives (including noise detail)
-    float dHdx = ddx(detailedHeight);
-    float dHdy = ddy(detailedHeight);
-
-    // Calculate tangent-space gradient
     float3 vertexNormal = normalize(input.WorldNormal);
     float3 crossX = cross(vertexNormal, worldDerivativeX);
     float3 crossY = cross(worldDerivativeY, vertexNormal);
@@ -241,10 +237,20 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float sgn = d < 0.0 ? -1.0 : 1.0;
     float surface = sgn / max(0.00000001, abs(d));
 
-    float3 surfaceGrad = surface * (dHdx * crossY + dHdy * crossX);
-    float3 heightmapNormal = normalize(vertexNormal - NormalMapStrength * surfaceGrad);
+    // Terrain normals (large scale features from base heightmap)
+    float dTerrainHdx = ddx(height);
+    float dTerrainHdy = ddy(height);
+    float3 terrainGrad = surface * (dTerrainHdx * crossY + dTerrainHdy * crossX);
+    float3 terrainNormal = normalize(vertexNormal - NormalMapStrength * terrainGrad);
 
-    float3 normal = heightmapNormal;
+    // Detail normals (fine surface details from noise)
+    float dDetailHdx = ddx(detailedHeight - height); // Only the noise contribution
+    float dDetailHdy = ddy(detailedHeight - height);
+    float3 detailGrad = surface * (dDetailHdx * crossY + dDetailHdy * crossX);
+    float3 detailNormal = normalize(vertexNormal - DetailNormalStrength * detailGrad);
+
+    // Blend terrain and detail normals
+    float3 normal = normalize(terrainNormal + detailNormal - vertexNormal);
 
     float3 lightDir = normalize(-DirectionalLightDirection);
     float3 viewDir = normalize(CameraPosition - input.WorldPosition);
