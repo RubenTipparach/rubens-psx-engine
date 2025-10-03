@@ -56,6 +56,7 @@ namespace rubens_psx_engine
                 //Initialize the game.
                 Logger.Info("ScreenManager: Creating GraphicsDeviceManager");
                 graphics = new GraphicsDeviceManager(this);
+                graphics.GraphicsProfile = GraphicsProfile.HiDef; // Required for shader model 5.0
 
                 Logger.Info("ScreenManager: Creating SettingsManager");
                 settingsManager = new SettingsManager();

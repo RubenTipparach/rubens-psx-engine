@@ -3,8 +3,8 @@
     #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
-    #define VS_SHADERMODEL vs_4_0
-    #define PS_SHADERMODEL ps_4_0
+    #define VS_SHADERMODEL vs_5_0
+    #define PS_SHADERMODEL ps_5_0
 #endif
 
 // Matrices
@@ -14,26 +14,27 @@ float4x4 Projection;
 
 // Atmosphere parameters
 float3 CameraPosition;
-float3 PlanetCenter;
+float3 PlanetCenter = float3(0, 0, 0);
 float PlanetRadius = 50.0;
 float AtmosphereRadius = 60.0;
-float3 SunDirection = float3(0.0, 0.5, 0.866); // Normalized direction to sun
+float3 SunDirection = float3(0.0, 0.5, 0.866);
 
-// Atmospheric scattering colors
-float3 RayleighColor = float3(0.26, 0.41, 0.58); // Blue sky
-float3 MieColor = float3(1.0, 0.9, 0.8); // Sunset/sunrise warm colors
-float3 SunColor = float3(1.0, 0.9, 0.7);
+// Scattering coefficients (physically based for Earth-like atmosphere)
+static const float3 BetaRayleigh = float3(5.8e-3, 13.5e-3, 33.1e-3); // Rayleigh scattering coefficients
+static const float BetaMie = 21e-3;                                    // Mie scattering coefficient
 
-// Scattering coefficients
-float RayleighStrength = 2.0;
-float MieStrength = 0.8;
+static const float HRayleigh = 8000.0;  // Rayleigh scale height (in meters, will be normalized)
+static const float HMie = 1200.0;       // Mie scale height
+
+static const float g = 0.76;            // Mie scattering direction (anisotropy)
+
+// Intensity multipliers
 float SunIntensity = 20.0;
-float AtmosphereThickness = 1.0;
-float DensityFalloff = 4.0;
+float AtmosphereIntensity = 1.0;
 
-// Fog parameters
-float FogDensity = 0.5;
-float FogHeight = 1.0;
+// Sampling quality
+static const int NumSamples = 16;
+static const int NumSamplesLight = 8;
 
 struct VertexShaderInput
 {
@@ -47,7 +48,6 @@ struct VertexShaderOutput
     float4 Position : SV_POSITION;
     float3 WorldPosition : TEXCOORD0;
     float3 Normal : TEXCOORD1;
-    float3 ViewDirection : TEXCOORD2;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -56,154 +56,228 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
     float4 worldPosition = mul(input.Position, World);
     output.WorldPosition = worldPosition.xyz;
-    output.ViewDirection = normalize(CameraPosition - worldPosition.xyz);
     output.Normal = normalize(mul(input.Normal, (float3x3)World));
 
     float4 viewPosition = mul(worldPosition, View);
     output.Position = mul(viewPosition, Projection);
 
+    // No depth modification - let atmosphere render at its natural position
+    // The double-sided sphere will render correctly with alpha blending
+
     return output;
 }
 
 // Ray-sphere intersection
-float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCenter, float sphereRadius)
+bool RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCenter, float sphereRadius, out float t0, out float t1)
 {
-    float3 offset = rayOrigin - sphereCenter;
-    float a = dot(rayDir, rayDir);
-    float b = 2.0 * dot(offset, rayDir);
-    float c = dot(offset, offset) - sphereRadius * sphereRadius;
-    float discriminant = b * b - 4.0 * a * c;
+    float3 L = sphereCenter - rayOrigin;
+    float tca = dot(L, rayDir);
+    float d2 = dot(L, L) - tca * tca;
+    float radius2 = sphereRadius * sphereRadius;
 
-    if (discriminant < 0.0)
-        return float2(-1.0, -1.0); // No intersection
+    if (d2 > radius2)
+        return false;
 
-    float sqrtDisc = sqrt(discriminant);
-    float t1 = (-b - sqrtDisc) / (2.0 * a);
-    float t2 = (-b + sqrtDisc) / (2.0 * a);
+    float thc = sqrt(radius2 - d2);
+    t0 = tca - thc;
+    t1 = tca + thc;
 
-    return float2(t1, t2);
+    return true;
 }
 
-// Atmospheric density at a given height
-float AtmosphereDensity(float3 position)
+// Atmospheric density at height (exponential falloff)
+float DensityRayleigh(float height)
 {
-    float height = length(position - PlanetCenter) - PlanetRadius;
-    float normalizedHeight = saturate(height / (AtmosphereRadius - PlanetRadius));
-    return exp(-normalizedHeight * DensityFalloff) * AtmosphereThickness;
+    // Normalize scale height to our planet scale
+    float scaleHeight = (AtmosphereRadius - PlanetRadius) * (HRayleigh / 8000.0);
+    return exp(-height / scaleHeight);
 }
 
-// Rayleigh phase function (wavelength-dependent scattering)
-float RayleighPhase(float cosTheta)
+float DensityMie(float height)
+{
+    float scaleHeight = (AtmosphereRadius - PlanetRadius) * (HMie / 8000.0);
+    return exp(-height / scaleHeight);
+}
+
+// Rayleigh phase function
+float PhaseRayleigh(float cosTheta)
 {
     return (3.0 / (16.0 * 3.14159)) * (1.0 + cosTheta * cosTheta);
 }
 
-// Mie phase function (forward scattering for particles)
-float MiePhase(float cosTheta, float g)
+// Mie phase function (Cornette-Shanks)
+float PhaseMie(float cosTheta)
 {
     float g2 = g * g;
-    float num = (1.0 - g2);
-    float denom = 4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
-    return num / denom;
+    float numerator = (1.0 - g2) * (1.0 + cosTheta * cosTheta);
+    float denominator = (2.0 + g2) * pow(abs(1.0 + g2 - 2.0 * g * cosTheta), 1.5);
+    return (3.0 / (8.0 * 3.14159)) * numerator / denominator;
 }
 
-// Simple atmospheric scattering calculation
-float3 CalculateAtmosphericScattering(float3 rayOrigin, float3 rayDir, float rayLength)
+// Calculate optical depth (integral of density along path)
+void CalculateOpticalDepth(float3 rayStart, float3 rayEnd, out float depthRayleigh, out float depthMie)
 {
-    const int numSamples = 16;
-    float stepSize = rayLength / float(numSamples);
+    float3 step = (rayEnd - rayStart) / float(NumSamplesLight);
+    float stepLength = length(step);
 
-    float3 rayleighAccum = float3(0.0, 0.0, 0.0);
-    float3 mieAccum = float3(0.0, 0.0, 0.0);
+    depthRayleigh = 0.0;
+    depthMie = 0.0;
 
-    float cosTheta = dot(rayDir, SunDirection);
-    float rayleighPhase = RayleighPhase(cosTheta);
-    float miePhase = MiePhase(cosTheta, 0.76); // g = 0.76 for Earth-like atmosphere
+    float3 pos = rayStart + step * 0.5;
 
-    for (int i = 0; i < numSamples; i++)
+    [unroll]
+    for (int i = 0; i < NumSamplesLight; i++)
     {
-        float t = (float(i) + 0.5) * stepSize;
-        float3 samplePos = rayOrigin + rayDir * t;
+        float height = length(pos - PlanetCenter) - PlanetRadius;
 
-        float density = AtmosphereDensity(samplePos);
+        if (height < 0.0)
+            return; // Below surface, in shadow
 
-        // Calculate light transmittance from sun to sample point
-        float3 sunDir = SunDirection;
-        float2 sunIntersect = RaySphereIntersection(samplePos, sunDir, PlanetCenter, AtmosphereRadius);
+        depthRayleigh += DensityRayleigh(height) * stepLength;
+        depthMie += DensityMie(height) * stepLength;
 
-        float sunRayLength = sunIntersect.y;
-        float opticalDepth = density * stepSize;
+        pos += step;
+    }
+}
 
-        // Accumulate scattering
-        rayleighAccum += density * rayleighPhase * exp(-opticalDepth * 0.1);
-        mieAccum += density * miePhase * exp(-opticalDepth * 0.05);
+// Main atmospheric scattering calculation
+float3 CalculateScattering(float3 rayOrigin, float3 rayDir, float rayLength, float3 sunDir)
+{
+    float3 step = rayDir * (rayLength / float(NumSamples));
+    float stepLength = length(step);
+
+    float3 pos = rayOrigin + step * 0.5;
+
+    // Accumulated scattering
+    float3 sumRayleigh = float3(0, 0, 0);
+    float3 sumMie = float3(0, 0, 0);
+
+    // Optical depth along view ray
+    float opticalDepthRayleigh = 0.0;
+    float opticalDepthMie = 0.0;
+
+    float cosTheta = dot(rayDir, sunDir);
+    float phaseRayleigh = PhaseRayleigh(cosTheta);
+    float phaseMie = PhaseMie(cosTheta);
+
+    [loop]
+    for (int i = 0; i < NumSamples; i++)
+    {
+        float height = length(pos - PlanetCenter) - PlanetRadius;
+
+        // Density at current sample point
+        float densityRayleigh = DensityRayleigh(height);
+        float densityMie = DensityMie(height);
+
+        // Accumulate optical depth along view ray
+        opticalDepthRayleigh += densityRayleigh * stepLength;
+        opticalDepthMie += densityMie * stepLength;
+
+        // Calculate optical depth to sun from this point
+        float t0Sun, t1Sun;
+        RaySphereIntersection(pos, sunDir, PlanetCenter, AtmosphereRadius, t0Sun, t1Sun);
+
+        float sunRayLength = t1Sun;
+        float lightDepthRayleigh, lightDepthMie;
+        CalculateOpticalDepth(pos, pos + sunDir * sunRayLength, lightDepthRayleigh, lightDepthMie);
+
+        // Calculate transmittance (Beer's law)
+        float3 tau = BetaRayleigh * (opticalDepthRayleigh + lightDepthRayleigh) +
+                     BetaMie * (opticalDepthMie + lightDepthMie);
+        float3 attenuation = exp(-tau);
+
+        // Accumulate scattered light
+        sumRayleigh += attenuation * densityRayleigh * stepLength;
+        sumMie += attenuation * densityMie * stepLength;
+
+        pos += step;
     }
 
-    rayleighAccum *= stepSize * RayleighStrength;
-    mieAccum *= stepSize * MieStrength;
+    // Apply scattering coefficients and phase functions
+    float3 scatteredLight = sumRayleigh * BetaRayleigh * phaseRayleigh +
+                           sumMie * BetaMie * phaseMie;
 
-    // Combine Rayleigh (blue sky) and Mie (sunset/sunrise) scattering
-    float3 scattering = rayleighAccum * RayleighColor + mieAccum * MieColor;
-
-    // Add sun disk
-    float sunDisk = pow(saturate(cosTheta), 512.0) * SunIntensity;
-    scattering += SunColor * sunDisk;
-
-    // Dusk/dawn transition (more warm colors near horizon)
-    float horizonFactor = 1.0 - abs(rayDir.y);
-    scattering += MieColor * horizonFactor * horizonFactor * 0.5;
-
-    return scattering;
-}
-
-// Volumetric fog based on height
-float CalculateFog(float3 worldPos)
-{
-    float height = length(worldPos - PlanetCenter) - PlanetRadius;
-    float heightFog = exp(-height / FogHeight) * FogDensity;
-
-    float distanceFromCamera = length(worldPos - CameraPosition);
-    float distanceFog = 1.0 - exp(-distanceFromCamera * 0.001);
-
-    return saturate(heightFog * distanceFog);
+    return scatteredLight * SunIntensity * AtmosphereIntensity;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
     float3 rayOrigin = CameraPosition;
-    float3 rayDir = -input.ViewDirection;
+    float3 rayDir = normalize(input.WorldPosition - CameraPosition);
 
-    // Check if ray intersects atmosphere
-    float2 atmosphereIntersect = RaySphereIntersection(rayOrigin, rayDir, PlanetCenter, AtmosphereRadius);
-    float2 planetIntersect = RaySphereIntersection(rayOrigin, rayDir, PlanetCenter, PlanetRadius);
+    // Check if camera is inside or outside atmosphere
+    float cameraHeight = length(rayOrigin - PlanetCenter);
+    bool insideAtmosphere = cameraHeight < AtmosphereRadius;
 
-    // If we're looking at the planet, don't render atmosphere there
-    float rayLength = 0.0;
-    if (atmosphereIntersect.x > 0.0)
+    // Find intersection with atmosphere
+    float t0Atmos, t1Atmos;
+    if (!RaySphereIntersection(rayOrigin, rayDir, PlanetCenter, AtmosphereRadius, t0Atmos, t1Atmos))
     {
-        rayLength = atmosphereIntersect.y - max(0.0, atmosphereIntersect.x);
+        discard; // No intersection with atmosphere
+        return float4(0, 0, 0, 0);
+    }
 
-        // If ray hits planet, limit atmosphere ray to before planet surface
-        if (planetIntersect.x > 0.0)
+    // Find intersection with planet surface
+    float t0Planet, t1Planet;
+    bool hitsPlanet = RaySphereIntersection(rayOrigin, rayDir, PlanetCenter, PlanetRadius, t0Planet, t1Planet);
+
+    // Determine ray marching start and end points
+    float tStart, tEnd;
+
+    if (insideAtmosphere)
+    {
+        // Camera inside atmosphere - start from camera
+        tStart = 0.0;
+
+        if (hitsPlanet && t0Planet > 0.0)
         {
-            rayLength = min(rayLength, planetIntersect.x - max(0.0, atmosphereIntersect.x));
+            // Ray hits planet - end at planet surface
+            tEnd = t0Planet;
+        }
+        else
+        {
+            // Ray exits atmosphere - end at outer boundary
+            tEnd = t1Atmos;
+        }
+    }
+    else
+    {
+        // Camera outside atmosphere - start from atmosphere entry
+        tStart = max(0.0, t0Atmos);
+
+        if (hitsPlanet && t0Planet > tStart)
+        {
+            // Ray hits planet - end at planet surface
+            tEnd = t0Planet;
+        }
+        else
+        {
+            // Ray exits atmosphere - end at atmosphere exit
+            tEnd = t1Atmos;
         }
     }
 
-    if (rayLength <= 0.0)
+    if (tStart >= tEnd)
+    {
         discard;
+        return float4(0, 0, 0, 0);
+    }
 
-    // Calculate atmospheric scattering
-    float3 scattering = CalculateAtmosphericScattering(rayOrigin, rayDir, rayLength);
+    // Calculate scattering along the ray
+    float rayLength = tEnd - tStart;
+    float3 scatteringStart = rayOrigin + rayDir * tStart;
 
-    // Calculate fog
-    float fog = CalculateFog(input.WorldPosition);
+    float3 scattering = CalculateScattering(scatteringStart, rayDir, rayLength, SunDirection);
 
-    // Fade based on view angle (more transparent when looking straight at it)
-    float viewDot = abs(dot(input.Normal, input.ViewDirection));
-    float fresnel = pow(1.0 - viewDot, 3.0);
+    // Calculate alpha based on optical depth
+    float opticalDepth = rayLength / (AtmosphereRadius - PlanetRadius);
+    float alpha = saturate(opticalDepth * 0.8);
 
-    float alpha = saturate(fresnel * 0.8 + fog * 0.3);
+    // Increase alpha when viewing from grazing angles
+    float3 viewDir = normalize(rayOrigin - input.WorldPosition);
+    float NdotV = abs(dot(input.Normal, viewDir));
+    float fresnel = pow(1.0 - NdotV, 3.0);
+    alpha = saturate(alpha + fresnel * 0.3);
 
     return float4(scattering, alpha);
 }

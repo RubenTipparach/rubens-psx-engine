@@ -3,8 +3,8 @@
     #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
-    #define VS_SHADERMODEL vs_4_0
-    #define PS_SHADERMODEL ps_4_0
+    #define VS_SHADERMODEL vs_5_0
+    #define PS_SHADERMODEL ps_5_0
 #endif
 
 // Matrices
@@ -28,14 +28,14 @@ float3 SunColor = float3(1.0, 0.95, 0.9);
 
 // Cloud shape parameters
 float CloudCoverage = 0.5;
-float CloudDensity = 0.8;
+float CloudDensity = 1.5; // Increased from 0.8 to make clouds denser
 float CloudScale = 5.0;
 float CloudSpeed = 0.1;
 float CloudDetailScale = 20.0;
 float CloudDetailStrength = 0.3;
 
 // Ray marching
-int MaxSteps = 32;
+int MaxSteps = 48; // Increased from 32 to 48 for better quality
 float StepSize = 0.5;
 
 struct VertexShaderInput
@@ -102,24 +102,32 @@ float Noise3D(float3 p)
     return lerp(nxy0, nxy1, f.z);
 }
 
-// Fractal Brownian Motion for cloud shapes
-float FBM(float3 p, int octaves)
+// Fractal Brownian Motion for cloud shapes - fixed octave count for ps_4_0
+float FBM(float3 p)
 {
     float value = 0.0;
     float amplitude = 0.5;
     float frequency = 1.0;
 
-    for (int i = 0; i < octaves; i++)
-    {
-        value += amplitude * Noise3D(p * frequency);
-        frequency *= 2.0;
-        amplitude *= 0.5;
-    }
+    // Unrolled loop for 4 octaves
+    value += amplitude * Noise3D(p * frequency);
+    frequency *= 2.0;
+    amplitude *= 0.5;
+
+    value += amplitude * Noise3D(p * frequency);
+    frequency *= 2.0;
+    amplitude *= 0.5;
+
+    value += amplitude * Noise3D(p * frequency);
+    frequency *= 2.0;
+    amplitude *= 0.5;
+
+    value += amplitude * Noise3D(p * frequency);
 
     return value;
 }
 
-// Worley-like noise for cloud detail (simplified)
+// Worley-like noise for cloud detail (simplified) - unrolled for ps_4_0
 float WorleyNoise(float3 p)
 {
     float3 i = floor(p);
@@ -127,15 +135,19 @@ float WorleyNoise(float3 p)
 
     float minDist = 1.0;
 
+    // Manually unroll the 3x3x3 loop
+    [unroll]
     for (int z = -1; z <= 1; z++)
     {
+        [unroll]
         for (int y = -1; y <= 1; y++)
         {
+            [unroll]
             for (int x = -1; x <= 1; x++)
             {
                 float3 neighbor = float3(x, y, z);
-                float3 point = Hash(i + neighbor) * float3(1, 1, 1);
-                float3 diff = neighbor + point - f;
+                float3 cellPoint = Hash(i + neighbor) * float3(1, 1, 1);
+                float3 diff = neighbor + cellPoint - f;
                 float dist = length(diff);
                 minDist = min(minDist, dist);
             }
@@ -161,18 +173,30 @@ float CloudDensityFunction(float3 position)
     // Vertical density gradient (more dense in middle of layer)
     float verticalGradient = 1.0 - abs(heightFraction * 2.0 - 1.0);
 
-    // Convert to spherical coordinates for cloud motion
+    // Convert to spherical coordinates for proper cloud sampling
     float3 normalizedPos = normalize(spherePos);
 
-    // Add wind motion
-    float3 windOffset = float3(Time * CloudSpeed, 0.0, Time * CloudSpeed * 0.5);
-    float3 cloudPos = normalizedPos * CloudScale + windOffset;
+    // Use spherical coordinates (theta, phi) to avoid stretching at poles
+    float theta = atan2(normalizedPos.x, normalizedPos.z); // Longitude
+    float phi = asin(normalizedPos.y); // Latitude
+
+    // Convert to 2D tangent space coordinates with proper scaling
+    // Scale by radius to maintain proportional cloud sizes
+    float2 tangentCoords = float2(theta, phi) * height;
+
+    // Add wind motion in tangent space
+    float2 windOffset = float2(Time * CloudSpeed, Time * CloudSpeed * 0.5);
+    float2 cloudPos2D = tangentCoords * CloudScale + windOffset;
+
+    // Sample noise in 3D but with proper tangent space mapping
+    // This prevents the aurora-like stretching at poles
+    float3 cloudPos = float3(cloudPos2D.x, height * CloudScale, cloudPos2D.y);
 
     // Base cloud shape (FBM for large formations)
-    float baseNoise = FBM(cloudPos, 4);
+    float baseNoise = FBM(cloudPos);
 
     // Add detail
-    float detailNoise = FBM(cloudPos * CloudDetailScale, 3);
+    float detailNoise = FBM(cloudPos * CloudDetailScale);
     float cloudShape = baseNoise - (1.0 - detailNoise) * CloudDetailStrength;
 
     // Apply coverage
@@ -207,10 +231,11 @@ float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCente
 float3 CalculateCloudLighting(float3 position, float density)
 {
     // Sample density towards sun for shadow
-    float lightSteps = 6.0;
     float lightStepSize = 2.0;
     float lightDensity = 0.0;
 
+    // Unroll 6 light samples
+    [unroll]
     for (int i = 0; i < 6; i++)
     {
         float3 samplePos = position + SunDirection * (float(i) + 0.5) * lightStepSize;
@@ -241,13 +266,14 @@ float4 RayMarchClouds(float3 rayOrigin, float3 rayDir)
         return float4(0, 0, 0, 0);
 
     float rayLength = tEnd - tStart;
-    float stepSize = rayLength / float(MaxSteps);
+    float stepSize = rayLength / 48.0; // Updated to use 48 steps
 
     float3 accumulatedColor = float3(0, 0, 0);
     float accumulatedAlpha = 0.0;
 
-    // Ray march through cloud layer
-    for (int i = 0; i < MaxSteps; i++)
+    // Ray march through cloud layer - increased to 48 steps for better quality
+    [loop]
+    for (int i = 0; i < 48; i++)
     {
         if (accumulatedAlpha > 0.99)
             break;

@@ -3,8 +3,8 @@
 	#define VS_SHADERMODEL vs_3_0
 	#define PS_SHADERMODEL ps_3_0
 #else
-	#define VS_SHADERMODEL vs_4_0_level_9_3
-	#define PS_SHADERMODEL ps_4_0_level_9_3
+	#define VS_SHADERMODEL vs_5_0
+	#define PS_SHADERMODEL ps_5_0
 #endif
 
 float4x4 World;
@@ -14,6 +14,27 @@ float4x4 WorldInverseTranspose;
 float3 CameraPosition;
 Texture2D HeightmapTexture;
 Texture2D NormalMapTexture;
+
+// Atmospheric scattering parameters
+float3 PlanetCenter = float3(0, 0, 0);
+float PlanetRadius = 50.0;
+float AtmosphereRadius = 60.0;
+float3 SunDirection = float3(0.0, 0.5, 0.866);
+
+// Self-shadowing parameters
+bool EnableSelfShadowing = true;
+float ShadowSoftness = 0.5;
+int ShadowRaySteps = 16;
+
+// Scattering coefficients (physically based, same as atmosphere shader)
+static const float3 BetaRayleigh = float3(5.8e-3, 13.5e-3, 33.1e-3);
+static const float BetaMie = 21e-3;
+static const float HRayleigh = 8000.0;
+static const float HMie = 1200.0;
+static const float g = 0.76;
+
+float SunIntensity = 20.0;
+float AtmosphereFogIntensity = 0.3; // Reduced for terrain to not overpower surface details
 
 // PS1-style parameters (kept for compatibility)
 float VertexJitterAmount = 30.0;
@@ -188,6 +209,147 @@ float fbm(float3 p)
     return value;
 }
 
+// Atmospheric density at height
+float DensityRayleighTerrain(float height)
+{
+    float scaleHeight = (AtmosphereRadius - PlanetRadius) * (HRayleigh / 8000.0);
+    return exp(-height / scaleHeight);
+}
+
+float DensityMieTerrain(float height)
+{
+    float scaleHeight = (AtmosphereRadius - PlanetRadius) * (HMie / 8000.0);
+    return exp(-height / scaleHeight);
+}
+
+// Rayleigh phase function
+float PhaseRayleighTerrain(float cosTheta)
+{
+    return (3.0 / (16.0 * 3.14159)) * (1.0 + cosTheta * cosTheta);
+}
+
+// Mie phase function
+float PhaseMieTerrain(float cosTheta)
+{
+    float g2 = g * g;
+    float numerator = (1.0 - g2) * (1.0 + cosTheta * cosTheta);
+    float denominator = (2.0 + g2) * pow(abs(1.0 + g2 - 2.0 * g * cosTheta), 1.5);
+    return (3.0 / (8.0 * 3.14159)) * numerator / denominator;
+}
+
+// Simplified atmospheric scattering for terrain fog
+float3 CalculateAtmosphericFog(float3 worldPos, float3 viewDir)
+{
+    float3 rayOrigin = CameraPosition;
+    float3 rayDir = normalize(worldPos - CameraPosition);
+    float rayLength = length(worldPos - CameraPosition);
+
+    // Limit samples for performance
+    const int numSamples = 8;
+    float3 step = rayDir * (rayLength / float(numSamples));
+    float stepLength = length(step);
+
+    float3 pos = rayOrigin + step * 0.5;
+
+    float3 sumRayleigh = float3(0, 0, 0);
+    float3 sumMie = float3(0, 0, 0);
+
+    float opticalDepthRayleigh = 0.0;
+    float opticalDepthMie = 0.0;
+
+    float cosTheta = dot(rayDir, SunDirection);
+    float phaseRayleigh = PhaseRayleighTerrain(cosTheta);
+    float phaseMie = PhaseMieTerrain(cosTheta);
+
+    [unroll]
+    for (int i = 0; i < 8; i++)
+    {
+        float height = length(pos - PlanetCenter) - PlanetRadius;
+
+        float densityRayleigh = DensityRayleighTerrain(height);
+        float densityMie = DensityMieTerrain(height);
+
+        opticalDepthRayleigh += densityRayleigh * stepLength;
+        opticalDepthMie += densityMie * stepLength;
+
+        // Simplified light path (approximate)
+        float lightHeight = height + 5.0; // Assume sun ray at slightly higher altitude
+        float lightDensityRayleigh = DensityRayleighTerrain(lightHeight) * 10.0;
+        float lightDensityMie = DensityMieTerrain(lightHeight) * 10.0;
+
+        // Beer's law attenuation
+        float3 tau = BetaRayleigh * (opticalDepthRayleigh + lightDensityRayleigh) +
+                     BetaMie * (opticalDepthMie + lightDensityMie);
+        float3 attenuation = exp(-tau);
+
+        sumRayleigh += attenuation * densityRayleigh * stepLength;
+        sumMie += attenuation * densityMie * stepLength;
+
+        pos += step;
+    }
+
+    // Apply scattering
+    float3 scatteredLight = sumRayleigh * BetaRayleigh * phaseRayleigh +
+                           sumMie * BetaMie * phaseMie;
+
+    return scatteredLight * SunIntensity * AtmosphereFogIntensity;
+}
+
+// Calculate terrain self-shadowing by ray marching towards the sun
+float CalculateTerrainShadow(float3 worldPos, float3 normal)
+{
+    if (!EnableSelfShadowing)
+        return 1.0;
+
+    // Offset start position slightly above surface to avoid self-intersection
+    float3 rayOrigin = worldPos + normal * 0.1;
+    float3 rayDir = SunDirection;
+
+    float shadow = 1.0;
+    float rayStep = 2.0; // Step size for ray marching
+
+    // Ray march towards sun checking terrain height
+    [loop]
+    for (int i = 0; i < ShadowRaySteps; i++)
+    {
+        float t = float(i + 1) * rayStep;
+        float3 samplePos = rayOrigin + rayDir * t;
+
+        // Get distance from planet center
+        float sampleDist = length(samplePos - PlanetCenter);
+
+        // Convert to sphere direction and sample heightmap
+        float3 sampleDir = normalize(samplePos - PlanetCenter);
+
+        // Calculate UV for heightmap sampling
+        float theta = atan2(sampleDir.x, sampleDir.z);
+        float phi = asin(clamp(sampleDir.y, -1.0, 1.0));
+        float2 sampleUV = float2(0.5 + theta / (2.0 * 3.14159), 0.5 + phi / 3.14159);
+
+        // Sample terrain height
+        float terrainHeight = tex2Dlod(HeightmapSampler, float4(sampleUV, 0, 0)).r;
+
+        // Calculate actual terrain radius at this point
+        float heightScale = PlanetRadius * 0.1;
+        float terrainRadius = PlanetRadius + (terrainHeight - 0.5) * heightScale * 2.0;
+
+        // Check if ray is below terrain
+        if (sampleDist < terrainRadius)
+        {
+            // In shadow - calculate soft shadow based on how deep
+            float depth = terrainRadius - sampleDist;
+            shadow = saturate(1.0 - depth / (rayStep * ShadowSoftness));
+            break;
+        }
+
+        // Early exit if ray escapes atmosphere
+        if (sampleDist > AtmosphereRadius * 1.5)
+            break;
+    }
+
+    return shadow;
+}
+
 VertexShaderOutput VS(VertexShaderInput input)
 {
     VertexShaderOutput output;
@@ -259,14 +421,27 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float NdotL = dot(normal, lightDir);
     float lightIntensity = smoothstep(-lerp(0.01, 0.5, DayNightTransition), lerp(0.01, 0.5, DayNightTransition), NdotL);
 
-    // Combine ambient and diffuse
-    float3 lighting = AmbientLightColor * AmbientLightIntensity + DirectionalLightColor * DirectionalLightIntensity * lightIntensity;
+    // Calculate terrain self-shadowing
+    float shadow = CalculateTerrainShadow(input.WorldPosition, normal);
+
+    // Combine ambient and diffuse with shadow
+    float3 lighting = AmbientLightColor * AmbientLightIntensity +
+                      DirectionalLightColor * DirectionalLightIntensity * lightIntensity * shadow;
 
     // Calculate specular
     float NdotH = max(0.0, dot(normal, normalize(lightDir + viewDir)));
     float3 specular = pow(NdotH, SpecularPower) * SpecularIntensity * lightIntensity * DirectionalLightColor;
 
     float3 finalColor = terrainColor * lighting + specular;
+
+    // Apply atmospheric scattering fog
+    float3 atmosphericFog = CalculateAtmosphericFog(input.WorldPosition, viewDir);
+    float distanceToCamera = length(input.WorldPosition - CameraPosition);
+    float fogAmount = 1.0 - exp(-distanceToCamera * 0.001); // Exponential fog falloff
+    fogAmount = saturate(fogAmount);
+
+    // Add atmospheric fog to terrain (additive blending for scattering)
+    finalColor += atmosphericFog * fogAmount;
 
     return float4(finalColor * Brightness, 1.0);
 }

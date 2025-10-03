@@ -12,7 +12,7 @@ namespace rubens_psx_engine.system.procedural
         public float MountainFrequency { get; set; } = 4.0f;
         public float DetailFrequency { get; set; } = 8.0f;
         public float WorleyFrequency { get; set; } = 2.0f;
-        public float OceanLevel { get; set; } = 0.3f;
+        public float OceanLevel { get; set; } = 7.5f;
         public float ContinentHeight { get; set; } = 0.2f;
         public float MountainHeight { get; set; } = 0.5f;
         public float WorleyStrength { get; set; } = 0.3f;

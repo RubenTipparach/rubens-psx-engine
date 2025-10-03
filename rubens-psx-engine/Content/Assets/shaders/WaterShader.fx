@@ -3,35 +3,57 @@
 	#define VS_SHADERMODEL vs_3_0
 	#define PS_SHADERMODEL ps_3_0
 #else
-	#define VS_SHADERMODEL vs_4_0_level_9_1
-	#define PS_SHADERMODEL ps_4_0_level_9_1
+	#define VS_SHADERMODEL vs_5_0
+	#define PS_SHADERMODEL ps_5_0
 #endif
 
 float4x4 World;
 float4x4 View;
 float4x4 Projection;
+float4x4 WorldInverseTranspose;
+float3 CameraPosition;
 
-// Water parameters
+// Planet parameters for depth calculation
+float3 PlanetCenter = float3(0, 0, 0);
+float PlanetRadius = 50.0;
+
+// Sun direction for lighting
+float3 SunDirection = float3(0.0, 0.5, 0.866);
+
+// Advanced water parameters
 float Time = 0.0;
 float WaveSpeed = 1.0;
-float WaveStrength = 0.02;
-float3 WaterColor = float3(0.1, 0.4, 0.8);
-float WaterAlpha = 0.7;
+float WaveHeight = 0.05; // Reduced for small-scale waves only
+
+// Deep/shallow water colors
+float3 ShallowWaterColor = float3(0.0, 0.6, 0.7);   // Turquoise
+float3 DeepWaterColor = float3(0.0, 0.1, 0.3);      // Deep blue
+float3 ScatterColor = float3(0.0, 0.4, 0.3);        // Underwater light scattering
 float3 FoamColor = float3(0.9, 0.95, 1.0);
 
-// User-controllable water parameters
-float WaveUVScale = 1.0;        // Scale of UV for wave patterns
-float WaveFrequency = 1.0;      // Frequency multiplier for waves
-float WaveAmplitude = 1.0;      // Amplitude multiplier for waves
-float WaveNormalStrength = 1.0; // Strength of normal map effect
-float WaveDistortion = 1.0;     // Distortion intensity of water surface
-float WaveScrollSpeed = 1.0;    // Speed of wave pattern movement
+// Optical properties
+float WaterClarity = 15.0;        // How far you can see through water
+float Refraction = 0.02;          // Refraction strength
+float ReflectionStrength = 0.8;   // Surface reflection intensity
+float SpecularPower = 128.0;      // Specular highlight sharpness
+float SpecularIntensity = 2.0;    // Specular brightness
 
-// Simple noise function using sin waves instead of complex voronoi
-float simpleNoise(float2 p)
-{
-    return sin(p.x * 6.2831) * sin(p.y * 6.2831);
-}
+// Wave parameters
+float WaveUVScale = 1.0;
+float WaveFrequency = 1.0;
+float WaveAmplitude = 1.0;
+float WaveNormalStrength = 1.0;
+float WaveDistortion = 1.0;
+float WaveScrollSpeed = 1.0;
+
+// Foam parameters
+float FoamAmount = 0.3;
+float FoamCutoff = 0.6;
+float FoamEdgeDistance = 2.0;     // Distance for foam near terrain
+
+// Subsurface scattering
+float SubsurfaceStrength = 0.8;
+float3 SubsurfaceColor = float3(0.0, 0.8, 0.6);
 
 struct VertexShaderInput
 {
@@ -46,73 +68,219 @@ struct VertexShaderOutput
     float3 WorldPosition : TEXCOORD0;
     float3 Normal : TEXCOORD1;
     float2 TexCoord : TEXCOORD2;
+    float3 ViewDirection : TEXCOORD3;
+    float4 ScreenPosition : TEXCOORD4;
+    float WaterDepth : TEXCOORD5;
 };
+
+// 3D Hash for procedural noise
+float3 hash3(float3 p)
+{
+    p = frac(p * float3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return frac((p.xxy + p.yxx) * p.zyx);
+}
+
+// 3D Perlin-style noise
+float noise3D(float3 p)
+{
+    float3 i = floor(p);
+    float3 f = frac(p);
+    f = f * f * (3.0 - 2.0 * f);
+
+    return lerp(
+        lerp(lerp(hash3(i).x, hash3(i + float3(1,0,0)).x, f.x),
+             lerp(hash3(i + float3(0,1,0)).x, hash3(i + float3(1,1,0)).x, f.x), f.y),
+        lerp(lerp(hash3(i + float3(0,0,1)).x, hash3(i + float3(1,0,1)).x, f.x),
+             lerp(hash3(i + float3(0,1,1)).x, hash3(i + float3(1,1,1)).x, f.x), f.y), f.z);
+}
+
+// Fractal Brownian Motion for natural-looking waves
+float fbm(float3 p, int octaves)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        if (i >= octaves) break;
+        value += amplitude * noise3D(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+// Gerstner wave function for realistic ocean waves
+float3 GerstnerWave(float3 pos, float2 direction, float wavelength, float steepness, float time)
+{
+    float k = 2.0 * 3.14159 / wavelength;
+    float c = sqrt(9.8 / k);
+    float2 d = normalize(direction);
+    float f = k * (dot(d, pos.xz) - c * time);
+    float a = steepness / k;
+
+    return float3(
+        d.x * a * cos(f),
+        a * sin(f),
+        d.y * a * cos(f)
+    );
+}
+
+// Calculate water depth below a point
+float CalculateWaterDepth(float3 worldPos)
+{
+    // Distance from planet center
+    float distFromCenter = length(worldPos - PlanetCenter);
+
+    // Water is at PlanetRadius, so depth is how far below the surface
+    float depth = max(0.0, distFromCenter - PlanetRadius);
+
+    return depth;
+}
 
 VertexShaderOutput VS(VertexShaderInput input)
 {
     VertexShaderOutput output;
 
-    // Transform position to world space
+    // Transform to world space
     float4 worldPos = mul(input.Position, World);
+    float3 baseWorldPos = worldPos.xyz;
 
-    // Apply UV scale to wave calculations using texture coordinates
-    float2 scaledUV = input.TexCoord * WaveUVScale;
+    // Calculate distance from camera for LOD
+    float distanceToCamera = length(baseWorldPos - CameraPosition);
+    float waveLOD = saturate(distanceToCamera / 50.0); // Fade out waves at distance
 
-    // Simple wave displacement using sin waves with user controls
-    float wave1 = sin(scaledUV.x * 20.0 * WaveFrequency + Time * WaveSpeed * WaveScrollSpeed) * 0.5;
-    float wave2 = sin(scaledUV.y * 15.0 * WaveFrequency - Time * WaveSpeed * WaveScrollSpeed * 0.7) * 0.3;
+    // Only small-scale ripples (no large planetary waves)
+    float3 waveOffset = float3(0, 0, 0);
 
-    // Apply wave displacement with amplitude control
-    worldPos.y += (wave1 + wave2) * WaveStrength * WaveAmplitude;
+    // Small ripples only (visible when close)
+    float ripples = fbm(baseWorldPos * 4.0 + Time * 0.3 * WaveScrollSpeed, 3) * (1.0 - waveLOD);
+    waveOffset.y = ripples * WaveHeight * WaveAmplitude;
 
+    // Apply wave displacement
+    worldPos.xyz += waveOffset;
+
+    // Calculate view direction
+    output.ViewDirection = normalize(CameraPosition - worldPos.xyz);
+
+    // Transform to clip space
     float4 viewPosition = mul(worldPos, View);
     output.Position = mul(viewPosition, Projection);
 
+    // Pass through data
     output.WorldPosition = worldPos.xyz;
-    output.Normal = normalize(mul(input.Normal, (float3x3)World));
+    output.Normal = normalize(mul(input.Normal, (float3x3)WorldInverseTranspose));
     output.TexCoord = input.TexCoord;
+    output.ScreenPosition = output.Position;
+
+    // Calculate water depth for this vertex
+    output.WaterDepth = CalculateWaterDepth(worldPos.xyz);
 
     return output;
 }
 
+// Calculate detailed water normal from noise
+float3 CalculateWaterNormal(float3 worldPos, float2 uv, float time)
+{
+    float2 scaledUV = uv * WaveUVScale;
+
+    // Sample noise at offset positions for normal calculation
+    float epsilon = 0.1;
+
+    float3 pos = worldPos * 0.5 + float3(time * 0.2 * WaveScrollSpeed, 0, 0);
+
+    float h0 = fbm(pos, 4);
+    float hX = fbm(pos + float3(epsilon, 0, 0), 4);
+    float hZ = fbm(pos + float3(0, 0, epsilon), 4);
+
+    // Calculate gradient
+    float3 normal;
+    normal.x = (h0 - hX) * WaveNormalStrength;
+    normal.z = (h0 - hZ) * WaveNormalStrength;
+    normal.y = 1.0;
+
+    return normalize(normal);
+}
+
+// Schlick's Fresnel approximation
+float FresnelSchlick(float cosTheta, float F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 float4 PS(VertexShaderOutput input) : SV_Target0
 {
-    // Apply UV scale to texture coordinates
-    float2 scaledUV = input.TexCoord * WaveUVScale;
+    // Calculate detailed normal from noise
+    float3 detailNormal = CalculateWaterNormal(input.WorldPosition, input.TexCoord, Time);
+    float3 normal = normalize(input.Normal + detailNormal - float3(0, 1, 0));
 
-    // Simple animated distortion using sin waves with user control
-    float2 distortUV = scaledUV + Time * 0.1 * WaveScrollSpeed;
-    float distortion = sin(distortUV.x * 10.0 * WaveFrequency) *
-                       sin(distortUV.y * 8.0 * WaveFrequency) * 0.02 * WaveDistortion;
+    // View and light directions
+    float3 viewDir = normalize(input.ViewDirection);
+    float3 lightDir = normalize(SunDirection);
+    float3 halfDir = normalize(viewDir + lightDir);
 
-    // Create simple ripple normals with user-controlled strength
-    float normalSample = sin(scaledUV.x * 20.0 * WaveFrequency + Time * 2.0 * WaveScrollSpeed) *
-                        sin(scaledUV.y * 15.0 * WaveFrequency - Time * 1.5 * WaveScrollSpeed) * WaveNormalStrength;
+    // Depth-based color
+    float depth = input.WaterDepth;
+    float depthFactor = 1.0 - exp(-depth / WaterClarity);
+    float3 waterColor = lerp(ShallowWaterColor, DeepWaterColor, depthFactor);
 
-    // Simple foam using noise with scroll speed
-    float foam = simpleNoise(scaledUV * 8.0 + Time * WaveScrollSpeed);
-    foam = saturate((foam + 0.5) * 0.5); // Normalize to 0-1
+    // Fresnel effect
+    float NdotV = max(0.0, dot(normal, viewDir));
+    float fresnel = FresnelSchlick(NdotV, 0.02); // Water F0 ≈ 0.02
 
-    // Simple lighting
-    float3 lightDir = normalize(float3(0.7, -0.7, 0.0));
-    float NdotL = max(0.3, dot(input.Normal, lightDir));
+    // Specular highlight (sun reflection)
+    float NdotH = max(0.0, dot(normal, halfDir));
+    float specular = pow(NdotH, SpecularPower) * SpecularIntensity;
+    float3 specularColor = float3(1.0, 0.98, 0.95) * specular;
 
-    // Simple fresnel
-    float3 viewDir = normalize(input.WorldPosition);
-    float fresnel = 1.0 - abs(dot(input.Normal, viewDir));
+    // Diffuse lighting
+    float NdotL = max(0.0, dot(normal, lightDir));
+    float3 diffuse = waterColor * NdotL * 0.5;
 
-    // Depth fog (simplified)
-    float depth = length(input.WorldPosition) * 0.1;
-    float depthFog = saturate(depth);
+    // Subsurface scattering (light passing through waves)
+    float3 subsurface = float3(0, 0, 0);
+    float backside = max(0.0, dot(-normal, lightDir));
+    subsurface = SubsurfaceColor * backside * SubsurfaceStrength;
 
-    // Combine colors
-    float3 waterSurface = lerp(WaterColor, FoamColor, foam * 0.2);
-    waterSurface *= NdotL;
+    // Scatter color (underwater light scattering effect)
+    float3 scatter = ScatterColor * (1.0 - depthFactor) * 0.3;
 
-    // Final alpha
-    float finalAlpha = WaterAlpha + fresnel * 0.2 + depthFog * 0.1;
+    // Shore foam calculation - appears near terrain (shallow water)
+    float shoreFoam = saturate(1.0 - depth / FoamEdgeDistance);
 
-    return float4(waterSurface, saturate(finalAlpha));
+    // Multi-layered foam noise for better looking shore foam
+    float foamNoise1 = fbm(input.WorldPosition * 6.0 + Time * 0.2 * WaveScrollSpeed, 3);
+    float foamNoise2 = fbm(input.WorldPosition * 12.0 - Time * 0.4 * WaveScrollSpeed, 2);
+    float combinedFoamNoise = foamNoise1 * 0.6 + foamNoise2 * 0.4;
+
+    // Create animated foam line at shoreline
+    float foamLine = saturate((shoreFoam - 0.3) / 0.7); // Sharp transition near shore
+    float foamMask = foamLine * saturate(combinedFoamNoise + 0.3);
+    foamMask = smoothstep(0.3, 0.8, foamMask);
+
+    float3 foam = FoamColor * foamMask;
+
+    // Sky reflection (simplified - would be better with cubemap)
+    float3 skyColor = lerp(float3(0.5, 0.7, 0.9), float3(0.1, 0.3, 0.6), depthFactor);
+    float3 reflection = skyColor * fresnel * ReflectionStrength;
+
+    // Combine all lighting components
+    float3 finalColor = diffuse + scatter + subsurface + reflection + specularColor + foam;
+
+    // Distance fog for atmospheric perspective
+    float distanceToCamera = length(input.WorldPosition - CameraPosition);
+    float distanceFog = saturate(distanceToCamera * 0.005);
+    float3 fogColor = float3(0.6, 0.8, 0.9);
+    finalColor = lerp(finalColor, fogColor, distanceFog * 0.3);
+
+    // Alpha based on depth and fresnel
+    float alpha = saturate(0.85 + fresnel * 0.15 + depthFactor * 0.1 - foamMask * 0.3);
+
+    return float4(finalColor, alpha);
 }
 
 technique Water

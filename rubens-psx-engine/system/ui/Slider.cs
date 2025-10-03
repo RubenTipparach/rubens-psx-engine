@@ -29,6 +29,8 @@ namespace rubens_psx_engine.system.ui
             set => needsRegeneration = value;
         }
 
+        public string Category { get; set; }
+
         public event Action<float> ValueChanged;
 
         public Slider(Rectangle bounds, float minValue, float maxValue, float initialValue, string label, SpriteFont font)

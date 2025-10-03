@@ -244,10 +244,24 @@ namespace rubens_psx_engine.system.procedural
                 waterShader.Parameters["CameraPosition"]?.SetValue(cameraPosition);
                 waterShader.Parameters["Time"]?.SetValue((float)gameTime.TotalGameTime.TotalSeconds);
 
-                // Set water-specific parameters
-                waterShader.Parameters["WaterTransparency"]?.SetValue(0.7f);
-                waterShader.Parameters["WaveHeight"]?.SetValue(0.02f);
-                waterShader.Parameters["WaveSpeed"]?.SetValue(2.0f);
+                // Planet parameters for depth calculation
+                waterShader.Parameters["PlanetCenter"]?.SetValue(Vector3.Zero);
+                waterShader.Parameters["PlanetRadius"]?.SetValue(baseRadius);
+
+                // Sun direction (should match atmosphere shader)
+                waterShader.Parameters["SunDirection"]?.SetValue(new Vector3(0.0f, 0.5f, 0.866f));
+
+                // Water appearance parameters
+                waterShader.Parameters["WaveHeight"]?.SetValue(0.05f); // Small-scale waves only
+                waterShader.Parameters["WaveSpeed"]?.SetValue(1.0f);
+                waterShader.Parameters["WaterClarity"]?.SetValue(15.0f);
+                waterShader.Parameters["ReflectionStrength"]?.SetValue(0.8f);
+                waterShader.Parameters["SpecularPower"]?.SetValue(128.0f);
+                waterShader.Parameters["SpecularIntensity"]?.SetValue(2.0f);
+                waterShader.Parameters["SubsurfaceStrength"]?.SetValue(0.8f);
+                waterShader.Parameters["FoamAmount"]?.SetValue(0.3f);
+                waterShader.Parameters["FoamCutoff"]?.SetValue(0.6f);
+                waterShader.Parameters["FoamEdgeDistance"]?.SetValue(2.0f);
 
                 // Set user-controllable parameters
                 waterShader.Parameters["WaveUVScale"]?.SetValue(uvScale);

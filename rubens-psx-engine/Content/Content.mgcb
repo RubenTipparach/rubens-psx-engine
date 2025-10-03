@@ -821,11 +821,19 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/postprocess/Tint.fx
 
+## Atmosphere and Clouds shaders now use ps_5_0 for dynamic loop support
+
 #begin Assets/shaders/surface/atmosphere.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/atmosphere.fx;Assets/shaders/surface/atmosphere
+
+#begin Assets/shaders/surface/clouds.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/clouds.fx;Assets/shaders/surface/clouds
 
 #begin Assets/shaders/surface/BakedVertexLit.fx
 /importer:EffectImporter

@@ -163,19 +163,83 @@ namespace rubens_psx_engine.system.procedural
 
         private void CollectChunkCandidatesRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 lodTargetPoint, BoundingFrustum frustum, float heightAboveSurface)
         {
-            // Create chunk center position
+            // Create chunk center position on base sphere
             Vector3 axisA = new Vector3(localUp.Y, localUp.Z, localUp.X);
             Vector3 axisB = Vector3.Cross(localUp, axisA);
-            Vector3 centerPos = localUp * Radius + (axisA * (offset.X + size * 0.5f - 0.5f) + axisB * (offset.Y + size * 0.5f - 0.5f)) * Radius * 2.0f;
+            Vector3 baseCenterPos = localUp * Radius + (axisA * (offset.X + size * 0.5f - 0.5f) + axisB * (offset.Y + size * 0.5f - 0.5f)) * Radius * 2.0f;
+
+            // Sample terrain height at chunk center for accurate culling
+            Vector3 directionFromCenter = Vector3.Normalize(baseCenterPos);
+            float height = planetGenerator.SampleHeightAtPosition(directionFromCenter);
+            float heightScale = Radius * 0.1f * planetGenerator.Parameters.MountainHeight;
+            float terrainSurfaceRadius = Radius + height * heightScale;
+            Vector3 centerPos = directionFromCenter * terrainSurfaceRadius;
+
+            // Backface culling - skip chunks facing completely away from camera
+            // We want to show at least 50% of the planet (hemisphere + some extra for horizon)
+            Vector3 chunkNormal = directionFromCenter; // Normal points outward from planet center
+            Vector3 viewDir = Vector3.Normalize(currentCameraPosition - centerPos);
+            float facingDot = Vector3.Dot(chunkNormal, viewDir);
+
+            // Calculate distance from camera to planet center
+            float cameraDistFromCenter = currentCameraPosition.Length();
+
+            // Adjust culling threshold based on camera distance
+            // When close to surface: show more chunks (including horizon)
+            // When far away (space): can be more aggressive with culling
+            float distanceRatio = cameraDistFromCenter / (Radius * 2.0f); // Normalized distance
+            float cullThreshold = MathHelper.Lerp(-0.6f, -0.3f, MathHelper.Clamp(distanceRatio, 0f, 1f));
+
+            // If chunk is facing away from camera beyond threshold, skip it
+            if (facingDot < cullThreshold)
+                return;
+
+            // Calculate chunk size for culling checks
+            float currentChunkSize = size * Radius * 2.0f;
+
+            // Frustum culling with generous threshold to avoid missing patches
+            // Create a bounding sphere for this chunk
+            float chunkRadius = currentChunkSize * 1.5f; // 50% larger for generous culling
+            BoundingSphere chunkBounds = new BoundingSphere(centerPos, chunkRadius);
+
+            // Check if chunk is in frustum (with generous tolerance)
+            ContainmentType containment = frustum.Contains(chunkBounds);
+            if (containment == ContainmentType.Disjoint)
+            {
+                // Chunk is completely outside frustum - skip it
+                return;
+            }
 
             // Distance from chunk to LOD target point (where detail is centered)
             float distanceToTarget = Vector3.Distance(centerPos, lodTargetPoint);
 
-            // Check minimum chunk size
-            float currentChunkSize = size * Radius * 2.0f;
-            const float MIN_CHUNK_SIZE = 0.1f;
+            // Check minimum chunk size based on height above surface
+            // When close to surface: allow smaller chunks (higher detail)
+            // When far away: stop subdividing earlier (fewer, larger chunks)
 
-            if (currentChunkSize <= MIN_CHUNK_SIZE)
+            float minChunkSize;
+            if (heightAboveSurface < 5.0f)
+            {
+                // Very close to surface - allow tiny chunks for maximum detail
+                minChunkSize = 0.1f;
+            }
+            else if (heightAboveSurface < 20.0f)
+            {
+                // Close to surface - allow small chunks
+                minChunkSize = 0.5f;
+            }
+            else if (heightAboveSurface < 50.0f)
+            {
+                // Medium altitude - use medium chunks
+                minChunkSize = 2.0f;
+            }
+            else
+            {
+                // High altitude / space - use large chunks only
+                minChunkSize = 5.0f;
+            }
+
+            if (currentChunkSize <= minChunkSize)
             {
                 // Add as candidate without subdividing
                 chunkCandidates.Add(new ChunkCandidate
@@ -190,19 +254,42 @@ namespace rubens_psx_engine.system.procedural
             }
 
             // Calculate LOD threshold based on height above terrain
+            // Optimize for 16-50 chunks per LOD level through better batching
             // heightAboveSurface is already clamped to 0 minimum (no negative heights)
-            // When at ground (height = 0): maximum detail
-            // When far away: reduced detail
-            float heightThreshold = 15.0f; // Height where detail starts to reduce
-            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.0f, 1.0f);
-            // heightMultiplier ranges from 2.0 (at ground, max detail) to 1.0 (far away, normal detail)
-            float heightMultiplier = 2.0f - heightFactor;
 
-            float baseThreshold = Radius * 8.0f * heightMultiplier;
+            float heightMultiplier;
+            if (heightAboveSurface < 5.0f)
+            {
+                // Very close to surface (0-5m) - high detail
+                float closenessFactor = heightAboveSurface / 5.0f;
+                heightMultiplier = MathHelper.Lerp(4.0f, 2.5f, closenessFactor);
+            }
+            else if (heightAboveSurface < 20.0f)
+            {
+                // Close to surface (5-20m) - medium detail
+                float closenessFactor = (heightAboveSurface - 5.0f) / 15.0f;
+                heightMultiplier = MathHelper.Lerp(2.5f, 1.5f, closenessFactor);
+            }
+            else if (heightAboveSurface < 100.0f)
+            {
+                // Medium altitude (20-100m) - reduce detail gradually
+                float altitudeFactor = (heightAboveSurface - 20.0f) / 80.0f;
+                heightMultiplier = MathHelper.Lerp(1.5f, 0.8f, altitudeFactor);
+            }
+            else
+            {
+                // High altitude / space (>100m) - very coarse detail
+                float spaceFactor = MathHelper.Clamp((heightAboveSurface - 100.0f) / 200.0f, 0.0f, 1.0f);
+                heightMultiplier = MathHelper.Lerp(0.8f, 0.3f, spaceFactor);
+            }
+
+            // Larger base threshold to create bigger chunks (better for batching)
+            float baseThreshold = Radius * 10.0f * heightMultiplier;
             float lodMultiplier = MathF.Pow(0.5f, lodLevel);
             float threshold = baseThreshold * lodMultiplier;
 
-            bool shouldSubdivide = distanceToTarget < threshold && lodLevel < 12;
+            // Limit maximum LOD depth to keep chunk count manageable (16-50 per level)
+            bool shouldSubdivide = distanceToTarget < threshold && lodLevel < 8;
 
             if (shouldSubdivide)
             {

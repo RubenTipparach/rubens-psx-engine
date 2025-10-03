@@ -52,9 +52,23 @@ namespace anakinsoft.game.scenes
         private bool regenerateButtonHovered = false;
         private Rectangle saveButton;
         private bool saveButtonHovered = false;
+        private Rectangle categoryButton;
+        private bool categoryButtonHovered = false;
+
+        // Toggle buttons for layers
+        private Rectangle waterToggleButton;
+        private bool waterToggleButtonHovered = false;
+        private Rectangle atmosphereToggleButton;
+        private bool atmosphereToggleButtonHovered = false;
+        private Rectangle cloudsToggleButton;
+        private bool cloudsToggleButtonHovered = false;
+
+        // UI Categories
+        private enum UICategory { Terrain, Water, Planet }
+        private UICategory currentCategory = UICategory.Terrain;
 
         // Shader parameters
-        private float planetNormalMapStrength = 0.15f;
+        private float planetNormalMapStrength = 0.5f;
         private float planetDetailNormalStrength = 0.3f;
         private float planetDayNightTransition = 0.5f;
         private float planetSpecularIntensity = 0.1f;
@@ -128,7 +142,7 @@ namespace anakinsoft.game.scenes
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Failed to load Atmosphere shader: {ex.Message} " + ex.StackTrace);
+                System.Console.WriteLine($"Failed to load Atmosphere shader: {ex.Message}");
                 atmosphereShader = null;
             }
 
@@ -139,7 +153,7 @@ namespace anakinsoft.game.scenes
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine($"Failed to load Cloud shader: {ex.Message} " + ex.StackTrace);
+                System.Console.WriteLine($"Failed to load Cloud shader: {ex.Message}");
                 cloudShader = null;
             }
 
@@ -173,13 +187,29 @@ namespace anakinsoft.game.scenes
 
             // Save heightmap button
             saveButton = new Rectangle(x + (sliderWidth - buttonWidth) / 2, startY, buttonWidth, buttonHeight);
+            startY += buttonHeight + 10;
+
+            // Category toggle button
+            categoryButton = new Rectangle(x + (sliderWidth - buttonWidth) / 2, startY, buttonWidth, buttonHeight);
+            startY += buttonHeight + 10;
+
+            // Layer toggle buttons
+            int toggleButtonWidth = 60;
+            int toggleButtonSpacing = 5;
+            int toggleButtonStartX = x + (sliderWidth - (toggleButtonWidth * 3 + toggleButtonSpacing * 2)) / 2;
+
+            waterToggleButton = new Rectangle(toggleButtonStartX, startY, toggleButtonWidth, buttonHeight);
+            atmosphereToggleButton = new Rectangle(toggleButtonStartX + toggleButtonWidth + toggleButtonSpacing, startY, toggleButtonWidth, buttonHeight);
+            cloudsToggleButton = new Rectangle(toggleButtonStartX + (toggleButtonWidth + toggleButtonSpacing) * 2, startY, toggleButtonWidth, buttonHeight);
             startY += buttonHeight + 20;
 
+            // ===== TERRAIN SLIDERS =====
             // Continent Frequency (needs regeneration)
             var continentSlider = new Slider(
                 new Rectangle(x, startY, sliderWidth, sliderHeight),
                 0.1f, 3.0f, planetGenerator.Parameters.ContinentFrequency,
                 "Continent Freq", font);
+            continentSlider.Category = "Terrain";
             continentSlider.NeedsRegeneration = true;
             continentSlider.ValueChanged += value =>
             {
@@ -192,6 +222,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing, sliderWidth, sliderHeight),
                 0.5f, 8.0f, planetGenerator.Parameters.MountainFrequency,
                 "Mountain Freq", font);
+            mountainSlider.Category = "Terrain";
             mountainSlider.NeedsRegeneration = true;
             mountainSlider.ValueChanged += value =>
             {
@@ -199,11 +230,27 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(mountainSlider);
 
-            // Ocean Level (only affects water sphere, not terrain)
-            var oceanSlider = new Slider(
+            // Mountain Height (just changes scale, no regen) - 10x range
+            var mountainHeightSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
-                0.1f, 0.8f, planetGenerator.Parameters.OceanLevel,
+                0.1f, 10.0f, planetGenerator.Parameters.MountainHeight,
+                "Mountain Height", font);
+            mountainHeightSlider.Category = "Terrain";
+            mountainHeightSlider.ValueChanged += value =>
+            {
+                planetGenerator.Parameters.MountainHeight = value;
+            };
+            sliders.Add(mountainHeightSlider);
+
+            // ===== WATER SLIDERS =====
+            // Ocean Level (only affects water sphere, not terrain) - Wide range to accommodate default of 7.5
+            // Default set to 0.75f (normalized range 0-1)
+            float defaultWaterHeight = 0.75f;
+            var oceanSlider = new Slider(
+                new Rectangle(x, startY, sliderWidth, sliderHeight),
+                0.0f, 1.0f, defaultWaterHeight,
                 "Ocean Level", font);
+            oceanSlider.Category = "Water";
             oceanSlider.ValueChanged += value =>
             {
                 planetGenerator.Parameters.OceanLevel = value;
@@ -211,22 +258,16 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(oceanSlider);
 
-            // Mountain Height (just changes scale, no regen) - 10x range
-            var mountainHeightSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
-                0.1f, 10.0f, planetGenerator.Parameters.MountainHeight,
-                "Mountain Height", font);
-            mountainHeightSlider.ValueChanged += value =>
-            {
-                planetGenerator.Parameters.MountainHeight = value;
-            };
-            sliders.Add(mountainHeightSlider);
+            // Initialize water sphere to default water height and trigger parameter update
+            planetGenerator.Parameters.OceanLevel = defaultWaterHeight;
+            waterSphere.UpdateWaterLevel(defaultWaterHeight);
 
             // Planet Normal Map Strength (terrain normals)
             var normalMapStrengthSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
                 -10.0f, 10.0f, 0.5f,
                 "Terrain Normal", font);
+            normalMapStrengthSlider.Category = "Planet";
             normalMapStrengthSlider.ValueChanged += value =>
             {
                 planetNormalMapStrength = value;
@@ -238,6 +279,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
                 0.0f, 10.0f, 0.3f,
                 "Detail Normal", font);
+            detailNormalStrengthSlider.Category = "Planet";
             detailNormalStrengthSlider.ValueChanged += value =>
             {
                 planetDetailNormalStrength = value;
@@ -249,6 +291,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 1.0f, 0.5f,
                 "Day/Night Trans", font);
+            dayNightSlider.Category = "Planet";
             dayNightSlider.ValueChanged += value =>
             {
                 planetDayNightTransition = value;
@@ -260,6 +303,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 1.0f, 0.1f,
                 "Specular Intensity", font);
+            specularSlider.Category = "Planet";
             specularSlider.ValueChanged += value =>
             {
                 planetSpecularIntensity = value;
@@ -271,6 +315,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 7, sliderWidth, sliderHeight),
                 -2.0f, 2.0f, 0.0f,
                 "Rotation Speed", font);
+            rotationSpeedSlider.Category = "Planet";
             rotationSpeedSlider.ValueChanged += value =>
             {
                 planetRotationSpeed = value;
@@ -282,6 +327,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
                 0.1f, 50.0f, 10.0f,
                 "Noise Scale", font);
+            noiseScaleSlider.Category = "Water";
             noiseScaleSlider.ValueChanged += value =>
             {
                 noiseScale = value;
@@ -293,6 +339,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
                 0.0f, 0.5f, 0.05f,
                 "Noise Strength", font);
+            noiseStrengthSlider.Category = "Water";
             noiseStrengthSlider.ValueChanged += value =>
             {
                 noiseStrength = value;
@@ -304,6 +351,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Water UV Scale", font);
+            waterUVScaleSlider.Category = "Water";
             waterUVScaleSlider.ValueChanged += value =>
             {
                 waterUVScale = value;
@@ -315,6 +363,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Frequency", font);
+            waterFreqSlider.Category = "Water";
             waterFreqSlider.ValueChanged += value =>
             {
                 waterWaveFrequency = value;
@@ -326,6 +375,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Amplitude", font);
+            waterAmpSlider.Category = "Water";
             waterAmpSlider.ValueChanged += value =>
             {
                 waterWaveAmplitude = value;
@@ -337,6 +387,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 13, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Normal Str", font);
+            waterNormalSlider.Category = "Water";
             waterNormalSlider.ValueChanged += value =>
             {
                 waterNormalStrength = value;
@@ -348,6 +399,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 14, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Distortion", font);
+            waterDistortionSlider.Category = "Water";
             waterDistortionSlider.ValueChanged += value =>
             {
                 waterDistortion = value;
@@ -359,6 +411,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 15, sliderWidth, sliderHeight),
                 0.0f, 5.0f, 1.0f,
                 "Wave Scroll Speed", font);
+            waterScrollSpeedSlider.Category = "Water";
             waterScrollSpeedSlider.ValueChanged += value =>
             {
                 waterScrollSpeed = value;
@@ -540,9 +593,13 @@ namespace anakinsoft.game.scenes
             // Update UI
             if (showUI)
             {
+                // Only update sliders in current category
                 foreach (var slider in sliders)
                 {
-                    slider.Update(gameTime);
+                    if (slider.Category == currentCategory.ToString())
+                    {
+                        slider.Update(gameTime);
+                    }
                 }
 
                 // Handle UI buttons
@@ -551,6 +608,10 @@ namespace anakinsoft.game.scenes
 
                 regenerateButtonHovered = regenerateButton.Contains(mousePos);
                 saveButtonHovered = saveButton.Contains(mousePos);
+                categoryButtonHovered = categoryButton.Contains(mousePos);
+                waterToggleButtonHovered = waterToggleButton.Contains(mousePos);
+                atmosphereToggleButtonHovered = atmosphereToggleButton.Contains(mousePos);
+                cloudsToggleButtonHovered = cloudsToggleButton.Contains(mousePos);
 
                 if (regenerateButtonHovered && InputManager.GetMouseClick(0))
                 {
@@ -560,6 +621,33 @@ namespace anakinsoft.game.scenes
                 if (saveButtonHovered && InputManager.GetMouseClick(0))
                 {
                     planetGenerator.SaveHeightmapToDisk();
+                }
+
+                if (categoryButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    // Cycle through categories: Terrain -> Water -> Planet -> Terrain
+                    currentCategory = currentCategory switch
+                    {
+                        UICategory.Terrain => UICategory.Water,
+                        UICategory.Water => UICategory.Planet,
+                        UICategory.Planet => UICategory.Terrain,
+                        _ => UICategory.Terrain
+                    };
+                }
+
+                if (waterToggleButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    showWater = !showWater;
+                }
+
+                if (atmosphereToggleButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    showAtmosphere = !showAtmosphere;
+                }
+
+                if (cloudsToggleButtonHovered && InputManager.GetMouseClick(0))
+                {
+                    showClouds = !showClouds;
                 }
             }
 
@@ -675,10 +763,66 @@ namespace anakinsoft.game.scenes
             getSpriteBatch.DrawString(Globals.fontNTR, saveButtonText, saveButtonTextPos + Vector2.One, Color.Black);
             getSpriteBatch.DrawString(Globals.fontNTR, saveButtonText, saveButtonTextPos, Color.White);
 
-            // Draw sliders
+            // Draw category button
+            Color categoryButtonColor = categoryButtonHovered ? Color.LightBlue : Color.DarkBlue;
+            getSpriteBatch.Draw(pixelTexture, categoryButton, categoryButtonColor);
+
+            string categoryButtonText = currentCategory.ToString().ToUpper();
+            Vector2 categoryButtonTextSize = Globals.fontNTR.MeasureString(categoryButtonText);
+            Vector2 categoryButtonTextPos = new Vector2(
+                categoryButton.X + (categoryButton.Width - categoryButtonTextSize.X) / 2,
+                categoryButton.Y + (categoryButton.Height - categoryButtonTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, categoryButtonText, categoryButtonTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, categoryButtonText, categoryButtonTextPos, Color.White);
+
+            // Draw layer toggle buttons
+            // Water toggle
+            Color waterButtonColor = showWater ? Color.DarkBlue : Color.Gray;
+            if (waterToggleButtonHovered) waterButtonColor = showWater ? Color.Blue : Color.DarkGray;
+            getSpriteBatch.Draw(pixelTexture, waterToggleButton, waterButtonColor);
+            string waterText = "Water";
+            Vector2 waterTextSize = Globals.fontNTR.MeasureString(waterText);
+            Vector2 waterTextPos = new Vector2(
+                waterToggleButton.X + (waterToggleButton.Width - waterTextSize.X) / 2,
+                waterToggleButton.Y + (waterToggleButton.Height - waterTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, waterText, waterTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, waterText, waterTextPos, Color.White);
+
+            // Atmosphere toggle
+            Color atmoButtonColor = showAtmosphere ? Color.DarkCyan : Color.Gray;
+            if (atmosphereToggleButtonHovered) atmoButtonColor = showAtmosphere ? Color.Cyan : Color.DarkGray;
+            getSpriteBatch.Draw(pixelTexture, atmosphereToggleButton, atmoButtonColor);
+            string atmoText = "Atmos";
+            Vector2 atmoTextSize = Globals.fontNTR.MeasureString(atmoText);
+            Vector2 atmoTextPos = new Vector2(
+                atmosphereToggleButton.X + (atmosphereToggleButton.Width - atmoTextSize.X) / 2,
+                atmosphereToggleButton.Y + (atmosphereToggleButton.Height - atmoTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, atmoText, atmoTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, atmoText, atmoTextPos, Color.White);
+
+            // Clouds toggle
+            Color cloudsButtonColor = showClouds ? Color.DarkMagenta : Color.Gray;
+            if (cloudsToggleButtonHovered) cloudsButtonColor = showClouds ? Color.Magenta : Color.DarkGray;
+            getSpriteBatch.Draw(pixelTexture, cloudsToggleButton, cloudsButtonColor);
+            string cloudsText = "Clouds";
+            Vector2 cloudsTextSize = Globals.fontNTR.MeasureString(cloudsText);
+            Vector2 cloudsTextPos = new Vector2(
+                cloudsToggleButton.X + (cloudsToggleButton.Width - cloudsTextSize.X) / 2,
+                cloudsToggleButton.Y + (cloudsToggleButton.Height - cloudsTextSize.Y) / 2
+            );
+            getSpriteBatch.DrawString(Globals.fontNTR, cloudsText, cloudsTextPos + Vector2.One, Color.Black);
+            getSpriteBatch.DrawString(Globals.fontNTR, cloudsText, cloudsTextPos, Color.White);
+
+            // Draw sliders (only those matching current category and update input)
             foreach (var slider in sliders)
             {
-                slider.Draw(getSpriteBatch, pixelTexture);
+                if (slider.Category == currentCategory.ToString())
+                {
+                    slider.Draw(getSpriteBatch, pixelTexture);
+                }
             }
 
             // Draw current seed
@@ -723,13 +867,40 @@ namespace anakinsoft.game.scenes
             var gd = Globals.screenManager.GraphicsDevice;
             gd.Clear(new Color(5, 5, 15));
 
-            // Set render states
-            gd.RasterizerState = RasterizerState.CullCounterClockwise;
-            gd.DepthStencilState = DepthStencilState.Default;
-            gd.BlendState = BlendState.Opaque;
-
-            // Draw planet with rotation around Y axis
             Matrix world = Matrix.CreateRotationY(planetRotationAngle);
+
+            // ===== PASS 1: Draw atmosphere as double-sided sphere =====
+            // Atmosphere renders at its natural position, no depth write
+            if (showAtmosphere && atmosphereShader != null && atmosphereSphere != null)
+            {
+                // Read depth but don't write - allows terrain to draw in front
+                gd.DepthStencilState = DepthStencilState.DepthRead;
+                gd.BlendState = BlendState.AlphaBlend;
+
+                // Disable backface culling so atmosphere is visible from inside
+                var noCullState = new RasterizerState { CullMode = CullMode.None };
+                gd.RasterizerState = noCullState;
+
+                atmosphereShader.Parameters["World"]?.SetValue(world);
+                atmosphereShader.Parameters["View"]?.SetValue(camera.View);
+                atmosphereShader.Parameters["Projection"]?.SetValue(camera.Projection);
+                atmosphereShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
+                atmosphereShader.Parameters["PlanetCenter"]?.SetValue(Vector3.Zero);
+                atmosphereShader.Parameters["PlanetRadius"]?.SetValue(50.0f);
+                atmosphereShader.Parameters["AtmosphereRadius"]?.SetValue(atmosphereRadius);
+                atmosphereShader.Parameters["SunIntensity"]?.SetValue(sunIntensity);
+
+                foreach (var pass in atmosphereShader.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    atmosphereSphere.Draw(gd);
+                }
+            }
+
+            // ===== PASS 2: Draw solid geometry (terrain) with depth write =====
+            gd.RasterizerState = RasterizerState.CullCounterClockwise;
+            gd.DepthStencilState = DepthStencilState.Default; // Enable depth write
+            gd.BlendState = BlendState.Opaque;
 
             if (planetShader != null)
             {
@@ -746,36 +917,16 @@ namespace anakinsoft.game.scenes
                 chunkedPlanet.Draw(gd, world, camera.View, camera.Projection, planetShader, showWireframe);
             }
 
+            // ===== PASS 3: Draw transparent geometry (water, clouds) =====
+            // These read depth but don't write to avoid z-fighting
+            gd.BlendState = BlendState.AlphaBlend;
+            gd.DepthStencilState = DepthStencilState.DepthRead; // Read depth but don't write
+
             // Draw water sphere if enabled
             if (showWater)
             {
                 waterSphere.Draw(gd, world, camera.View, camera.Projection, gameTime, planetGenerator.Parameters,
                     waterUVScale, waterWaveFrequency, waterWaveAmplitude, waterNormalStrength, waterDistortion, waterScrollSpeed);
-            }
-
-            // Enable alpha blending for atmosphere and clouds
-            gd.BlendState = BlendState.AlphaBlend;
-            gd.DepthStencilState = DepthStencilState.DepthRead; // Read depth but don't write
-
-            // Draw atmosphere if enabled
-            if (showAtmosphere && atmosphereShader != null && atmosphereSphere != null)
-            {
-                atmosphereShader.Parameters["World"]?.SetValue(world);
-                atmosphereShader.Parameters["View"]?.SetValue(camera.View);
-                atmosphereShader.Parameters["Projection"]?.SetValue(camera.Projection);
-                atmosphereShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
-                atmosphereShader.Parameters["PlanetCenter"]?.SetValue(Vector3.Zero);
-                atmosphereShader.Parameters["PlanetRadius"]?.SetValue(50.0f);
-                atmosphereShader.Parameters["AtmosphereRadius"]?.SetValue(atmosphereRadius);
-                atmosphereShader.Parameters["RayleighStrength"]?.SetValue(rayleighStrength);
-                atmosphereShader.Parameters["MieStrength"]?.SetValue(mieStrength);
-                atmosphereShader.Parameters["SunIntensity"]?.SetValue(sunIntensity);
-
-                foreach (var pass in atmosphereShader.CurrentTechnique.Passes)
-                {
-                    pass.Apply();
-                    atmosphereSphere.Draw(gd);
-                }
             }
 
             // Draw clouds if enabled
