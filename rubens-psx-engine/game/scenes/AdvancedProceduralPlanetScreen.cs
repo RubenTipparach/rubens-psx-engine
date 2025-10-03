@@ -474,10 +474,7 @@ namespace anakinsoft.game.scenes
             {
                 BoundingFrustum frustum = new BoundingFrustum(camera.View * camera.Projection);
 
-                // Calculate actual height above terrain for LOD system
-                float heightAboveTerrain = CalculateHeightAboveTerrain();
-
-                chunkedPlanet.UpdateChunks(camera.Position, frustum, heightAboveTerrain);
+                chunkedPlanet.UpdateChunks(camera.Position, frustum);
             }
 
             // Apply height collision for camera
@@ -508,7 +505,7 @@ namespace anakinsoft.game.scenes
 
         private void ApplyCameraHeightCollision()
         {
-            float minHeightAboveTerrain = 0.5f; // Minimum distance above terrain
+            float minHeightAboveTerrain = 0.01f; // Minimum distance above terrain (1mm precision)
             float heightAboveTerrain = CalculateHeightAboveTerrain();
 
             if (heightAboveTerrain < minHeightAboveTerrain)

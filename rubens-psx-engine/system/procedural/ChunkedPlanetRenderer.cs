@@ -93,7 +93,7 @@ namespace rubens_psx_engine.system.procedural
             chunkCandidates = new List<ChunkCandidate>();
         }
 
-        public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum, float heightAboveTerrain = -1.0f)
+        public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum)
         {
             // Calculate true average radius once at startup
             if (!hasCalculatedTrueRadius)
