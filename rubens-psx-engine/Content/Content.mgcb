@@ -791,7 +791,6 @@
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/File.fx;Assets/shaders/File
 
-
 #begin Assets/shaders/postprocess/BloomCombine.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -821,6 +820,12 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/postprocess/Tint.fx
+
+#begin Assets/shaders/surface/atmosphere.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/shaders/surface/atmosphere.fx;Assets/shaders/surface/atmosphere
 
 #begin Assets/shaders/surface/BakedVertexLit.fx
 /importer:EffectImporter

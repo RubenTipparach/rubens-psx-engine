@@ -48,6 +48,13 @@ namespace rubens_psx_engine.system.procedural
         private Dictionary<ChunkKey, PlanetChunk> chunkCache;
         private HashSet<ChunkKey> currentFrameChunks;
 
+        // LOD target point (where detail is centered)
+        public Vector3 LODTargetPoint { get; private set; }
+
+        // True average radius of the planet (base radius + average terrain height)
+        private float trueAverageRadius;
+        private bool hasCalculatedTrueRadius = false;
+
         // Performance limits
         private const int MAX_CHUNKS_PER_FRAME = 5000; // Limit total chunks to prevent performance issues
         private int chunksGeneratedThisFrame = 0;
@@ -86,8 +93,15 @@ namespace rubens_psx_engine.system.procedural
             chunkCandidates = new List<ChunkCandidate>();
         }
 
-        public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum)
+        public void UpdateChunks(Vector3 cameraPosition, BoundingFrustum frustum, float heightAboveTerrain = -1.0f)
         {
+            // Calculate true average radius once at startup
+            if (!hasCalculatedTrueRadius)
+            {
+                CalculateTrueAverageRadius();
+                hasCalculatedTrueRadius = true;
+            }
+
             // Clear active chunks list but don't dispose - we'll reuse from cache
             activeChunks.Clear();
             currentFrameChunks.Clear();
@@ -95,10 +109,27 @@ namespace rubens_psx_engine.system.procedural
             chunkCandidates.Clear(); // Clear candidate list
             currentCameraPosition = cameraPosition;
 
+            // Calculate LOD target point: project camera to nearest point on sphere surface
+            Vector3 directionFromCenter = Vector3.Normalize(cameraPosition);
+
+            // Sample height using EXACT same method as vertices (PlanetChunk.cs line 102)
+            float height = planetGenerator.SampleHeightAtPosition(directionFromCenter);
+
+            // Apply EXACT same transformation as vertices (PlanetChunk.cs line 106-107)
+            float heightScale = Radius * 0.1f * planetGenerator.Parameters.MountainHeight;
+            float terrainSurfaceRadius = Radius + height * heightScale;
+
+            // Final target point is at the actual terrain surface
+            LODTargetPoint = directionFromCenter * terrainSurfaceRadius;
+
+            // Calculate height above terrain (clamped to 0 minimum - no negative heights)
+            float cameraDistanceFromCenter = cameraPosition.Length();
+            float heightAboveSurface = MathF.Max(0.0f, cameraDistanceFromCenter - terrainSurfaceRadius);
+
             // PASS 1: Collect all chunk candidates
             foreach (var faceNormal in CubeFaces)
             {
-                CollectChunkCandidatesRecursive(faceNormal, Vector2.Zero, 1.0f, 0, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(faceNormal, Vector2.Zero, 1.0f, 0, LODTargetPoint, frustum, heightAboveSurface);
             }
 
             // PASS 2: Sort candidates by distance to camera (closest first)
@@ -129,122 +160,18 @@ namespace rubens_psx_engine.system.procedural
             }
         }
 
-        private void GenerateChunksRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 cameraPosition, BoundingFrustum frustum)
+
+        private void CollectChunkCandidatesRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 lodTargetPoint, BoundingFrustum frustum, float heightAboveSurface)
         {
-            // Check if we've hit the chunk limit for this frame
-            if (chunksGeneratedThisFrame >= MAX_CHUNKS_PER_FRAME)
-            {
-                return; // Stop generating more chunks to maintain performance
-            }
-
-            // Check cache first
-            var key = new ChunkKey(localUp, offset, size, lodLevel);
-
-            PlanetChunk chunk;
-            if (chunkCache.TryGetValue(key, out chunk))
-            {
-                // Reuse cached chunk
-                currentFrameChunks.Add(key);
-            }
-            else
-            {
-                // Create new chunk and cache it
-                chunk = new PlanetChunk(graphicsDevice, planetGenerator, localUp, offset, size, lodLevel, Radius);
-                chunkCache[key] = chunk;
-                currentFrameChunks.Add(key);
-            }
-
-            chunksGeneratedThisFrame++; // Increment counter
-
-            // DISABLED: Frustum culling for performance testing
-            //if (frustum != null && frustum.Contains(chunk.Bounds) == ContainmentType.Disjoint)
-            //{
-            //    chunk.Dispose();
-            //    return;
-            //}
-
-            // Check if camera is far enough to skip LOD and culling
-            float distanceToCenter = Vector3.Distance(cameraPosition, Vector3.Zero);
-            bool cameraFarAway = distanceToCenter > Radius * 3.0f; // 3x radius threshold
-
-            // When camera is close, only cull chunks on the opposite hemisphere
-            // Calculate camera direction from planet center
-            Vector3 cameraDir = Vector3.Normalize(cameraPosition);
-
-            // Check if chunk center is on the back hemisphere (more than 90 degrees away from camera direction)
-            Vector3 chunkCenter = chunk.GetCenterPosition();
-            Vector3 chunkDir = Vector3.Normalize(chunkCenter);
-            float hemisphereAlignment = Vector3.Dot(cameraDir, chunkDir);
-
-            // Only cull if chunk is clearly on the back hemisphere (dot < 0)
-            if (!cameraFarAway && hemisphereAlignment < -0.2f)
-            {
-                // Chunk is on back hemisphere, check if it's fully hidden
-                // Check all corners to see if any are visible
-                Vector3[] corners = chunk.GetCornerPositions();
-                bool anyPointVisible = false;
-
-                // Check center first
-                Vector3 toCameraDir = Vector3.Normalize(cameraPosition - chunkCenter);
-                Vector3 centerNormal = Vector3.Normalize(chunkCenter);
-                if (Vector3.Dot(toCameraDir, centerNormal) > -0.1f)
-                {
-                    anyPointVisible = true;
-                }
-
-                // Check corners if center wasn't visible
-                if (!anyPointVisible)
-                {
-                    foreach (Vector3 corner in corners)
-                    {
-                        toCameraDir = Vector3.Normalize(cameraPosition - corner);
-                        Vector3 cornerNormal = Vector3.Normalize(corner);
-
-                        // Check if this corner faces the camera
-                        if (Vector3.Dot(toCameraDir, cornerNormal) > -0.1f)
-                        {
-                            anyPointVisible = true;
-                            break;
-                        }
-                    }
-                }
-
-                // If no points are visible, cull the chunk (don't add to active list)
-                if (!anyPointVisible)
-                {
-                    return;
-                }
-            }
-
-            // Check if we should subdivide this chunk
-            if (!cameraFarAway && chunk.ShouldSubdivide(cameraPosition))
-            {
-                // Subdivide into 4 child chunks (don't dispose - chunk stays in cache)
-                float childSize = size * 0.5f;
-                int childLOD = lodLevel + 1;
-
-                GenerateChunksRecursive(localUp, offset, childSize, childLOD, cameraPosition, frustum);
-                GenerateChunksRecursive(localUp, offset + new Vector2(childSize, 0), childSize, childLOD, cameraPosition, frustum);
-                GenerateChunksRecursive(localUp, offset + new Vector2(0, childSize), childSize, childLOD, cameraPosition, frustum);
-                GenerateChunksRecursive(localUp, offset + new Vector2(childSize, childSize), childSize, childLOD, cameraPosition, frustum);
-            }
-            else
-            {
-                // Use this chunk
-                activeChunks.Add(chunk);
-            }
-        }
-
-        private void CollectChunkCandidatesRecursive(Vector3 localUp, Vector2 offset, float size, int lodLevel, Vector3 cameraPosition, BoundingFrustum frustum)
-        {
-            // Create temporary chunk to check subdivision
+            // Create chunk center position
             Vector3 axisA = new Vector3(localUp.Y, localUp.Z, localUp.X);
             Vector3 axisB = Vector3.Cross(localUp, axisA);
             Vector3 centerPos = localUp * Radius + (axisA * (offset.X + size * 0.5f - 0.5f) + axisB * (offset.Y + size * 0.5f - 0.5f)) * Radius * 2.0f;
 
-            float distanceToCamera = Vector3.Distance(centerPos, cameraPosition);
+            // Distance from chunk to LOD target point (where detail is centered)
+            float distanceToTarget = Vector3.Distance(centerPos, lodTargetPoint);
 
-            // Check minimum chunk size (same as PlanetChunk.ShouldSubdivide)
+            // Check minimum chunk size
             float currentChunkSize = size * Radius * 2.0f;
             const float MIN_CHUNK_SIZE = 0.1f;
 
@@ -257,22 +184,25 @@ namespace rubens_psx_engine.system.procedural
                     Offset = offset,
                     Size = size,
                     LODLevel = lodLevel,
-                    DistanceToCamera = distanceToCamera
+                    DistanceToCamera = distanceToTarget
                 });
                 return;
             }
 
-            // Calculate if should subdivide (same logic as PlanetChunk.ShouldSubdivide)
-            float distanceFromPlanetCenter = cameraPosition.Length();
-            float heightAboveSurface = distanceFromPlanetCenter - Radius;
-            float heightThreshold = 2.0f; // Dense detail only below 2 units above ground
-            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.5f, 1.0f);
-            float heightMultiplier = 1.0f / heightFactor;
+            // Calculate LOD threshold based on height above terrain
+            // heightAboveSurface is already clamped to 0 minimum (no negative heights)
+            // When at ground (height = 0): maximum detail
+            // When far away: reduced detail
+            float heightThreshold = 15.0f; // Height where detail starts to reduce
+            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.0f, 1.0f);
+            // heightMultiplier ranges from 2.0 (at ground, max detail) to 1.0 (far away, normal detail)
+            float heightMultiplier = 2.0f - heightFactor;
+
             float baseThreshold = Radius * 8.0f * heightMultiplier;
             float lodMultiplier = MathF.Pow(0.5f, lodLevel);
             float threshold = baseThreshold * lodMultiplier;
 
-            bool shouldSubdivide = distanceToCamera < threshold && lodLevel < 12;
+            bool shouldSubdivide = distanceToTarget < threshold && lodLevel < 12;
 
             if (shouldSubdivide)
             {
@@ -280,10 +210,10 @@ namespace rubens_psx_engine.system.procedural
                 float childSize = size * 0.5f;
                 int childLOD = lodLevel + 1;
 
-                CollectChunkCandidatesRecursive(localUp, offset, childSize, childLOD, cameraPosition, frustum);
-                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, 0), childSize, childLOD, cameraPosition, frustum);
-                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(0, childSize), childSize, childLOD, cameraPosition, frustum);
-                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, childSize), childSize, childLOD, cameraPosition, frustum);
+                CollectChunkCandidatesRecursive(localUp, offset, childSize, childLOD, lodTargetPoint, frustum, heightAboveSurface);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, 0), childSize, childLOD, lodTargetPoint, frustum, heightAboveSurface);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(0, childSize), childSize, childLOD, lodTargetPoint, frustum, heightAboveSurface);
+                CollectChunkCandidatesRecursive(localUp, offset + new Vector2(childSize, childSize), childSize, childLOD, lodTargetPoint, frustum, heightAboveSurface);
             }
             else
             {
@@ -294,9 +224,46 @@ namespace rubens_psx_engine.system.procedural
                     Offset = offset,
                     Size = size,
                     LODLevel = lodLevel,
-                    DistanceToCamera = distanceToCamera
+                    DistanceToCamera = distanceToTarget
                 });
             }
+        }
+
+        private void CalculateTrueAverageRadius()
+        {
+            // Sample 100 random points across the sphere to get average terrain height
+            const int sampleCount = 100;
+            float totalRadius = 0.0f;
+            Random rand = new Random();
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                // Generate random point on sphere using spherical coordinates
+                float theta = (float)(rand.NextDouble() * Math.PI); // 0 to PI
+                float phi = (float)(rand.NextDouble() * 2.0 * Math.PI); // 0 to 2PI
+
+                float sinTheta = MathF.Sin(theta);
+                Vector3 direction = new Vector3(
+                    sinTheta * MathF.Cos(phi),
+                    MathF.Cos(theta),
+                    sinTheta * MathF.Sin(phi)
+                );
+
+                // Sample height using EXACT same method as vertices (PlanetChunk.cs line 102)
+                float height = planetGenerator.SampleHeightAtPosition(direction);
+
+                // Apply EXACT same transformation as vertices (PlanetChunk.cs line 106-107)
+                float heightScale = Radius * 0.1f * planetGenerator.Parameters.MountainHeight;
+                float terrainSurfaceRadius = Radius + height * heightScale;
+
+                // Accumulate total radius
+                totalRadius += terrainSurfaceRadius;
+            }
+
+            // Calculate average
+            trueAverageRadius = totalRadius / sampleCount;
+
+            System.Console.WriteLine($"Calculated true average planet radius: {trueAverageRadius:F2} (base: {Radius}, avg offset: {trueAverageRadius - Radius:F2})");
         }
 
         private void GenerateChunk(Vector3 localUp, Vector2 offset, float size, int lodLevel)

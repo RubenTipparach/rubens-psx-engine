@@ -412,11 +412,15 @@ namespace rubens_psx_engine.system.procedural
             float heightAboveSurface = distanceFromPlanetCenter - planetRadius;
 
             // Scale LOD distance based on height above ground
-            // When close to ground: INCREASE detail (lower threshold)
-            // When far from ground: DECREASE detail (higher threshold)
-            float heightThreshold = 10.0f; // Transition height
-            float heightFactor = MathHelper.Clamp(heightAboveSurface / heightThreshold, 0.0f, 1.0f);
-            float heightMultiplier = 1.0f - (heightFactor * 0.5f); // Ranges from 1.0 (close) to 0.5 (far)
+            // When close to ground: INCREASE detail (LARGER threshold means more chunks subdivide)
+            // When far from ground: DECREASE detail (SMALLER threshold means fewer chunks subdivide)
+            // Below heightThreshold: maintain maximum detail
+            float heightOffset = 5.0f; // Offset to maintain max detail even below ground
+            float heightThreshold = 15.0f; // Height where detail starts to reduce
+            float adjustedHeight = heightAboveSurface + heightOffset;
+            float heightFactor = MathHelper.Clamp(adjustedHeight / heightThreshold, 0.0f, 1.0f);
+            // heightMultiplier ranges from 2.0 (at/below ground, max detail) to 1.0 (far away, normal detail)
+            float heightMultiplier = 2.0f - heightFactor;
 
             // Distance-based subdivision that creates smaller chunks near camera
             float baseThreshold = planetRadius * 8.0f * heightMultiplier; // Multiply by height factor

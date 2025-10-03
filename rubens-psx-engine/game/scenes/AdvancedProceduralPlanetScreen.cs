@@ -25,11 +25,17 @@ namespace anakinsoft.game.scenes
         private ProceduralPlanetGenerator planetGenerator;
         private ChunkedPlanetRenderer chunkedPlanet;
         private WaterSphereRenderer waterSphere;
+        private AtmosphereSphereRenderer atmosphereSphere;
+        private AtmosphereSphereRenderer cloudSphere;
         private Effect planetShader;
+        private Effect atmosphereShader;
+        private Effect cloudShader;
         private bool useVertexColoring = false;
         private bool showWater = true;
         private bool useChunkedRenderer = true;
         private bool showWireframe = false;
+        private bool showAtmosphere = true;
+        private bool showClouds = true;
 
         // Performance monitoring
         private int frameCount = 0;
@@ -62,8 +68,22 @@ namespace anakinsoft.game.scenes
         private float waterDistortion = 1.0f;
         private float waterScrollSpeed = 1.0f;
 
+        // Atmosphere parameters
+        private float atmosphereRadius = 60.0f;
+        private float rayleighStrength = 2.0f;
+        private float mieStrength = 0.8f;
+        private float sunIntensity = 20.0f;
+
+        // Cloud parameters
+        private float cloudLayerStart = 52.0f;
+        private float cloudLayerEnd = 56.0f;
+        private float cloudCoverage = 0.5f;
+        private float cloudDensity = 0.8f;
+        private float cloudSpeed = 0.1f;
+
         // Rotation state
         private float planetRotationAngle = 0.0f;
+        private float elapsedGameTime = 0.0f;
 
         public AdvancedProceduralPlanetScreen()
         {
@@ -84,6 +104,12 @@ namespace anakinsoft.game.scenes
             // Create water sphere at ocean level (matches base planet radius at height 0)
             waterSphere = new WaterSphereRenderer(gd, 50, 3);
 
+            // Create atmosphere sphere (20% larger than planet)
+            atmosphereSphere = new AtmosphereSphereRenderer(gd, atmosphereRadius, 64);
+
+            // Create cloud sphere (extends from cloudLayerStart to cloudLayerEnd)
+            cloudSphere = new AtmosphereSphereRenderer(gd, cloudLayerEnd, 32);
+
             // Load custom planet shader
             try
             {
@@ -93,6 +119,28 @@ namespace anakinsoft.game.scenes
             {
                 System.Console.WriteLine($"Failed to load Planet shader: {ex.Message} " + ex.StackTrace );
                 planetShader = null;
+            }
+
+            // Load atmosphere shader
+            try
+            {
+                atmosphereShader = Globals.screenManager.Content.Load<Effect>("shaders/surface/atmosphere");
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"Failed to load Atmosphere shader: {ex.Message} " + ex.StackTrace);
+                atmosphereShader = null;
+            }
+
+            // Load cloud shader
+            try
+            {
+                cloudShader = Globals.screenManager.Content.Load<Effect>("shaders/surface/clouds");
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"Failed to load Cloud shader: {ex.Message} " + ex.StackTrace);
+                cloudShader = null;
             }
 
             // Create UI
@@ -316,6 +364,76 @@ namespace anakinsoft.game.scenes
                 waterScrollSpeed = value;
             };
             sliders.Add(waterScrollSpeedSlider);
+
+            // === Atmosphere Parameters ===
+
+            // Rayleigh Strength (blue sky scattering)
+            var rayleighSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 16, sliderWidth, sliderHeight),
+                0.0f, 5.0f, rayleighStrength,
+                "Rayleigh Strength", font);
+            rayleighSlider.ValueChanged += value =>
+            {
+                rayleighStrength = value;
+            };
+            sliders.Add(rayleighSlider);
+
+            // Mie Strength (sunset/sunrise scattering)
+            var mieSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 17, sliderWidth, sliderHeight),
+                0.0f, 3.0f, mieStrength,
+                "Mie Strength", font);
+            mieSlider.ValueChanged += value =>
+            {
+                mieStrength = value;
+            };
+            sliders.Add(mieSlider);
+
+            // Sun Intensity
+            var sunIntensitySlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 18, sliderWidth, sliderHeight),
+                0.0f, 50.0f, sunIntensity,
+                "Sun Intensity", font);
+            sunIntensitySlider.ValueChanged += value =>
+            {
+                sunIntensity = value;
+            };
+            sliders.Add(sunIntensitySlider);
+
+            // === Cloud Parameters ===
+
+            // Cloud Coverage
+            var cloudCoverageSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 19, sliderWidth, sliderHeight),
+                0.0f, 1.0f, cloudCoverage,
+                "Cloud Coverage", font);
+            cloudCoverageSlider.ValueChanged += value =>
+            {
+                cloudCoverage = value;
+            };
+            sliders.Add(cloudCoverageSlider);
+
+            // Cloud Density
+            var cloudDensitySlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 20, sliderWidth, sliderHeight),
+                0.0f, 2.0f, cloudDensity,
+                "Cloud Density", font);
+            cloudDensitySlider.ValueChanged += value =>
+            {
+                cloudDensity = value;
+            };
+            sliders.Add(cloudDensitySlider);
+
+            // Cloud Speed
+            var cloudSpeedSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 21, sliderWidth, sliderHeight),
+                0.0f, 1.0f, cloudSpeed,
+                "Cloud Speed", font);
+            cloudSpeedSlider.ValueChanged += value =>
+            {
+                cloudSpeed = value;
+            };
+            sliders.Add(cloudSpeedSlider);
         }
 
         private void RegeneratePlanet()
@@ -348,42 +466,67 @@ namespace anakinsoft.game.scenes
             // Update planet rotation
             planetRotationAngle += planetRotationSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            // Update elapsed time for cloud animation
+            elapsedGameTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
             // Update chunked planet LOD
             if (useChunkedRenderer && chunkedPlanet != null)
             {
                 BoundingFrustum frustum = new BoundingFrustum(camera.View * camera.Projection);
-                chunkedPlanet.UpdateChunks(camera.Position, frustum);
+
+                // Calculate actual height above terrain for LOD system
+                float heightAboveTerrain = CalculateHeightAboveTerrain();
+
+                chunkedPlanet.UpdateChunks(camera.Position, frustum, heightAboveTerrain);
             }
 
             // Apply height collision for camera
             ApplyCameraHeightCollision();
         }
 
-        private void ApplyCameraHeightCollision()
+        private float CalculateHeightAboveTerrain()
         {
-            float planetRadius = 50f;
-            float minHeightAboveTerrain = 0.5f; // Minimum distance above terrain
+            // Use the SAME planet radius as the chunks
+            float planetRadius = chunkedPlanet?.Radius ?? 50f;
 
-            // Get normalized position on sphere
+            // Get normalized direction from planet center to camera
             Vector3 direction = Vector3.Normalize(camera.Position);
 
-            // Convert to spherical UV coordinates
-            float u = MathF.Atan2(direction.X, direction.Z) / (2.0f * MathF.PI) + 0.5f;
-            float v = MathF.Asin(MathHelper.Clamp(direction.Y, -1.0f, 1.0f)) / MathF.PI + 0.5f;
+            // Sample height using the same method as vertex generation
+            float height = planetGenerator.SampleHeightAtPosition(direction);
 
-            // Sample height from heightmap (0-1 range)
-            float heightSample = planetGenerator.SampleHeightAtUV(u, v);
+            // Apply EXACT same transformation as vertices (PlanetChunk.cs line 106-107)
+            float heightScale = planetRadius * 0.1f * planetGenerator.Parameters.MountainHeight;
+            float terrainSurfaceRadius = planetRadius + height * heightScale;
 
-            // Calculate terrain height at this position
-            // Height sample is normalized (0-1), multiply by max terrain displacement
-            float maxTerrainHeight = planetRadius * 0.3f; // Adjust based on your terrain settings
-            float terrainHeight = planetRadius + (heightSample - 0.5f) * maxTerrainHeight;
+            // Camera distance from planet center
+            float cameraDistanceFromCenter = camera.Position.Length();
 
-            float currentDistance = camera.Position.Length();
-            float minDistanceFromCenter = terrainHeight + minHeightAboveTerrain;
+            // Return actual height above terrain
+            return cameraDistanceFromCenter - terrainSurfaceRadius;
+        }
 
-            if (currentDistance < minDistanceFromCenter)
+        private void ApplyCameraHeightCollision()
+        {
+            float minHeightAboveTerrain = 0.5f; // Minimum distance above terrain
+            float heightAboveTerrain = CalculateHeightAboveTerrain();
+
+            if (heightAboveTerrain < minHeightAboveTerrain)
             {
+                // Use the SAME planet radius as the chunks
+                float planetRadius = chunkedPlanet?.Radius ?? 50f;
+
+                // Get normalized direction from planet center to camera
+                Vector3 direction = Vector3.Normalize(camera.Position);
+
+                // Sample height using the same method as vertex generation
+                float height = planetGenerator.SampleHeightAtPosition(direction);
+
+                // Apply EXACT same transformation as vertices
+                float heightScale = planetRadius * 0.1f * planetGenerator.Parameters.MountainHeight;
+                float terrainSurfaceRadius = planetRadius + height * heightScale;
+                float minDistanceFromCenter = terrainSurfaceRadius + minHeightAboveTerrain;
+
                 // Push camera away to maintain minimum distance above terrain
                 camera.Position = direction * minDistanceFromCenter;
             }
@@ -612,6 +755,125 @@ namespace anakinsoft.game.scenes
                 waterSphere.Draw(gd, world, camera.View, camera.Projection, gameTime, planetGenerator.Parameters,
                     waterUVScale, waterWaveFrequency, waterWaveAmplitude, waterNormalStrength, waterDistortion, waterScrollSpeed);
             }
+
+            // Enable alpha blending for atmosphere and clouds
+            gd.BlendState = BlendState.AlphaBlend;
+            gd.DepthStencilState = DepthStencilState.DepthRead; // Read depth but don't write
+
+            // Draw atmosphere if enabled
+            if (showAtmosphere && atmosphereShader != null && atmosphereSphere != null)
+            {
+                atmosphereShader.Parameters["World"]?.SetValue(world);
+                atmosphereShader.Parameters["View"]?.SetValue(camera.View);
+                atmosphereShader.Parameters["Projection"]?.SetValue(camera.Projection);
+                atmosphereShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
+                atmosphereShader.Parameters["PlanetCenter"]?.SetValue(Vector3.Zero);
+                atmosphereShader.Parameters["PlanetRadius"]?.SetValue(50.0f);
+                atmosphereShader.Parameters["AtmosphereRadius"]?.SetValue(atmosphereRadius);
+                atmosphereShader.Parameters["RayleighStrength"]?.SetValue(rayleighStrength);
+                atmosphereShader.Parameters["MieStrength"]?.SetValue(mieStrength);
+                atmosphereShader.Parameters["SunIntensity"]?.SetValue(sunIntensity);
+
+                foreach (var pass in atmosphereShader.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    atmosphereSphere.Draw(gd);
+                }
+            }
+
+            // Draw clouds if enabled
+            if (showClouds && cloudShader != null && cloudSphere != null)
+            {
+                cloudShader.Parameters["World"]?.SetValue(world);
+                cloudShader.Parameters["View"]?.SetValue(camera.View);
+                cloudShader.Parameters["Projection"]?.SetValue(camera.Projection);
+                cloudShader.Parameters["CameraPosition"]?.SetValue(camera.Position);
+                cloudShader.Parameters["PlanetCenter"]?.SetValue(Vector3.Zero);
+                cloudShader.Parameters["PlanetRadius"]?.SetValue(50.0f);
+                cloudShader.Parameters["CloudLayerStart"]?.SetValue(cloudLayerStart);
+                cloudShader.Parameters["CloudLayerEnd"]?.SetValue(cloudLayerEnd);
+                cloudShader.Parameters["CloudCoverage"]?.SetValue(cloudCoverage);
+                cloudShader.Parameters["CloudDensity"]?.SetValue(cloudDensity);
+                cloudShader.Parameters["CloudSpeed"]?.SetValue(cloudSpeed);
+                cloudShader.Parameters["Time"]?.SetValue(elapsedGameTime);
+
+                foreach (var pass in cloudShader.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    cloudSphere.Draw(gd);
+                }
+            }
+
+            // Restore render states
+            gd.BlendState = BlendState.Opaque;
+            gd.DepthStencilState = DepthStencilState.Default;
+
+            // Draw debug wireframe cube at LOD target point
+            if (chunkedPlanet != null)
+            {
+                // Calculate rotation to align cube with camera direction from origin
+                Vector3 directionFromOrigin = Vector3.Normalize(camera.Position);
+                Matrix cubeRotation = Matrix.CreateWorld(chunkedPlanet.LODTargetPoint, directionFromOrigin, Vector3.Up);
+
+                DrawDebugCube(gd, 0.3f, Color.Red, cubeRotation);
+            }
+        }
+
+        private void DrawDebugCube(GraphicsDevice gd, float size, Color color, Matrix world)
+        {
+            var effect = new BasicEffect(gd)
+            {
+                World = world,
+                View = camera.View,
+                Projection = camera.Projection,
+                VertexColorEnabled = true
+            };
+
+            // Vertices in local space (around origin), world matrix will position and rotate them
+            float half = size * 0.5f;
+            var vertices = new VertexPositionColor[]
+            {
+                // Front face
+                new VertexPositionColor(new Vector3(-half, -half, half), color),
+                new VertexPositionColor(new Vector3(half, -half, half), color),
+                new VertexPositionColor(new Vector3(half, half, half), color),
+                new VertexPositionColor(new Vector3(-half, half, half), color),
+                // Back face
+                new VertexPositionColor(new Vector3(-half, -half, -half), color),
+                new VertexPositionColor(new Vector3(half, -half, -half), color),
+                new VertexPositionColor(new Vector3(half, half, -half), color),
+                new VertexPositionColor(new Vector3(-half, half, -half), color)
+            };
+
+            var indices = new short[]
+            {
+                // Front face
+                0, 1, 1, 2, 2, 3, 3, 0,
+                // Back face
+                4, 5, 5, 6, 6, 7, 7, 4,
+                // Connect front to back
+                0, 4, 1, 5, 2, 6, 3, 7
+            };
+
+            var oldRasterizer = gd.RasterizerState;
+            gd.RasterizerState = RasterizerState.CullNone;
+
+            foreach (var pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                gd.DrawUserIndexedPrimitives(
+                    PrimitiveType.LineList,
+                    vertices,
+                    0,
+                    vertices.Length,
+                    indices,
+                    0,
+                    indices.Length / 2
+                );
+            }
+
+            gd.RasterizerState = oldRasterizer;
+            effect.Dispose();
         }
 
         protected override void Dispose(bool disposing)
@@ -621,7 +883,11 @@ namespace anakinsoft.game.scenes
                 planetGenerator?.Dispose();
                 chunkedPlanet?.Dispose();
                 waterSphere?.Dispose();
+                atmosphereSphere?.Dispose();
+                cloudSphere?.Dispose();
                 planetShader?.Dispose();
+                atmosphereShader?.Dispose();
+                cloudShader?.Dispose();
                 pixelTexture?.Dispose();
             }
             base.Dispose(disposing);
