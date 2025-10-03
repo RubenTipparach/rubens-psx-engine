@@ -64,7 +64,7 @@ namespace anakinsoft.game.scenes
         private bool cloudsToggleButtonHovered = false;
 
         // UI Categories
-        private enum UICategory { Terrain, Water, Planet }
+        private enum UICategory { Terrain, Water, Rendering, Atmosphere, LODTweaks }
         private UICategory currentCategory = UICategory.Terrain;
 
         // Shader parameters
@@ -94,6 +94,9 @@ namespace anakinsoft.game.scenes
         private float cloudCoverage = 0.5f;
         private float cloudDensity = 0.8f;
         private float cloudSpeed = 0.1f;
+        private float cloudScale = 5.0f;
+        private float cloudDetailScale = 20.0f;
+        private float cloudDetailStrength = 0.3f;
 
         // Rotation state
         private float planetRotationAngle = 0.0f;
@@ -243,13 +246,13 @@ namespace anakinsoft.game.scenes
             sliders.Add(mountainHeightSlider);
 
             // ===== WATER SLIDERS =====
-            // Ocean Level (only affects water sphere, not terrain) - Wide range to accommodate default of 7.5
-            // Default set to 0.75f (normalized range 0-1)
-            float defaultWaterHeight = 0.75f;
+            // Ocean Level (only affects water sphere, not terrain)
+            // Default set to 0.71 (normalized range 0-1)
+            float defaultWaterHeight = 0.71f;
             var oceanSlider = new Slider(
                 new Rectangle(x, startY, sliderWidth, sliderHeight),
                 0.0f, 1.0f, defaultWaterHeight,
-                "Ocean Level", font);
+                "Water Height", font);
             oceanSlider.Category = "Water";
             oceanSlider.ValueChanged += value =>
             {
@@ -267,7 +270,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
                 -10.0f, 10.0f, 0.5f,
                 "Terrain Normal", font);
-            normalMapStrengthSlider.Category = "Planet";
+            normalMapStrengthSlider.Category = "Rendering";
             normalMapStrengthSlider.ValueChanged += value =>
             {
                 planetNormalMapStrength = value;
@@ -279,7 +282,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
                 0.0f, 10.0f, 0.3f,
                 "Detail Normal", font);
-            detailNormalStrengthSlider.Category = "Planet";
+            detailNormalStrengthSlider.Category = "Rendering";
             detailNormalStrengthSlider.ValueChanged += value =>
             {
                 planetDetailNormalStrength = value;
@@ -291,7 +294,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 1.0f, 0.5f,
                 "Day/Night Trans", font);
-            dayNightSlider.Category = "Planet";
+            dayNightSlider.Category = "Rendering";
             dayNightSlider.ValueChanged += value =>
             {
                 planetDayNightTransition = value;
@@ -303,7 +306,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 1.0f, 0.1f,
                 "Specular Intensity", font);
-            specularSlider.Category = "Planet";
+            specularSlider.Category = "Rendering";
             specularSlider.ValueChanged += value =>
             {
                 planetSpecularIntensity = value;
@@ -315,7 +318,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 7, sliderWidth, sliderHeight),
                 -2.0f, 2.0f, 0.0f,
                 "Rotation Speed", font);
-            rotationSpeedSlider.Category = "Planet";
+            rotationSpeedSlider.Category = "Rendering";
             rotationSpeedSlider.ValueChanged += value =>
             {
                 planetRotationSpeed = value;
@@ -327,7 +330,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 8, sliderWidth, sliderHeight),
                 0.1f, 50.0f, 10.0f,
                 "Noise Scale", font);
-            noiseScaleSlider.Category = "Water";
+            noiseScaleSlider.Category = "Rendering";
             noiseScaleSlider.ValueChanged += value =>
             {
                 noiseScale = value;
@@ -339,7 +342,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 9, sliderWidth, sliderHeight),
                 0.0f, 0.5f, 0.05f,
                 "Noise Strength", font);
-            noiseStrengthSlider.Category = "Water";
+            noiseStrengthSlider.Category = "Rendering";
             noiseStrengthSlider.ValueChanged += value =>
             {
                 noiseStrength = value;
@@ -360,7 +363,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Frequency
             var waterFreqSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 11, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Frequency", font);
             waterFreqSlider.Category = "Water";
@@ -372,7 +375,7 @@ namespace anakinsoft.game.scenes
 
             // Water Wave Amplitude
             var waterAmpSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 12, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
                 0.1f, 5.0f, 1.0f,
                 "Wave Amplitude", font);
             waterAmpSlider.Category = "Water";
@@ -384,7 +387,7 @@ namespace anakinsoft.game.scenes
 
             // Water Normal Strength
             var waterNormalSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 13, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Normal Str", font);
             waterNormalSlider.Category = "Water";
@@ -396,7 +399,7 @@ namespace anakinsoft.game.scenes
 
             // Water Distortion
             var waterDistortionSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 14, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
                 0.0f, 3.0f, 1.0f,
                 "Wave Distortion", font);
             waterDistortionSlider.Category = "Water";
@@ -408,7 +411,7 @@ namespace anakinsoft.game.scenes
 
             // Water Scroll Speed
             var waterScrollSpeedSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 15, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
                 0.0f, 5.0f, 1.0f,
                 "Wave Scroll Speed", font);
             waterScrollSpeedSlider.Category = "Water";
@@ -444,9 +447,10 @@ namespace anakinsoft.game.scenes
 
             // Sun Intensity
             var sunIntensitySlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 18, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
                 0.0f, 50.0f, sunIntensity,
                 "Sun Intensity", font);
+            sunIntensitySlider.Category = "Atmosphere";
             sunIntensitySlider.ValueChanged += value =>
             {
                 sunIntensity = value;
@@ -460,6 +464,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 19, sliderWidth, sliderHeight),
                 0.0f, 1.0f, cloudCoverage,
                 "Cloud Coverage", font);
+            cloudCoverageSlider.Category = "Atmosphere";
             cloudCoverageSlider.ValueChanged += value =>
             {
                 cloudCoverage = value;
@@ -471,6 +476,7 @@ namespace anakinsoft.game.scenes
                 new Rectangle(x, startY + sliderSpacing * 20, sliderWidth, sliderHeight),
                 0.0f, 2.0f, cloudDensity,
                 "Cloud Density", font);
+            cloudDensitySlider.Category = "Atmosphere";
             cloudDensitySlider.ValueChanged += value =>
             {
                 cloudDensity = value;
@@ -479,14 +485,113 @@ namespace anakinsoft.game.scenes
 
             // Cloud Speed
             var cloudSpeedSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 21, sliderWidth, sliderHeight),
+                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
                 0.0f, 1.0f, cloudSpeed,
                 "Cloud Speed", font);
+            cloudSpeedSlider.Category = "Atmosphere";
             cloudSpeedSlider.ValueChanged += value =>
             {
                 cloudSpeed = value;
             };
             sliders.Add(cloudSpeedSlider);
+
+            // Cloud Scale
+            var cloudScaleSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
+                1.0f, 20.0f, cloudScale,
+                "Cloud Scale", font);
+            cloudScaleSlider.Category = "Atmosphere";
+            cloudScaleSlider.ValueChanged += value =>
+            {
+                cloudScale = value;
+            };
+            sliders.Add(cloudScaleSlider);
+
+            // Cloud Detail Scale
+            var cloudDetailScaleSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
+                5.0f, 50.0f, cloudDetailScale,
+                "Cloud Detail Scale", font);
+            cloudDetailScaleSlider.Category = "Atmosphere";
+            cloudDetailScaleSlider.ValueChanged += value =>
+            {
+                cloudDetailScale = value;
+            };
+            sliders.Add(cloudDetailScaleSlider);
+
+            // Cloud Detail Strength
+            var cloudDetailStrengthSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
+                0.0f, 1.0f, cloudDetailStrength,
+                "Cloud Detail Str", font);
+            cloudDetailStrengthSlider.Category = "Atmosphere";
+            cloudDetailStrengthSlider.ValueChanged += value =>
+            {
+                cloudDetailStrength = value;
+            };
+            sliders.Add(cloudDetailStrengthSlider);
+
+            // === LOD Tweaks Parameters ===
+
+            // Finest LOD Max Height
+            var finestLODMaxHeightSlider = new Slider(
+                new Rectangle(x, startY, sliderWidth, sliderHeight),
+                1.0f, 20.0f, chunkedPlanet.FinestLODMaxHeight,
+                "Finest LOD Height", font);
+            finestLODMaxHeightSlider.Category = "LODTweaks";
+            finestLODMaxHeightSlider.ValueChanged += value =>
+            {
+                chunkedPlanet.FinestLODMaxHeight = value;
+            };
+            sliders.Add(finestLODMaxHeightSlider);
+
+            // Finest LOD Max Distance
+            var finestLODMaxDistanceSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing, sliderWidth, sliderHeight),
+                5.0f, 50.0f, chunkedPlanet.FinestLODMaxDistance,
+                "Finest LOD Distance", font);
+            finestLODMaxDistanceSlider.Category = "LODTweaks";
+            finestLODMaxDistanceSlider.ValueChanged += value =>
+            {
+                chunkedPlanet.FinestLODMaxDistance = value;
+            };
+            sliders.Add(finestLODMaxDistanceSlider);
+
+            // Min Chunk Size Close
+            var minChunkSizeCloseSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
+                0.05f, 1.0f, chunkedPlanet.MinChunkSizeClose,
+                "Min Chunk Close", font);
+            minChunkSizeCloseSlider.Category = "LODTweaks";
+            minChunkSizeCloseSlider.ValueChanged += value =>
+            {
+                chunkedPlanet.MinChunkSizeClose = value;
+            };
+            sliders.Add(minChunkSizeCloseSlider);
+
+            // Min Chunk Size Medium
+            var minChunkSizeMediumSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
+                0.1f, 2.0f, chunkedPlanet.MinChunkSizeMedium,
+                "Min Chunk Medium", font);
+            minChunkSizeMediumSlider.Category = "LODTweaks";
+            minChunkSizeMediumSlider.ValueChanged += value =>
+            {
+                chunkedPlanet.MinChunkSizeMedium = value;
+            };
+            sliders.Add(minChunkSizeMediumSlider);
+
+            // Min Chunk Size Far
+            var minChunkSizeFarSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
+                0.5f, 5.0f, chunkedPlanet.MinChunkSizeFar,
+                "Min Chunk Far", font);
+            minChunkSizeFarSlider.Category = "LODTweaks";
+            minChunkSizeFarSlider.ValueChanged += value =>
+            {
+                chunkedPlanet.MinChunkSizeFar = value;
+            };
+            sliders.Add(minChunkSizeFarSlider);
         }
 
         private void RegeneratePlanet()
@@ -625,12 +730,14 @@ namespace anakinsoft.game.scenes
 
                 if (categoryButtonHovered && InputManager.GetMouseClick(0))
                 {
-                    // Cycle through categories: Terrain -> Water -> Planet -> Terrain
+                    // Cycle through categories: Terrain -> Water -> Rendering -> Atmosphere -> LODTweaks -> Terrain
                     currentCategory = currentCategory switch
                     {
                         UICategory.Terrain => UICategory.Water,
-                        UICategory.Water => UICategory.Planet,
-                        UICategory.Planet => UICategory.Terrain,
+                        UICategory.Water => UICategory.Rendering,
+                        UICategory.Rendering => UICategory.Atmosphere,
+                        UICategory.Atmosphere => UICategory.LODTweaks,
+                        UICategory.LODTweaks => UICategory.Terrain,
                         _ => UICategory.Terrain
                     };
                 }
@@ -943,6 +1050,9 @@ namespace anakinsoft.game.scenes
                 cloudShader.Parameters["CloudCoverage"]?.SetValue(cloudCoverage);
                 cloudShader.Parameters["CloudDensity"]?.SetValue(cloudDensity);
                 cloudShader.Parameters["CloudSpeed"]?.SetValue(cloudSpeed);
+                cloudShader.Parameters["CloudScale"]?.SetValue(cloudScale);
+                cloudShader.Parameters["CloudDetailScale"]?.SetValue(cloudDetailScale);
+                cloudShader.Parameters["CloudDetailStrength"]?.SetValue(cloudDetailStrength);
                 cloudShader.Parameters["Time"]?.SetValue(elapsedGameTime);
 
                 foreach (var pass in cloudShader.CurrentTechnique.Passes)

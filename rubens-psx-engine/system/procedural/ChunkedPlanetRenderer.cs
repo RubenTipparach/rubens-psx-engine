@@ -55,9 +55,16 @@ namespace rubens_psx_engine.system.procedural
         private float trueAverageRadius;
         private bool hasCalculatedTrueRadius = false;
 
-        // Performance limits
-        private const int MAX_CHUNKS_PER_FRAME = 5000; // Limit total chunks to prevent performance issues
+        // Performance limits - optimized for modern GPUs
+        private const int MAX_CHUNKS_PER_FRAME = 8000; // Increased limit for more detail
         private int chunksGeneratedThisFrame = 0;
+
+        // LOD Parameters (exposed for tuning) - optimized for performance
+        public float FinestLODMaxHeight { get; set; } = 1.25f;       // Max height above terrain for finest LOD (1/4 of 5.0)
+        public float FinestLODMaxDistance { get; set; } = 3.75f;     // Max distance from camera for finest LOD (1/4 of 15.0)
+        public float MinChunkSizeClose { get; set; } = 0.08f;        // Minimum chunk size when very close (more detail)
+        public float MinChunkSizeMedium { get; set; } = 0.4f;        // Minimum chunk size at medium distance
+        public float MinChunkSizeFar { get; set; } = 1.5f;           // Minimum chunk size far away
 
         // Chunk prioritization
         private struct ChunkCandidate
@@ -194,44 +201,39 @@ namespace rubens_psx_engine.system.procedural
             if (facingDot < cullThreshold)
                 return;
 
-            // Calculate chunk size for culling checks
-            float currentChunkSize = size * Radius * 2.0f;
-
-            // Frustum culling with generous threshold to avoid missing patches
-            // Create a bounding sphere for this chunk
-            float chunkRadius = currentChunkSize * 1.5f; // 50% larger for generous culling
-            BoundingSphere chunkBounds = new BoundingSphere(centerPos, chunkRadius);
-
-            // Check if chunk is in frustum (with generous tolerance)
-            ContainmentType containment = frustum.Contains(chunkBounds);
-            if (containment == ContainmentType.Disjoint)
-            {
-                // Chunk is completely outside frustum - skip it
-                return;
-            }
-
             // Distance from chunk to LOD target point (where detail is centered)
             float distanceToTarget = Vector3.Distance(centerPos, lodTargetPoint);
 
-            // Check minimum chunk size based on height above surface
-            // When close to surface: allow smaller chunks (higher detail)
-            // When far away: stop subdividing earlier (fewer, larger chunks)
+            // Calculate chunk size for minimum size checks
+            float currentChunkSize = size * Radius * 2.0f;
 
+            // Note: Frustum culling disabled - was too heavy on GPU
+            // Backface culling provides sufficient performance optimization
+
+            // Check minimum chunk size based on height above surface AND distance from camera
+            // Severely limit finest LOD to very close proximity
             float minChunkSize;
-            if (heightAboveSurface < 5.0f)
+
+            // Calculate distance from camera to chunk
+            float distanceFromCamera = Vector3.Distance(currentCameraPosition, centerPos);
+
+            // Only allow finest LOD when BOTH close to ground AND close to camera
+            bool canUseFinestLOD = heightAboveSurface <= FinestLODMaxHeight && distanceFromCamera <= FinestLODMaxDistance;
+
+            if (canUseFinestLOD)
             {
-                // Very close to surface - allow tiny chunks for maximum detail
-                minChunkSize = 0.1f;
+                // Very close to surface AND camera - allow tiny chunks for maximum detail
+                minChunkSize = MinChunkSizeClose;
             }
-            else if (heightAboveSurface < 20.0f)
+            else if (heightAboveSurface < 20.0f && distanceFromCamera < 30.0f)
             {
-                // Close to surface - allow small chunks
-                minChunkSize = 0.5f;
+                // Close to surface or camera - allow small chunks
+                minChunkSize = MinChunkSizeMedium;
             }
             else if (heightAboveSurface < 50.0f)
             {
                 // Medium altitude - use medium chunks
-                minChunkSize = 2.0f;
+                minChunkSize = MinChunkSizeFar;
             }
             else
             {
@@ -253,43 +255,48 @@ namespace rubens_psx_engine.system.procedural
                 return;
             }
 
-            // Calculate LOD threshold based on height above terrain
-            // Optimize for 16-50 chunks per LOD level through better batching
-            // heightAboveSurface is already clamped to 0 minimum (no negative heights)
+            // Calculate LOD based on camera distance for adaptive detail
+            // High detail close to camera, sharp falloff to low detail in distance
+            // Most medium-detail terrain is orthogonal to camera anyway, so skip it
 
-            float heightMultiplier;
-            if (heightAboveSurface < 5.0f)
+            // Use previously calculated distanceFromCamera for LOD calculations
+
+            // Optimized adaptive threshold based on camera distance
+            // Much tighter detail ranges for better performance (1/4 range for finest LOD)
+            float cameraDistanceMultiplier;
+            if (distanceFromCamera < 3.0f)
             {
-                // Very close to surface (0-5m) - high detail
-                float closenessFactor = heightAboveSurface / 5.0f;
-                heightMultiplier = MathHelper.Lerp(4.0f, 2.5f, closenessFactor);
+                // Very close to camera (0-3 units) - ultra high detail (1/4 of previous 8.0)
+                cameraDistanceMultiplier = 6.0f;
             }
-            else if (heightAboveSurface < 20.0f)
+            else if (distanceFromCamera < 12.0f)
             {
-                // Close to surface (5-20m) - medium detail
-                float closenessFactor = (heightAboveSurface - 5.0f) / 15.0f;
-                heightMultiplier = MathHelper.Lerp(2.5f, 1.5f, closenessFactor);
+                // Close range (3-12 units) - rapid exponential falloff
+                float t = (distanceFromCamera - 3.0f) / 9.0f;
+                // Cubic falloff for aggressive transition
+                cameraDistanceMultiplier = MathHelper.Lerp(6.0f, 1.2f, t * t * t);
             }
-            else if (heightAboveSurface < 100.0f)
+            else if (distanceFromCamera < 40.0f)
             {
-                // Medium altitude (20-100m) - reduce detail gradually
-                float altitudeFactor = (heightAboveSurface - 20.0f) / 80.0f;
-                heightMultiplier = MathHelper.Lerp(1.5f, 0.8f, altitudeFactor);
+                // Medium range (12-40 units) - reduced detail
+                float t = (distanceFromCamera - 12.0f) / 28.0f;
+                cameraDistanceMultiplier = MathHelper.Lerp(1.2f, 0.5f, t * t);
             }
             else
             {
-                // High altitude / space (>100m) - very coarse detail
-                float spaceFactor = MathHelper.Clamp((heightAboveSurface - 100.0f) / 200.0f, 0.0f, 1.0f);
-                heightMultiplier = MathHelper.Lerp(0.8f, 0.3f, spaceFactor);
+                // Far range (>40 units) - minimal detail for distant terrain
+                float t = MathHelper.Clamp((distanceFromCamera - 40.0f) / 80.0f, 0.0f, 1.0f);
+                cameraDistanceMultiplier = MathHelper.Lerp(0.5f, 0.2f, t);
             }
 
-            // Larger base threshold to create bigger chunks (better for batching)
-            float baseThreshold = Radius * 10.0f * heightMultiplier;
+            // Optimized base threshold with tighter control
+            float baseThreshold = Radius * 7.0f * cameraDistanceMultiplier;
             float lodMultiplier = MathF.Pow(0.5f, lodLevel);
             float threshold = baseThreshold * lodMultiplier;
 
-            // Limit maximum LOD depth to keep chunk count manageable (16-50 per level)
-            bool shouldSubdivide = distanceToTarget < threshold && lodLevel < 8;
+            // Dynamic max LOD based on distance - tighter ranges for performance
+            int maxLOD = distanceFromCamera < 5.0f ? 9 : (distanceFromCamera < 20.0f ? 7 : 5);
+            bool shouldSubdivide = distanceToTarget < threshold && lodLevel < maxLOD;
 
             if (shouldSubdivide)
             {

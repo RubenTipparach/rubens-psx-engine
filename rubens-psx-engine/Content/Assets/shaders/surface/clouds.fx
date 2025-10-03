@@ -157,7 +157,7 @@ float WorleyNoise(float3 p)
     return minDist;
 }
 
-// Cloud density function
+// Multi-scale fractal cloud density function
 float CloudDensityFunction(float3 position)
 {
     float3 spherePos = position - PlanetCenter;
@@ -170,8 +170,11 @@ float CloudDensityFunction(float3 position)
     // Normalize height within cloud layer
     float heightFraction = (height - CloudLayerStart) / (CloudLayerEnd - CloudLayerStart);
 
-    // Vertical density gradient (more dense in middle of layer)
-    float verticalGradient = 1.0 - abs(heightFraction * 2.0 - 1.0);
+    // Vertical density gradient (more dense in middle of layer, softer at top)
+    // Use cubic curve for more realistic falloff at cloud tops
+    float verticalGradient = heightFraction < 0.5
+        ? 1.0 - pow(heightFraction * 2.0, 0.5)  // Bottom: sharp rise
+        : pow(1.0 - (heightFraction - 0.5) * 2.0, 1.5); // Top: soft falloff
 
     // Convert to spherical coordinates for proper cloud sampling
     float3 normalizedPos = normalize(spherePos);
@@ -192,15 +195,32 @@ float CloudDensityFunction(float3 position)
     // This prevents the aurora-like stretching at poles
     float3 cloudPos = float3(cloudPos2D.x, height * CloudScale, cloudPos2D.y);
 
-    // Base cloud shape (FBM for large formations)
-    float baseNoise = FBM(cloudPos);
+    // MULTI-SCALE FRACTAL APPROACH
+    // Layer 1: Large-scale cloud formations (continent-sized)
+    float largeScale = FBM(cloudPos * 0.3);
 
-    // Add detail
-    float detailNoise = FBM(cloudPos * CloudDetailScale);
-    float cloudShape = baseNoise - (1.0 - detailNoise) * CloudDetailStrength;
+    // Layer 2: Medium-scale cloud structures (storm systems)
+    float mediumScale = FBM(cloudPos * 1.0);
 
-    // Apply coverage
+    // Layer 3: Small-scale cloud details (individual puffs)
+    float smallScale = FBM(cloudPos * 3.0);
+
+    // Layer 4: Fine details (wispy edges)
+    float fineDetail = Noise3D(cloudPos * 8.0);
+
+    // Combine scales with decreasing weights (fractal layering)
+    // Base shape combines large and medium scales
+    float baseShape = largeScale * 0.6 + mediumScale * 0.4;
+
+    // Detail layers subtract from base to create realistic cloud shapes
+    float cloudShape = baseShape - (1.0 - smallScale) * 0.2 - (1.0 - fineDetail) * 0.1;
+
+    // Apply coverage threshold to create distinct cloud formations
     cloudShape = saturate((cloudShape - (1.0 - CloudCoverage)) / CloudCoverage);
+
+    // Use Worley noise to erode cloud edges for realistic shapes
+    float erosion = WorleyNoise(cloudPos * CloudDetailScale * 0.5);
+    cloudShape *= saturate(erosion + 0.3); // Soften erosion to avoid over-eroding
 
     // Combine with vertical gradient
     float density = cloudShape * verticalGradient * CloudDensity;
@@ -227,28 +247,62 @@ float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCente
     return float2(t1, t2);
 }
 
-// Lighting calculation for clouds
-float3 CalculateCloudLighting(float3 position, float density)
+// Self-shadowing via ray marching toward sun with powder effect
+float CalculateCloudShadow(float3 position, float density)
 {
-    // Sample density towards sun for shadow
-    float lightStepSize = 2.0;
-    float lightDensity = 0.0;
+    // Ray march towards the sun to accumulate shadow density
+    float shadowStepSize = 1.2;
+    float shadowDensity = 0.0;
 
-    // Unroll 6 light samples
+    // March 6 steps toward sun (balanced quality/performance)
     [unroll]
     for (int i = 0; i < 6; i++)
     {
-        float3 samplePos = position + SunDirection * (float(i) + 0.5) * lightStepSize;
-        lightDensity += CloudDensityFunction(samplePos);
+        float3 samplePos = position + SunDirection * (float(i) + 0.5) * shadowStepSize;
+        float sampleDensity = CloudDensityFunction(samplePos);
+        shadowDensity += sampleDensity * shadowStepSize;
+
+        // Early exit if fully shadowed
+        if (shadowDensity > 2.5)
+            break;
     }
 
-    float transmittance = exp(-lightDensity * 0.5);
+    // Beer's law for light transmission through clouds
+    float transmittance = exp(-shadowDensity * 0.7);
 
-    // Ambient + direct lighting
-    float3 ambient = CloudShadowColor * 0.3;
-    float3 direct = SunColor * transmittance;
+    // Powder sugar effect: thin clouds at edges scatter more light
+    float powderEffect = 1.0 - exp(-density * 2.0);
 
-    return ambient + direct;
+    return lerp(transmittance, 1.0, powderEffect * 0.5);
+}
+
+// Lighting calculation for clouds with self-shadowing and advanced scattering
+float3 CalculateCloudLighting(float3 position, float density)
+{
+    // Calculate self-shadowing with powder effect
+    float shadow = CalculateCloudShadow(position, density);
+
+    // Ambient lighting (sky color) - stronger for thin clouds
+    float ambientStrength = lerp(0.3, 0.6, 1.0 - saturate(density));
+    float3 ambient = CloudShadowColor * ambientStrength;
+
+    // Direct sun lighting with shadow
+    float3 direct = SunColor * shadow * 1.2;
+
+    // HenyeyGreenstein phase function for realistic scattering
+    float3 viewDir = normalize(position - CameraPosition);
+    float cosAngle = dot(viewDir, SunDirection);
+
+    // Forward scattering (silver lining effect)
+    float g = 0.6; // Anisotropy factor
+    float g2 = g * g;
+    float phase = (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosAngle, 1.5);
+    float3 forwardScatter = SunColor * phase * 0.4;
+
+    // Back scattering (darker edges)
+    float backScatter = saturate(-cosAngle) * 0.2;
+
+    return ambient + direct + forwardScatter + backScatter;
 }
 
 // Ray marching through cloud layer
@@ -266,16 +320,21 @@ float4 RayMarchClouds(float3 rayOrigin, float3 rayDir)
         return float4(0, 0, 0, 0);
 
     float rayLength = tEnd - tStart;
-    float stepSize = rayLength / 48.0; // Updated to use 48 steps
+    float stepSize = rayLength / 64.0; // Increased to 64 steps for higher quality
 
     float3 accumulatedColor = float3(0, 0, 0);
     float accumulatedAlpha = 0.0;
 
-    // Ray march through cloud layer - increased to 48 steps for better quality
+    // Use adaptive step size based on distance for better performance
+    float distanceToStart = length(rayOrigin + rayDir * tStart - CameraPosition);
+    float adaptiveSteps = distanceToStart < 100.0 ? 64.0 : 32.0;
+    stepSize = rayLength / adaptiveSteps;
+
+    // Ray march through cloud layer with adaptive quality
     [loop]
-    for (int i = 0; i < 48; i++)
+    for (int i = 0; i < 64; i++)
     {
-        if (accumulatedAlpha > 0.99)
+        if (i >= adaptiveSteps || accumulatedAlpha > 0.98)
             break;
 
         float t = tStart + (float(i) + 0.5) * stepSize;
@@ -283,14 +342,15 @@ float4 RayMarchClouds(float3 rayOrigin, float3 rayDir)
 
         float density = CloudDensityFunction(samplePos);
 
-        if (density > 0.01)
+        if (density > 0.005)
         {
             float3 lighting = CalculateCloudLighting(samplePos, density);
 
-            // Accumulate color and alpha
-            float sampleAlpha = saturate(density * stepSize);
+            // Improved alpha blending with energy conservation
+            float sampleAlpha = 1.0 - exp(-density * stepSize * 1.5);
             float3 sampleColor = CloudColor * lighting;
 
+            // Front-to-back compositing
             accumulatedColor += sampleColor * sampleAlpha * (1.0 - accumulatedAlpha);
             accumulatedAlpha += sampleAlpha * (1.0 - accumulatedAlpha);
         }
