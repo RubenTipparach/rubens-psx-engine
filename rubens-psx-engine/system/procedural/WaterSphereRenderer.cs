@@ -215,7 +215,7 @@ namespace rubens_psx_engine.system.procedural
         }
 
         public void Draw(GraphicsDevice device, Matrix world, Matrix view, Matrix projection, GameTime gameTime, PlanetParameters parameters,
-            float uvScale = 1.0f, float waveFrequency = 1.0f, float waveAmplitude = 1.0f, float normalStrength = 1.0f, float distortion = 1.0f, float scrollSpeed = 1.0f)
+            float waveHeight = 0.05f, float waveSpeed = 1.0f, float normalStrength = 0.6f, float distortion = 0.5f, float scrollSpeed = 1.0f, float foamDepth = 3.5f, float detailScale = 1.0f)
         {
             device.SetVertexBuffer(vertexBuffer);
             device.Indices = indexBuffer;
@@ -259,17 +259,17 @@ namespace rubens_psx_engine.system.procedural
                 waterShader.Parameters["SpecularPower"]?.SetValue(128.0f);
                 waterShader.Parameters["SpecularIntensity"]?.SetValue(2.0f);
                 waterShader.Parameters["SubsurfaceStrength"]?.SetValue(0.8f);
-                waterShader.Parameters["FoamAmount"]?.SetValue(0.3f);
-                waterShader.Parameters["FoamCutoff"]?.SetValue(0.6f);
-                waterShader.Parameters["FoamEdgeDistance"]?.SetValue(2.0f);
+                waterShader.Parameters["FoamAmount"]?.SetValue(0.6f);
+                waterShader.Parameters["FoamCutoff"]?.SetValue(0.4f);
 
                 // Set user-controllable parameters
-                waterShader.Parameters["WaveUVScale"]?.SetValue(uvScale);
-                waterShader.Parameters["WaveFrequency"]?.SetValue(waveFrequency);
-                waterShader.Parameters["WaveAmplitude"]?.SetValue(waveAmplitude);
+                waterShader.Parameters["WaveHeight"]?.SetValue(waveHeight);
+                waterShader.Parameters["WaveSpeed"]?.SetValue(waveSpeed);
                 waterShader.Parameters["WaveNormalStrength"]?.SetValue(normalStrength);
                 waterShader.Parameters["WaveDistortion"]?.SetValue(distortion);
                 waterShader.Parameters["WaveScrollSpeed"]?.SetValue(scrollSpeed);
+                waterShader.Parameters["FoamEdgeDistance"]?.SetValue(foamDepth);
+                waterShader.Parameters["WaveUVScale"]?.SetValue(detailScale);
 
                 foreach (var pass in waterShader.CurrentTechnique.Passes)
                 {

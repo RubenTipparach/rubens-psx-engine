@@ -68,7 +68,81 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     return output;
 }
 
-// 3D Perlin-like noise (simplified for performance)
+// 3D Simplex Noise implementation
+// Based on Stefan Gustavson's implementation
+float3 mod289(float3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+float4 mod289(float4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+float4 permute(float4 x) { return mod289(((x * 34.0) + 1.0) * x); }
+float4 taylorInvSqrt(float4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float SimplexNoise3D(float3 v)
+{
+    const float2 C = float2(1.0 / 6.0, 1.0 / 3.0);
+    const float4 D = float4(0.0, 0.5, 1.0, 2.0);
+
+    // First corner
+    float3 i = floor(v + dot(v, C.yyy));
+    float3 x0 = v - i + dot(i, C.xxx);
+
+    // Other corners
+    float3 g = step(x0.yzx, x0.xyz);
+    float3 l = 1.0 - g;
+    float3 i1 = min(g.xyz, l.zxy);
+    float3 i2 = max(g.xyz, l.zxy);
+
+    float3 x1 = x0 - i1 + C.xxx;
+    float3 x2 = x0 - i2 + C.yyy;
+    float3 x3 = x0 - D.yyy;
+
+    // Permutations
+    i = mod289(i);
+    float4 p = permute(permute(permute(
+        i.z + float4(0.0, i1.z, i2.z, 1.0))
+        + i.y + float4(0.0, i1.y, i2.y, 1.0))
+        + i.x + float4(0.0, i1.x, i2.x, 1.0));
+
+    // Gradients: 7x7 points over a square, mapped onto an octahedron.
+    float n_ = 0.142857142857; // 1.0/7.0
+    float3 ns = n_ * D.wyz - D.xzx;
+
+    float4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+    float4 x_ = floor(j * ns.z);
+    float4 y_ = floor(j - 7.0 * x_);
+
+    float4 x = x_ * ns.x + ns.yyyy;
+    float4 y = y_ * ns.x + ns.yyyy;
+    float4 h = 1.0 - abs(x) - abs(y);
+
+    float4 b0 = float4(x.xy, y.xy);
+    float4 b1 = float4(x.zw, y.zw);
+
+    float4 s0 = floor(b0) * 2.0 + 1.0;
+    float4 s1 = floor(b1) * 2.0 + 1.0;
+    float4 sh = -step(h, float4(0, 0, 0, 0));
+
+    float4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+    float4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+
+    float3 p0 = float3(a0.xy, h.x);
+    float3 p1 = float3(a0.zw, h.y);
+    float3 p2 = float3(a1.xy, h.z);
+    float3 p3 = float3(a1.zw, h.w);
+
+    // Normalize gradients
+    float4 norm = taylorInvSqrt(float4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    p0 *= norm.x;
+    p1 *= norm.y;
+    p2 *= norm.z;
+    p3 *= norm.w;
+
+    // Mix final noise value
+    float4 m = max(0.6 - float4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+    m = m * m;
+    return 42.0 * dot(m * m, float4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+}
+
+// Keep hash for Worley noise
 float Hash(float3 p)
 {
     p = frac(p * 0.3183099 + 0.1);
@@ -76,55 +150,33 @@ float Hash(float3 p)
     return frac(p.x * p.y * p.z * (p.x + p.y + p.z));
 }
 
-float Noise3D(float3 p)
-{
-    float3 i = floor(p);
-    float3 f = frac(p);
-    f = f * f * (3.0 - 2.0 * f); // Smooth interpolation
-
-    float n000 = Hash(i + float3(0, 0, 0));
-    float n100 = Hash(i + float3(1, 0, 0));
-    float n010 = Hash(i + float3(0, 1, 0));
-    float n110 = Hash(i + float3(1, 1, 0));
-    float n001 = Hash(i + float3(0, 0, 1));
-    float n101 = Hash(i + float3(1, 0, 1));
-    float n011 = Hash(i + float3(0, 1, 1));
-    float n111 = Hash(i + float3(1, 1, 1));
-
-    float nx00 = lerp(n000, n100, f.x);
-    float nx10 = lerp(n010, n110, f.x);
-    float nx01 = lerp(n001, n101, f.x);
-    float nx11 = lerp(n011, n111, f.x);
-
-    float nxy0 = lerp(nx00, nx10, f.y);
-    float nxy1 = lerp(nx01, nx11, f.y);
-
-    return lerp(nxy0, nxy1, f.z);
-}
-
-// Fractal Brownian Motion for cloud shapes - fixed octave count for ps_4_0
+// Fractal Brownian Motion using Simplex noise for cloud shapes
 float FBM(float3 p)
 {
     float value = 0.0;
     float amplitude = 0.5;
     float frequency = 1.0;
 
-    // Unrolled loop for 4 octaves
-    value += amplitude * Noise3D(p * frequency);
-    frequency *= 2.0;
+    // Unrolled loop for 5 octaves using Simplex noise
+    value += amplitude * SimplexNoise3D(p * frequency);
+    frequency *= 2.07; // Slightly irregular to avoid artifacts
     amplitude *= 0.5;
 
-    value += amplitude * Noise3D(p * frequency);
-    frequency *= 2.0;
+    value += amplitude * SimplexNoise3D(p * frequency);
+    frequency *= 2.03;
     amplitude *= 0.5;
 
-    value += amplitude * Noise3D(p * frequency);
-    frequency *= 2.0;
+    value += amplitude * SimplexNoise3D(p * frequency);
+    frequency *= 2.01;
     amplitude *= 0.5;
 
-    value += amplitude * Noise3D(p * frequency);
+    value += amplitude * SimplexNoise3D(p * frequency);
+    frequency *= 2.05;
+    amplitude *= 0.5;
 
-    return value;
+    value += amplitude * SimplexNoise3D(p * frequency);
+
+    return value * 0.5 + 0.5; // Remap from [-1,1] to [0,1]
 }
 
 // Worley-like noise for cloud detail (simplified) - unrolled for ps_4_0
@@ -195,25 +247,25 @@ float CloudDensityFunction(float3 position)
     // This prevents the aurora-like stretching at poles
     float3 cloudPos = float3(cloudPos2D.x, height * CloudScale, cloudPos2D.y);
 
-    // MULTI-SCALE FRACTAL APPROACH
-    // Layer 1: Large-scale cloud formations (continent-sized)
-    float largeScale = FBM(cloudPos * 0.3);
+    // MULTI-SCALE FRACTAL APPROACH using Simplex Noise - BIGGER, FLUFFIER clouds
+    // Layer 1: Very large-scale cloud formations (bigger clouds)
+    float largeScale = FBM(cloudPos * 0.15); // Reduced from 0.3 for bigger shapes
 
-    // Layer 2: Medium-scale cloud structures (storm systems)
-    float mediumScale = FBM(cloudPos * 1.0);
+    // Layer 2: Large fluffy structures
+    float mediumScale = FBM(cloudPos * 0.6); // Reduced from 1.0 for fluffier look
 
-    // Layer 3: Small-scale cloud details (individual puffs)
-    float smallScale = FBM(cloudPos * 3.0);
+    // Layer 3: Medium-scale puffs (less aggressive)
+    float smallScale = FBM(cloudPos * 1.5); // Reduced from 3.0
 
-    // Layer 4: Fine details (wispy edges)
-    float fineDetail = Noise3D(cloudPos * 8.0);
+    // Layer 4: Subtle wispy edges - now using Simplex noise
+    float fineDetail = SimplexNoise3D(cloudPos * 4.0) * 0.5 + 0.5; // Reduced from 8.0
 
-    // Combine scales with decreasing weights (fractal layering)
-    // Base shape combines large and medium scales
-    float baseShape = largeScale * 0.6 + mediumScale * 0.4;
+    // Combine scales for big fluffy clouds
+    // More weight on large scales, less detail erosion
+    float baseShape = largeScale * 0.7 + mediumScale * 0.3;
 
-    // Detail layers subtract from base to create realistic cloud shapes
-    float cloudShape = baseShape - (1.0 - smallScale) * 0.2 - (1.0 - fineDetail) * 0.1;
+    // Minimal detail subtraction for fluffier appearance
+    float cloudShape = baseShape - (1.0 - smallScale) * 0.1 - (1.0 - fineDetail) * 0.05;
 
     // Apply coverage threshold to create distinct cloud formations
     cloudShape = saturate((cloudShape - (1.0 - CloudCoverage)) / CloudCoverage);
@@ -247,23 +299,23 @@ float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCente
     return float2(t1, t2);
 }
 
-// Self-shadowing via ray marching toward sun with powder effect
+// Self-shadowing via ray marching toward sun with powder effect - optimized
 float CalculateCloudShadow(float3 position, float density)
 {
     // Ray march towards the sun to accumulate shadow density
-    float shadowStepSize = 1.2;
+    float shadowStepSize = 1.8; // Larger steps for performance
     float shadowDensity = 0.0;
 
-    // March 6 steps toward sun (balanced quality/performance)
+    // March only 4 steps toward sun (performance optimized)
     [unroll]
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 4; i++)
     {
         float3 samplePos = position + SunDirection * (float(i) + 0.5) * shadowStepSize;
         float sampleDensity = CloudDensityFunction(samplePos);
         shadowDensity += sampleDensity * shadowStepSize;
 
         // Early exit if fully shadowed
-        if (shadowDensity > 2.5)
+        if (shadowDensity > 2.0)
             break;
     }
 
@@ -320,21 +372,20 @@ float4 RayMarchClouds(float3 rayOrigin, float3 rayDir)
         return float4(0, 0, 0, 0);
 
     float rayLength = tEnd - tStart;
-    float stepSize = rayLength / 64.0; // Increased to 64 steps for higher quality
 
     float3 accumulatedColor = float3(0, 0, 0);
     float accumulatedAlpha = 0.0;
 
-    // Use adaptive step size based on distance for better performance
+    // Much lower sample count for better performance
     float distanceToStart = length(rayOrigin + rayDir * tStart - CameraPosition);
-    float adaptiveSteps = distanceToStart < 100.0 ? 64.0 : 32.0;
-    stepSize = rayLength / adaptiveSteps;
+    float adaptiveSteps = distanceToStart < 80.0 ? 24.0 : 16.0; // Reduced from 64/32 to 24/16
+    float stepSize = rayLength / adaptiveSteps;
 
-    // Ray march through cloud layer with adaptive quality
+    // Ray march through cloud layer with low sample count
     [loop]
-    for (int i = 0; i < 64; i++)
+    for (int i = 0; i < 24; i++)
     {
-        if (i >= adaptiveSteps || accumulatedAlpha > 0.98)
+        if (i >= adaptiveSteps || accumulatedAlpha > 0.96)
             break;
 
         float t = tStart + (float(i) + 0.5) * stepSize;
@@ -342,12 +393,12 @@ float4 RayMarchClouds(float3 rayOrigin, float3 rayDir)
 
         float density = CloudDensityFunction(samplePos);
 
-        if (density > 0.005)
+        if (density > 0.01) // Higher threshold to skip more samples
         {
             float3 lighting = CalculateCloudLighting(samplePos, density);
 
             // Improved alpha blending with energy conservation
-            float sampleAlpha = 1.0 - exp(-density * stepSize * 1.5);
+            float sampleAlpha = 1.0 - exp(-density * stepSize * 2.0); // Stronger alpha for fewer samples
             float3 sampleColor = CloudColor * lighting;
 
             // Front-to-back compositing

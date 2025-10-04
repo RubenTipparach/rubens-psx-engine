@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 
 namespace rubens_psx_engine.system.procedural
 {
@@ -13,6 +14,16 @@ namespace rubens_psx_engine.system.procedural
         private float radius;
         private int latSegments;
         private int lonSegments;
+
+        // Chunk-based rendering for frustum culling
+        private struct SphereChunk
+        {
+            public int StartIndex;
+            public int PrimitiveCount;
+            public Vector3 Center;
+            public float BoundingRadius;
+        }
+        private List<SphereChunk> chunks;
 
         public float Radius => radius;
 
@@ -63,27 +74,67 @@ namespace rubens_psx_engine.system.procedural
                 }
             }
 
-            // Generate indices
+            // Generate indices and chunks for frustum culling
             int indexCount = latSegments * lonSegments * 6;
             var indices = new short[indexCount];
+            chunks = new List<SphereChunk>();
+
+            // Create chunks: divide sphere into 8x4 chunks (longitude x latitude)
+            int chunkLonDiv = 8;
+            int chunkLatDiv = 4;
+            int chunkLonSize = lonSegments / chunkLonDiv;
+            int chunkLatSize = latSegments / chunkLatDiv;
+
             int index = 0;
 
-            for (int lat = 0; lat < latSegments; lat++)
+            for (int chunkLat = 0; chunkLat < chunkLatDiv; chunkLat++)
             {
-                for (int lon = 0; lon < lonSegments; lon++)
+                for (int chunkLon = 0; chunkLon < chunkLonDiv; chunkLon++)
                 {
-                    int current = lat * (lonSegments + 1) + lon;
-                    int next = current + lonSegments + 1;
+                    int startLat = chunkLat * chunkLatSize;
+                    int endLat = Math.Min(startLat + chunkLatSize, latSegments);
+                    int startLon = chunkLon * chunkLonSize;
+                    int endLon = Math.Min(startLon + chunkLonSize, lonSegments);
 
-                    // First triangle (inverted winding for inside-out rendering)
-                    indices[index++] = (short)current;
-                    indices[index++] = (short)(current + 1);
-                    indices[index++] = (short)next;
+                    int chunkStartIndex = index;
+                    Vector3 chunkCenter = Vector3.Zero;
+                    int chunkVertCount = 0;
 
-                    // Second triangle
-                    indices[index++] = (short)(current + 1);
-                    indices[index++] = (short)(next + 1);
-                    indices[index++] = (short)next;
+                    for (int lat = startLat; lat < endLat; lat++)
+                    {
+                        for (int lon = startLon; lon < endLon; lon++)
+                        {
+                            int current = lat * (lonSegments + 1) + lon;
+                            int next = current + lonSegments + 1;
+
+                            // First triangle (inverted winding for inside-out rendering)
+                            indices[index++] = (short)current;
+                            indices[index++] = (short)(current + 1);
+                            indices[index++] = (short)next;
+
+                            // Second triangle
+                            indices[index++] = (short)(current + 1);
+                            indices[index++] = (short)(next + 1);
+                            indices[index++] = (short)next;
+
+                            // Calculate chunk center
+                            chunkCenter += vertices[current].Position;
+                            chunkVertCount++;
+                        }
+                    }
+
+                    if (chunkVertCount > 0)
+                    {
+                        chunkCenter /= chunkVertCount;
+
+                        chunks.Add(new SphereChunk
+                        {
+                            StartIndex = chunkStartIndex,
+                            PrimitiveCount = (index - chunkStartIndex) / 3,
+                            Center = chunkCenter,
+                            BoundingRadius = radius * 0.5f // Conservative bounding sphere
+                        });
+                    }
                 }
             }
 
@@ -111,6 +162,37 @@ namespace rubens_psx_engine.system.procedural
             device.SetVertexBuffer(vertexBuffer);
             device.Indices = indexBuffer;
             device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, primitiveCount);
+        }
+
+        // Draw with frustum culling for better performance
+        public void DrawWithFrustumCulling(GraphicsDevice device, BoundingFrustum frustum)
+        {
+            device.SetVertexBuffer(vertexBuffer);
+            device.Indices = indexBuffer;
+
+            int culledChunks = 0;
+            int drawnPrimitives = 0;
+
+            foreach (var chunk in chunks)
+            {
+                BoundingSphere chunkBounds = new BoundingSphere(chunk.Center, chunk.BoundingRadius);
+
+                // Frustum culling check
+                if (frustum.Contains(chunkBounds) != ContainmentType.Disjoint)
+                {
+                    device.DrawIndexedPrimitives(
+                        PrimitiveType.TriangleList,
+                        0,
+                        chunk.StartIndex,
+                        chunk.PrimitiveCount
+                    );
+                    drawnPrimitives += chunk.PrimitiveCount;
+                }
+                else
+                {
+                    culledChunks++;
+                }
+            }
         }
 
         public void Dispose()

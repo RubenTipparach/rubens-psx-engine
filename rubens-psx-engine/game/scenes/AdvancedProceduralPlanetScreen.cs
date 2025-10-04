@@ -75,12 +75,14 @@ namespace anakinsoft.game.scenes
         private float planetRotationSpeed = 0.0f;
         private float noiseScale = 10.0f;
         private float noiseStrength = 0.05f;
-        private float waterUVScale = 1.0f;
-        private float waterWaveFrequency = 1.0f;
-        private float waterWaveAmplitude = 1.0f;
-        private float waterNormalStrength = 1.0f;
-        private float waterDistortion = 1.0f;
+        // Water wave parameters
+        private float waterWaveHeight = 0.05f;
+        private float waterWaveSpeed = 1.0f;
+        private float waterNormalStrength = 0.6f;
+        private float waterDistortion = 0.5f;
         private float waterScrollSpeed = 1.0f;
+        private float waterFoamDepth = 3.5f; // Foam edge distance from shore
+        private float waterDetailScale = 1.0f; // UV scale for detail maps
 
         // Atmosphere parameters
         private float atmosphereRadius = 60.0f;
@@ -125,7 +127,7 @@ namespace anakinsoft.game.scenes
             atmosphereSphere = new AtmosphereSphereRenderer(gd, atmosphereRadius, 64);
 
             // Create cloud sphere (extends from cloudLayerStart to cloudLayerEnd)
-            cloudSphere = new AtmosphereSphereRenderer(gd, cloudLayerEnd, 32);
+            cloudSphere = new AtmosphereSphereRenderer(gd, cloudLayerEnd, 16); // Reduced from 32 to 16 for better performance
 
             // Load custom planet shader
             try
@@ -349,47 +351,40 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(noiseStrengthSlider);
 
-            // Water UV Scale
-            var waterUVScaleSlider = new Slider(
+            // === Water Wave Parameters ===
+
+            // Wave Height (vertical displacement)
+            var waveHeightSlider = new Slider(
                 new Rectangle(x, startY + sliderSpacing * 10, sliderWidth, sliderHeight),
-                0.1f, 5.0f, 1.0f,
-                "Water UV Scale", font);
-            waterUVScaleSlider.Category = "Water";
-            waterUVScaleSlider.ValueChanged += value =>
+                0.0f, 0.2f, waterWaveHeight,
+                "Wave Height", font);
+            waveHeightSlider.Category = "Water";
+            waveHeightSlider.ValueChanged += value =>
             {
-                waterUVScale = value;
+                waterWaveHeight = value;
             };
-            sliders.Add(waterUVScaleSlider);
+            sliders.Add(waveHeightSlider);
 
-            // Water Wave Frequency
-            var waterFreqSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
-                0.1f, 5.0f, 1.0f,
-                "Wave Frequency", font);
-            waterFreqSlider.Category = "Water";
-            waterFreqSlider.ValueChanged += value =>
+            // Wave Speed (animation speed)
+            var waveSpeedSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing, sliderWidth, sliderHeight),
+                0.0f, 3.0f, waterWaveSpeed,
+                "Wave Speed", font);
+            waveSpeedSlider.Category = "Water";
+            waveSpeedSlider.ValueChanged += value =>
             {
-                waterWaveFrequency = value;
+                waterWaveSpeed = value;
             };
-            sliders.Add(waterFreqSlider);
+            sliders.Add(waveSpeedSlider);
 
-            // Water Wave Amplitude
-            var waterAmpSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
-                0.1f, 5.0f, 1.0f,
-                "Wave Amplitude", font);
-            waterAmpSlider.Category = "Water";
-            waterAmpSlider.ValueChanged += value =>
-            {
-                waterWaveAmplitude = value;
-            };
-            sliders.Add(waterAmpSlider);
+            // Water Wave Frequency (not exposed - removed)
+            // Water Wave Amplitude (not exposed - removed)
 
-            // Water Normal Strength
+            // Normal Map Scale
             var waterNormalSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
-                0.0f, 3.0f, 1.0f,
-                "Wave Normal Str", font);
+                new Rectangle(x, startY + sliderSpacing * 2, sliderWidth, sliderHeight),
+                0.0f, 2.0f, waterNormalStrength,
+                "Normal Map Scale", font);
             waterNormalSlider.Category = "Water";
             waterNormalSlider.ValueChanged += value =>
             {
@@ -397,11 +392,11 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(waterNormalSlider);
 
-            // Water Distortion
+            // Distortion Map Scale
             var waterDistortionSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
-                0.0f, 3.0f, 1.0f,
-                "Wave Distortion", font);
+                new Rectangle(x, startY + sliderSpacing * 3, sliderWidth, sliderHeight),
+                0.0f, 2.0f, waterDistortion,
+                "Distortion Scale", font);
             waterDistortionSlider.Category = "Water";
             waterDistortionSlider.ValueChanged += value =>
             {
@@ -409,17 +404,41 @@ namespace anakinsoft.game.scenes
             };
             sliders.Add(waterDistortionSlider);
 
-            // Water Scroll Speed
+            // Wave Scroll Speed
             var waterScrollSpeedSlider = new Slider(
-                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
-                0.0f, 5.0f, 1.0f,
-                "Wave Scroll Speed", font);
+                new Rectangle(x, startY + sliderSpacing * 4, sliderWidth, sliderHeight),
+                0.0f, 3.0f, waterScrollSpeed,
+                "Scroll Speed", font);
             waterScrollSpeedSlider.Category = "Water";
             waterScrollSpeedSlider.ValueChanged += value =>
             {
                 waterScrollSpeed = value;
             };
             sliders.Add(waterScrollSpeedSlider);
+
+            // Foam Depth (distance from shore)
+            var waterFoamDepthSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 5, sliderWidth, sliderHeight),
+                0.5f, 10.0f, waterFoamDepth,
+                "Foam Depth", font);
+            waterFoamDepthSlider.Category = "Water";
+            waterFoamDepthSlider.ValueChanged += value =>
+            {
+                waterFoamDepth = value;
+            };
+            sliders.Add(waterFoamDepthSlider);
+
+            // Detail UV Scale
+            var waterDetailScaleSlider = new Slider(
+                new Rectangle(x, startY + sliderSpacing * 6, sliderWidth, sliderHeight),
+                0.1f, 5.0f, waterDetailScale,
+                "Detail UV Scale", font);
+            waterDetailScaleSlider.Category = "Water";
+            waterDetailScaleSlider.ValueChanged += value =>
+            {
+                waterDetailScale = value;
+            };
+            sliders.Add(waterDetailScaleSlider);
 
             // === Atmosphere Parameters ===
 
@@ -1033,7 +1052,7 @@ namespace anakinsoft.game.scenes
             if (showWater)
             {
                 waterSphere.Draw(gd, world, camera.View, camera.Projection, gameTime, planetGenerator.Parameters,
-                    waterUVScale, waterWaveFrequency, waterWaveAmplitude, waterNormalStrength, waterDistortion, waterScrollSpeed);
+                    waterWaveHeight, waterWaveSpeed, waterNormalStrength, waterDistortion, waterScrollSpeed, waterFoamDepth, waterDetailScale);
             }
 
             // Draw clouds if enabled
@@ -1058,7 +1077,9 @@ namespace anakinsoft.game.scenes
                 foreach (var pass in cloudShader.CurrentTechnique.Passes)
                 {
                     pass.Apply();
-                    cloudSphere.Draw(gd);
+                    // Use frustum culling for better performance
+                    BoundingFrustum frustum = new BoundingFrustum(camera.View * camera.Projection);
+                    cloudSphere.DrawWithFrustumCulling(gd, frustum);
                 }
             }
 

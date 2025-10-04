@@ -85,7 +85,7 @@ scene:
   # - "rtsTerrainTest"
   # "terrain"
   # "advancedProceduralPlanet"
-  defaultScene: "advancedProceduralPlanet"
+  defaultScene: "corridor"
   
   # Whether to show scene selection menu on startup
   showSceneMenu: false

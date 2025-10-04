@@ -13,3 +13,4 @@ ProceduralTerrain/bin/
 *.log
 nul
 rubens-psx-engine/heightmap_*
+bash.exe.stackdump

@@ -17,8 +17,24 @@ float3 CameraPosition;
 float3 PlanetCenter = float3(0, 0, 0);
 float PlanetRadius = 50.0;
 
+// Heightmap texture for accurate depth calculation
+texture HeightTexture;
+sampler HeightSampler = sampler_state
+{
+    Texture = <HeightTexture>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+bool UseHeightTexture = false; // Toggle for texture-based depth
+
 // Sun direction for lighting
 float3 SunDirection = float3(0.0, 0.5, 0.866);
+
+// Rendering modes
+bool WireframeMode = false;
 
 // Advanced water parameters
 float Time = 0.0;
@@ -38,18 +54,18 @@ float ReflectionStrength = 0.8;   // Surface reflection intensity
 float SpecularPower = 128.0;      // Specular highlight sharpness
 float SpecularIntensity = 2.0;    // Specular brightness
 
-// Wave parameters
+// Wave parameters - reduced for cleaner, more realistic water
 float WaveUVScale = 1.0;
 float WaveFrequency = 1.0;
-float WaveAmplitude = 1.0;
-float WaveNormalStrength = 1.0;
-float WaveDistortion = 1.0;
+float WaveAmplitude = 0.7;          // Reduced amplitude for calmer water
+float WaveNormalStrength = 0.6;     // Reduced normal strength for subtler ripples
+float WaveDistortion = 0.5;         // Reduced distortion for clearer water
 float WaveScrollSpeed = 1.0;
 
-// Foam parameters
-float FoamAmount = 0.3;
-float FoamCutoff = 0.6;
-float FoamEdgeDistance = 2.0;     // Distance for foam near terrain
+// Foam parameters - increased for more prominent shore foam
+float FoamAmount = 0.6;
+float FoamCutoff = 0.4;           // Lower cutoff = more foam visible
+float FoamEdgeDistance = 3.5;     // Increased distance for foam near terrain
 
 // Subsurface scattering
 float SubsurfaceStrength = 0.8;
@@ -130,14 +146,37 @@ float3 GerstnerWave(float3 pos, float2 direction, float wavelength, float steepn
     );
 }
 
-// Calculate water depth below a point
-float CalculateWaterDepth(float3 worldPos)
+// Calculate water depth below a point - geometric fallback
+float CalculateWaterDepthGeometric(float3 worldPos)
 {
-    // Distance from planet center
+    // Geometric calculation (distance from planet center)
     float distFromCenter = length(worldPos - PlanetCenter);
-
-    // Water is at PlanetRadius, so depth is how far below the surface
     float depth = max(0.0, distFromCenter - PlanetRadius);
+    return depth;
+}
+
+// Calculate water depth using heightmap texture (pixel shader only)
+float CalculateWaterDepthFromTexture(float3 worldPos)
+{
+    // Convert world position to spherical UV coordinates for texture lookup
+    float3 normalizedPos = normalize(worldPos - PlanetCenter);
+
+    // Spherical to UV mapping
+    float u = 0.5 + atan2(normalizedPos.z, normalizedPos.x) / (2.0 * 3.14159265);
+    float v = 0.5 - asin(normalizedPos.y) / 3.14159265;
+
+    // Sample heightmap texture (stored in red channel, normalized 0-1)
+    float terrainHeight = tex2D(HeightSampler, float2(u, v)).r;
+
+    // Convert normalized height back to world units
+    // Assuming heightmap stores elevation relative to base radius
+    float actualTerrainRadius = PlanetRadius + terrainHeight * 10.0; // Scale factor for height range
+
+    // Water surface is at PlanetRadius
+    float waterSurfaceRadius = length(worldPos - PlanetCenter);
+
+    // Depth is distance from water surface down to terrain
+    float depth = max(0.0, waterSurfaceRadius - actualTerrainRadius);
 
     return depth;
 }
@@ -177,30 +216,31 @@ VertexShaderOutput VS(VertexShaderInput input)
     output.TexCoord = input.TexCoord;
     output.ScreenPosition = output.Position;
 
-    // Calculate water depth for this vertex
-    output.WaterDepth = CalculateWaterDepth(worldPos.xyz);
+    // Calculate water depth for this vertex (geometric version for VS)
+    output.WaterDepth = CalculateWaterDepthGeometric(worldPos.xyz);
 
     return output;
 }
 
-// Calculate detailed water normal from noise
+// Calculate detailed water normal from noise - smaller, subtler details
 float3 CalculateWaterNormal(float3 worldPos, float2 uv, float time)
 {
     float2 scaledUV = uv * WaveUVScale;
 
-    // Sample noise at offset positions for normal calculation
-    float epsilon = 0.1;
+    // Sample noise at offset positions for normal calculation - smaller epsilon for finer detail
+    float epsilon = 0.05; // Reduced from 0.1 for smaller normal features
 
-    float3 pos = worldPos * 0.5 + float3(time * 0.2 * WaveScrollSpeed, 0, 0);
+    // Increased world position scale for smaller, tighter detail patterns
+    float3 pos = worldPos * 1.2 + float3(time * 0.15 * WaveScrollSpeed, 0, 0);
 
     float h0 = fbm(pos, 4);
     float hX = fbm(pos + float3(epsilon, 0, 0), 4);
     float hZ = fbm(pos + float3(0, 0, epsilon), 4);
 
-    // Calculate gradient
+    // Calculate gradient with reduced strength for subtler normals
     float3 normal;
-    normal.x = (h0 - hX) * WaveNormalStrength;
-    normal.z = (h0 - hZ) * WaveNormalStrength;
+    normal.x = (h0 - hX) * WaveNormalStrength * 0.5; // Reduced to 50% strength
+    normal.z = (h0 - hZ) * WaveNormalStrength * 0.5; // Reduced to 50% strength
     normal.y = 1.0;
 
     return normalize(normal);
@@ -214,6 +254,18 @@ float FresnelSchlick(float cosTheta, float F0)
 
 float4 PS(VertexShaderOutput input) : SV_Target0
 {
+    // Wireframe mode - simple grid overlay
+    if (WireframeMode)
+    {
+        float2 gridUV = input.TexCoord * 32.0; // 32x32 grid
+        float2 gridFrac = frac(gridUV);
+        float gridLine = step(gridFrac.x, 0.05) + step(gridFrac.y, 0.05);
+        gridLine = saturate(gridLine);
+
+        float3 wireColor = lerp(float3(0.0, 0.3, 0.4), float3(0.0, 0.9, 1.0), gridLine);
+        return float4(wireColor, 0.7);
+    }
+
     // Calculate detailed normal from noise
     float3 detailNormal = CalculateWaterNormal(input.WorldPosition, input.TexCoord, Time);
     float3 normal = normalize(input.Normal + detailNormal - float3(0, 1, 0));
@@ -223,8 +275,21 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float3 lightDir = normalize(SunDirection);
     float3 halfDir = normalize(viewDir + lightDir);
 
-    // Depth-based color
-    float depth = input.WaterDepth;
+    // Calculate if this point is on night side of planet
+    float3 surfaceToCenter = normalize(input.WorldPosition - PlanetCenter);
+    float dayNightFactor = saturate(dot(surfaceToCenter, lightDir)); // 1.0 = day, 0.0 = night
+
+    // Depth-based color - use texture lookup for accurate depth if available
+    float depth;
+    if (UseHeightTexture)
+    {
+        depth = CalculateWaterDepthFromTexture(input.WorldPosition);
+    }
+    else
+    {
+        depth = input.WaterDepth; // Use interpolated vertex depth
+    }
+
     float depthFactor = 1.0 - exp(-depth / WaterClarity);
     float3 waterColor = lerp(ShallowWaterColor, DeepWaterColor, depthFactor);
 
@@ -232,50 +297,67 @@ float4 PS(VertexShaderOutput input) : SV_Target0
     float NdotV = max(0.0, dot(normal, viewDir));
     float fresnel = FresnelSchlick(NdotV, 0.02); // Water F0 ≈ 0.02
 
-    // Specular highlight (sun reflection)
+    // Specular highlight (sun reflection) - only on day side
     float NdotH = max(0.0, dot(normal, halfDir));
-    float specular = pow(NdotH, SpecularPower) * SpecularIntensity;
+    float specular = pow(NdotH, SpecularPower) * SpecularIntensity * dayNightFactor;
     float3 specularColor = float3(1.0, 0.98, 0.95) * specular;
 
-    // Diffuse lighting
+    // Diffuse lighting - only on day side
     float NdotL = max(0.0, dot(normal, lightDir));
-    float3 diffuse = waterColor * NdotL * 0.5;
+    float3 diffuse = waterColor * NdotL * 0.5 * dayNightFactor;
 
-    // Subsurface scattering (light passing through waves)
+    // Subsurface scattering (light passing through waves) - only on day side
     float3 subsurface = float3(0, 0, 0);
     float backside = max(0.0, dot(-normal, lightDir));
-    subsurface = SubsurfaceColor * backside * SubsurfaceStrength;
+    subsurface = SubsurfaceColor * backside * SubsurfaceStrength * dayNightFactor;
 
-    // Scatter color (underwater light scattering effect)
-    float3 scatter = ScatterColor * (1.0 - depthFactor) * 0.3;
+    // Scatter color (underwater light scattering effect) - only on day side
+    float3 scatter = ScatterColor * (1.0 - depthFactor) * 0.3 * dayNightFactor;
 
     // Shore foam calculation - appears near terrain (shallow water)
     float shoreFoam = saturate(1.0 - depth / FoamEdgeDistance);
 
     // Multi-layered foam noise for better looking shore foam
-    float foamNoise1 = fbm(input.WorldPosition * 6.0 + Time * 0.2 * WaveScrollSpeed, 3);
-    float foamNoise2 = fbm(input.WorldPosition * 12.0 - Time * 0.4 * WaveScrollSpeed, 2);
+    float foamNoise1 = fbm(input.WorldPosition * 6.0 * WaveUVScale + Time * 0.2 * WaveScrollSpeed, 3);
+    float foamNoise2 = fbm(input.WorldPosition * 12.0 * WaveUVScale - Time * 0.4 * WaveScrollSpeed, 2);
     float combinedFoamNoise = foamNoise1 * 0.6 + foamNoise2 * 0.4;
 
-    // Create animated foam line at shoreline
-    float foamLine = saturate((shoreFoam - 0.3) / 0.7); // Sharp transition near shore
-    float foamMask = foamLine * saturate(combinedFoamNoise + 0.3);
-    foamMask = smoothstep(0.3, 0.8, foamMask);
+    // Create concentrated foam that collects at the shoreline
+    // Exponential falloff makes foam gather right at the shore
+    float foamLine = pow(shoreFoam, 2.0); // Sharper concentration at shore
+    float foamMask = foamLine * saturate(combinedFoamNoise + 0.2); // Higher threshold for cleaner foam
+    foamMask = smoothstep(0.3, 1.0, foamMask); // Sharp transition for concentrated foam
 
-    float3 foam = FoamColor * foamMask;
+    // Foam is much dimmer on night side
+    float3 foam = FoamColor * foamMask * lerp(0.05, 1.0, dayNightFactor);
+
+    // Shore brightening effect - shallow water near shore is lighter
+    float shoreGlow = pow(shoreFoam, 1.5) * 0.4; // Brighten the shoreline
+    float3 shoreBrightness = waterColor * shoreGlow * dayNightFactor;
 
     // Sky reflection (simplified - would be better with cubemap)
+    // Dark on night side, bright on day side
     float3 skyColor = lerp(float3(0.5, 0.7, 0.9), float3(0.1, 0.3, 0.6), depthFactor);
-    float3 reflection = skyColor * fresnel * ReflectionStrength;
+    float3 reflection = skyColor * fresnel * ReflectionStrength * lerp(0.1, 1.0, dayNightFactor);
 
-    // Combine all lighting components
-    float3 finalColor = diffuse + scatter + subsurface + reflection + specularColor + foam;
+    // Add very dim ambient on night side so it's not completely black
+    float3 nightAmbient = waterColor * 0.05 * (1.0 - dayNightFactor);
 
-    // Distance fog for atmospheric perspective
+    // Combine all lighting components with shore brightening
+    float3 finalColor = diffuse + scatter + subsurface + reflection + specularColor + foam + nightAmbient + shoreBrightness;
+
+    // Combined distance and depth fog for better underwater appearance
     float distanceToCamera = length(input.WorldPosition - CameraPosition);
     float distanceFog = saturate(distanceToCamera * 0.005);
-    float3 fogColor = float3(0.6, 0.8, 0.9);
-    finalColor = lerp(finalColor, fogColor, distanceFog * 0.3);
+
+    // Depth fog - deeper water gets darker/murkier (uses texture-based depth if available)
+    float depthFog = saturate(depth / (WaterClarity * 2.0)); // Deeper = more fog
+
+    // Combine both fog types
+    float totalFog = saturate(distanceFog * 0.3 + depthFog * 0.5);
+    float3 fogColor = lerp(float3(0.6, 0.8, 0.9), DeepWaterColor, depthFog); // Fog color transitions with depth
+
+    finalColor = lerp(finalColor, fogColor, totalFog);
 
     // Alpha based on depth and fresnel
     float alpha = saturate(0.85 + fresnel * 0.15 + depthFactor * 0.1 - foamMask * 0.3);
