@@ -85,7 +85,8 @@ scene:
   # - "rtsTerrainTest"
   # "terrain"
   # "advancedProceduralPlanet"
-  defaultScene: "corridor"
+  # "theLounge"
+  defaultScene: "theLounge"
   
   # Whether to show scene selection menu on startup
   showSceneMenu: false
@@ -109,7 +110,7 @@ development:
   # Console output settings
   console:
     # Show console window in debug builds (automatically disabled in release builds)
-    showConsole: false
+    showConsole: true
     # Enable console output (Console.WriteLine statements)
     enableOutput: true
 

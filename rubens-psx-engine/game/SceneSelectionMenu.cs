@@ -27,6 +27,7 @@ namespace rubens_psx_engine
                 ("RTS Terrain Demo", "rtsTerrainTest"),
                 ("Graphics Test Scene", "graphicsTest"),
                 ("Corridor Multi-Material Scene", "corridor"),
+                ("The Lounge", "theLounge"),
                 ("Wireframe Cube Test", "wireframeTest"),
                 ("Static Mesh Demo", "staticMeshDemo"),
                 ("Interactive Test Scene", "interactiveTest"),
