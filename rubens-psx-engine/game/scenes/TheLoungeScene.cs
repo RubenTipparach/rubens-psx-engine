@@ -28,6 +28,9 @@ namespace anakinsoft.game.scenes
     /// </summary>
     public class TheLoungeScene : Scene
     {
+        // Level scaling
+        private const float LevelScale = 0.5f; // Scale factor for the entire level
+
         // Character system
         CharacterControllers characters;
         CharacterInput? character;
@@ -107,12 +110,13 @@ namespace anakinsoft.game.scenes
             // Load all models from models/lounge with colliders
             // Position them in the scene - you can adjust these positions as needed
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { ceilingMat }, "models/lounge/Ceiling2");
-            //CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { doorMat }, "models/lounge/Door");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { doorMat }, "models/lounge/Door");
+            CreateStaticMesh(new Vector3(0, 0, 0), QuaternionExtensions.CreateFromYawPitchRollDegrees(180,0,0), new[] { doorMat }, "models/lounge/Door");
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { floorMat }, "models/lounge/Lounge_floor");
-            //CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Lounge_wall");
-            //CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_L");
-            //CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_R");
-            //CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Window");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Lounge_wall");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_L");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_R");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Window");
         }
 
         private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
@@ -126,7 +130,7 @@ namespace anakinsoft.game.scenes
             var entity = new MultiMaterialRenderingEntity(mesh, loadedMats);
 
             entity.Position = Vector3.Zero + offset;
-            entity.Scale = Vector3.One * .2f;
+            entity.Scale = Vector3.One * 0.2f * LevelScale;
             entity.Rotation = rotation;
             entity.IsVisible = true;
 
@@ -147,7 +151,7 @@ namespace anakinsoft.game.scenes
                 var model = Globals.screenManager.Content.Load<Model>(mesh);
 
                 // Use consistent scaling approach: visual scale * physics scale factor
-                var visualScale = Vector3.One * 0.2f; // Same scale as rendering entity
+                var visualScale = Vector3.One * 0.2f * LevelScale; // Same scale as rendering entity
                 var physicsScale = visualScale * 100; // Apply our learned scaling factor
 
                 // Extract triangles and wireframe vertices for rendering
@@ -185,13 +189,13 @@ namespace anakinsoft.game.scenes
         {
             characterActive = true;
             character = new CharacterInput(characters, position.ToVector3N(),
-                new Capsule(0.5f * 10, 1 * 10),
-                minimumSpeculativeMargin: 1f,
+                new Capsule(0.5f * 10 * LevelScale, 1 * 10 * LevelScale),
+                minimumSpeculativeMargin: 1f * LevelScale,
                 mass: 0.1f,
-                maximumHorizontalForce: 100,
-                maximumVerticalGlueForce: 1500,
+                maximumHorizontalForce: 100 * LevelScale,
+                maximumVerticalGlueForce: 1500 * LevelScale,
                 jumpVelocity: 0,
-                speed: 80,
+                speed: 80 * LevelScale,
                 maximumSlope: 40f.ToRadians());
 
             // Store the initial rotation for the camera
