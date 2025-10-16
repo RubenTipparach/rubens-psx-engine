@@ -28,6 +28,9 @@ namespace anakinsoft.game.scenes
     /// </summary>
     public class TheLoungeScene : Scene
     {
+        // Debug settings
+        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
+
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
 
@@ -259,12 +262,8 @@ namespace anakinsoft.game.scenes
             // Toggle physics wireframe rendering with L key
             if (keyboard.IsKeyDown(Keys.L) && !previousKeyboard.IsKeyDown(Keys.L))
             {
-                // Toggle the bounding box renderer (which controls both bounding boxes and wireframes)
-                if (boundingBoxRenderer != null)
-                {
-                    boundingBoxRenderer.ShowBoundingBoxes = !boundingBoxRenderer.ShowBoundingBoxes;
-                    Console.WriteLine($"Physics debug rendering: {(boundingBoxRenderer.ShowBoundingBoxes ? "ON" : "OFF")}");
-                }
+                ShowPhysicsWireframe = !ShowPhysicsWireframe;
+                Console.WriteLine($"Physics wireframe debug rendering: {(ShowPhysicsWireframe ? "ON" : "OFF")}");
             }
 
             previousKeyboard = keyboard;
@@ -275,8 +274,8 @@ namespace anakinsoft.game.scenes
             // Draw all entities using the base scene drawing
             base.Draw(gameTime, camera);
 
-            // Draw wireframe visualization of static mesh collision geometry if enabled
-            if (boundingBoxRenderer != null && boundingBoxRenderer.ShowBoundingBoxes)
+            // Draw wireframe visualization of static mesh collision geometry if debug mode enabled
+            if (ShowPhysicsWireframe)
             {
                 DrawStaticMeshWireframes(gameTime, camera);
             }
