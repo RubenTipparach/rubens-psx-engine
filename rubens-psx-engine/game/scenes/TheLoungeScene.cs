@@ -86,7 +86,7 @@ namespace anakinsoft.game.scenes
             }
 
             // Create first person character at starting position
-            CreateCharacter(new Vector3(0, .2f, 0), Quaternion.Identity);
+            CreateCharacter(new Vector3(0, 5f, 0), Quaternion.Identity);
 
             float jitter = 3;
             var affine = 0;
@@ -116,6 +116,10 @@ namespace anakinsoft.game.scenes
             wall2Mat.VertexJitterAmount = jitter;
             wall2Mat.Brightness = 1.2f;
             wall2Mat.AffineAmount = affine;
+            var windowMat = new UnlitMaterial("textures/Lounge/window");
+            wall2Mat.VertexJitterAmount = jitter;
+            wall2Mat.Brightness = 1.2f;
+            wall2Mat.AffineAmount = affine;
 
             // Load all models from models/lounge with colliders
             // Position them in the scene - you can adjust these positions as needed
@@ -126,7 +130,58 @@ namespace anakinsoft.game.scenes
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Lounge_wall");
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_L");
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_R");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Window");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { windowMat }, "models/lounge/Window");
+
+            // Create furniture materials
+            var barMat = new UnlitMaterial("textures/Lounge/Bar");
+            barMat.VertexJitterAmount = jitter;
+            barMat.Brightness = 1.2f;
+            barMat.AffineAmount = affine;
+
+            var chairMat = new UnlitMaterial("textures/Lounge/chair");
+            chairMat.VertexJitterAmount = jitter;
+            chairMat.Brightness = 1.2f;
+            chairMat.AffineAmount = affine;
+
+            var tableMat = new UnlitMaterial("textures/Lounge/table");
+            tableMat.VertexJitterAmount = jitter;
+            tableMat.Brightness = 1.2f;
+            tableMat.AffineAmount = affine;
+
+            var boothMat = new UnlitMaterial("textures/Lounge/booth");
+            boothMat.VertexJitterAmount = jitter;
+            boothMat.Brightness = 1.2f;
+            boothMat.AffineAmount = affine;
+
+            // Add lounge furniture
+            var posScale = 10f;
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar");
+            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_2");
+            CreateStaticMesh(new Vector3(-1.70852f, 0, -3.29662f) * posScale,
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
+            CreateStaticMesh(new Vector3(-1.70852f, 0, -2) * posScale,
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
+
+            CreateStaticMesh(new Vector3(-2.91486f, 0, 2.17103f) * posScale,
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
+            CreateStaticMesh(new Vector3(-2.91486f, 0, 3.41485f) * posScale,
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
+            CreateStaticMesh(new Vector3(-1.28593f, 0, -3.11644f) * posScale,
+                Quaternion.Identity, new[] { tableMat }, "models/lounge/furnitures/lounge_table");
+            CreateStaticMesh(new Vector3(2.05432f, 0, 3.11644f) * posScale,
+                Quaternion.Identity, new[] { tableMat }, "models/lounge/furnitures/lounge_table");
+
+            CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
+            CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
+                Quaternion.Identity, new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
+            CreateStaticMesh(new Vector3(3.18364f, 0, 2.8772f) * posScale,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
+
+            CreateStaticMesh(new Vector3(-3.82676f, 0, 2.89935f ) * posScale,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90,0,0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
+            CreateStaticMesh(new Vector3(3.68024f, 0, 2.89935f) * posScale,
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
 
             // Create point light at center of scene, 20 units from ground
             centerLight = new PointLight("CenterLight")
@@ -143,15 +198,25 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("LOADING ALIEN CHARACTER");
             Console.WriteLine("========================================");
 
-            var alienMaterial = new UnlitSkinnedMaterial("textures/prototype/grass");
-            alienMaterial.AmbientColor = new Vector3(0.8f, 0.8f, 0.9f); // Slight blue tint
-            alienMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, 0.5f));
-            alienMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f); // Warm white light
-            alienMaterial.LightIntensity = 0.8f;
+            // Default SkinnedEffect (commented out)
+            //var alienMaterial = new UnlitSkinnedMaterial("textures/prototype/grass");
+            //alienMaterial.AmbientColor = new Vector3(0.7f, 0.7f, 0.8f); // Bright ambient with slight blue tint
+            //alienMaterial.EmissiveColor = new Vector3(0.4f, 0.4f, 0.45f); // Emissive to brighten dark areas
+            //alienMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, 0.5f));
+            //alienMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f); // Warm white directional light
+            //alienMaterial.LightIntensity = 0.6f;
+
+            // Custom shader
+            var alienMaterial = new UnlitSkinnedMaterial("textures/prototype/grass", "shaders/surface/SkinnedVertexLit", useDefault: false);
+            alienMaterial.AmbientColor = new Vector3(0.1f, 0.1f, 0.2f);
+            alienMaterial.EmissiveColor = new Vector3(0.1f, 0.1f, 0.2f);
+            alienMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, -0.5f));
+            alienMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
+            alienMaterial.LightIntensity = 0.9f;
 
 
             alienCharacter = new SkinnedRenderingEntity("models/characters/alien", alienMaterial);
-            alienCharacter.Position = new Vector3(0, 0, 0);
+            alienCharacter.Position = new Vector3(25, 0, -25);
             alienCharacter.Scale = Vector3.One * 0.25f * LevelScale;
             alienCharacter.Rotation = Quaternion.Identity;
             alienCharacter.IsVisible = true;
