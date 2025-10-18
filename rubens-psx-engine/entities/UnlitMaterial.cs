@@ -13,6 +13,14 @@ namespace rubens_psx_engine.entities
         public float AffineAmount { get; set; } = 1.0f;
         public bool EnableAffineMapping { get; set; } = true;
         public float Brightness { get; set; } = 1.0f;
+
+        // Fog parameters
+        public bool FogEnabled { get; set; } = false;
+        public bool FogUseExponential { get; set; } = false;
+        public Vector3 FogColor { get; set; } = new Vector3(0.5f, 0.5f, 0.5f);
+        public float FogStart { get; set; } = 50.0f;
+        public float FogEnd { get; set; } = 200.0f;
+        public float FogDensity { get; set; } = 0.01f;
         
         public UnlitMaterial(string texturePath = null) 
             : base("shaders/surface/Unlit", texturePath)
@@ -33,7 +41,15 @@ namespace rubens_psx_engine.entities
             effect.Parameters["AffineAmount"]?.SetValue(AffineAmount);
             effect.Parameters["EnableAffineMapping"]?.SetValue(EnableAffineMapping);
             effect.Parameters["Brightness"]?.SetValue(Brightness);
-            
+
+            // Set fog parameters
+            effect.Parameters["FogEnabled"]?.SetValue(FogEnabled);
+            effect.Parameters["FogUseExponential"]?.SetValue(FogUseExponential);
+            effect.Parameters["FogColor"]?.SetValue(FogColor);
+            effect.Parameters["FogStart"]?.SetValue(FogStart);
+            effect.Parameters["FogEnd"]?.SetValue(FogEnd);
+            effect.Parameters["FogDensity"]?.SetValue(FogDensity);
+
             // Set texture if available
             if (texture != null)
             {
