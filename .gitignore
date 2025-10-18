@@ -17,3 +17,8 @@ bash.exe.stackdump
 rubens-psx-engine/AppData/
 AppData/
 CustomTextures/
+XnbInspector/obj/
+XnbReader/bin/
+XnbReader/obj/
+SkinnedModelPipeline/bin/
+SkinnedModelPipeline/obj/

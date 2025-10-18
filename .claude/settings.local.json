@@ -19,7 +19,14 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(dotnet clean:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add package:*)",
+      "Read(//c/Users/santi/.nuget/packages/lovebirb.monogame.skinnedmeshimporter/**)",
+      "Bash(dotnet mgcb:*)",
+      "Bash(dotnet sln remove:*)",
+      "Bash(dotnet add reference:*)",
+      "Bash(dotnet remove reference:*)"
     ],
     "deny": [],
     "ask": []

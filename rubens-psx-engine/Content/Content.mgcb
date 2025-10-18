@@ -10,6 +10,7 @@
 
 #-------------------------------- References --------------------------------#
 
+/reference:../../SkinnedModelPipeline/bin/Debug/net8.0/SkinnedModelPipeline.dll
 
 #---------------------------------- Content ---------------------------------#
 
@@ -69,6 +70,25 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Assets/models/chair/skin.png;Assets/models/chair/skin
+
+#begin Assets/models/characters/alien.fbx
+/importer:FbxImporter
+/processor:SkinnedModelProcessor
+/processorParam:DefaultEffect=SkinnedEffect
+/processorParam:ColorKeyColor=0,0,0,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=True
+/processorParam:GenerateTangentFrames=False
+/processorParam:PremultiplyTextureAlpha=True
+/processorParam:PremultiplyVertexColors=True
+/processorParam:ResizeTexturesToPowerOfTwo=False
+/processorParam:RotationX=0
+/processorParam:RotationY=0
+/processorParam:RotationZ=0
+/processorParam:Scale=1
+/processorParam:SwapWindingOrder=False
+/processorParam:TextureFormat=Compressed
+/build:Assets/models/characters/alien.fbx;Assets/models/characters/alien
 
 #begin Assets/models/corridor_single.fbx
 /importer:FbxImporter
@@ -965,12 +985,6 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Assets/shaders/surface/BakedVertexLit.fx;Assets/shaders/surface/BakedVertexLit
-
-#begin Assets/shaders/surface/clouds.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Assets/shaders/surface/clouds.fx;Assets/shaders/surface/clouds
 
 #begin Assets/shaders/surface/planet_modified.fx
 /importer:EffectImporter

@@ -67,7 +67,7 @@ namespace rubens_psx_engine.entities
             }
             catch (Exception e)
             {
-                string errorMessage = $"Failed to load assets:\nModel: {modelPath}\nTexture: {texturePath}\nEffect: {effectPath}\n\nError: {e.Message}";
+                string errorMessage = $"Failed to load assets:\nModel: {modelPath}\nTexture: {texturePath}\nEffect: {effectPath}\n\nError: {e.Message} {e.StackTrace}";
                 Helpers.FatalPopup(errorMessage);
             }
         }
