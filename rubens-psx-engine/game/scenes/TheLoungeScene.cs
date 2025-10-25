@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Matrix = Microsoft.Xna.Framework.Matrix;
 using Vector3N = System.Numerics.Vector3;
+using BepuPhysics.Trees;
 
 namespace anakinsoft.game.scenes
 {
@@ -30,7 +31,7 @@ namespace anakinsoft.game.scenes
     public class TheLoungeScene : Scene
     {
         // Debug settings
-        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -59,6 +60,25 @@ namespace anakinsoft.game.scenes
         // Point light
         PointLight centerLight;
 
+        // Interaction system
+        InteractionSystem interactionSystem;
+
+        // Bartender character
+        InteractableCharacter bartender;
+        SkinnedRenderingEntity bartenderModel;
+
+        // Bartender collider dimensions (shared between physics and debug visualization)
+        private float bartenderColliderWidth;
+        private float bartenderColliderHeight;
+        private float bartenderColliderDepth;
+        private Vector3 bartenderColliderCenter;
+
+        // Intro text state
+        private bool showIntroText = true;
+        private float introTextTimer = 0f;
+        private const float IntroTextDuration = 8.0f; // Show for 8 seconds
+        private const string IntroText = "Welcome to the Lounge. You are a detective on board the UEFS Marron. The Telirian ambassador is dead. Question the suspects, determine motive, means, and opportunity. Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.";
+
         // Starfield
         private struct Star
         {
@@ -85,6 +105,9 @@ namespace anakinsoft.game.scenes
             loungeBepuMeshes = new List<Mesh>();
             meshTriangleVertices = new List<List<Vector3>>();
             staticMeshTransforms = new List<(Vector3 position, Quaternion rotation)>();
+
+            // Initialize interaction system
+            interactionSystem = new InteractionSystem(physicsSystem);
 
             // Initialize starfield
             stars = new List<Star>();
@@ -239,7 +262,7 @@ namespace anakinsoft.game.scenes
             alienCharacter = new SkinnedRenderingEntity("models/characters/alien", alienMaterial);
             alienCharacter.Position = new Vector3(25, 0, -25);
             alienCharacter.Scale = Vector3.One * 0.25f * LevelScale;
-            alienCharacter.Rotation = Quaternion.Identity;
+            alienCharacter.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0,0,0);
             alienCharacter.IsVisible = true;
 
             Console.WriteLine($"Alien character created. Model loaded: {alienCharacter.Model != null}");
@@ -278,6 +301,90 @@ namespace anakinsoft.game.scenes
             AddRenderingEntity(alienCharacter);
 
             Console.WriteLine("========================================\n");
+
+            // Create bartender character
+            InitializeBartender();
+        }
+
+        private void InitializeBartender()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("LOADING BARTENDER CHARACTER");
+            Console.WriteLine("========================================");
+
+            // Position bartender where the alien was (at the bar)
+            Vector3 bartenderPosition = new Vector3(25, 0, -25);
+
+            // Camera interaction position - pulled back and looking directly at bartender
+            Vector3 cameraInteractionPosition = new Vector3(20, 15, -5); // Same Z, pulled back on X
+            Vector3 cameraLookAt =  new Vector3(20, 15, -29); // Look at bartender's head height
+
+            // Create bartender interactable
+            bartender = new InteractableCharacter("Bartender", bartenderPosition,
+                cameraInteractionPosition, cameraLookAt);
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(bartender);
+
+            // Create physics collider for bartender (invisible box for interaction raycasting)
+            CreateBartenderCollider(bartenderPosition);
+
+            Console.WriteLine($"Bartender created at position: {bartenderPosition}");
+            Console.WriteLine($"Interaction camera position: {cameraInteractionPosition}");
+
+            // TODO: Add bartender model rendering (using alien model for now as placeholder)
+            var bartenderMaterial = new UnlitSkinnedMaterial("textures/prototype/grass", "shaders/surface/SkinnedVertexLit", useDefault: false);
+            bartenderMaterial.AmbientColor = new Vector3(0.1f, 0.1f, 0.2f);
+            bartenderMaterial.EmissiveColor = new Vector3(0.1f, 0.1f, 0.2f);
+            bartenderMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, -0.5f));
+            bartenderMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
+            bartenderMaterial.LightIntensity = 0.9f;
+
+            bartenderModel = new SkinnedRenderingEntity("models/characters/alien", bartenderMaterial);
+            bartenderModel.Position = bartenderPosition;
+            bartenderModel.Scale = Vector3.One * 0.25f * LevelScale;
+            bartenderModel.Rotation = Quaternion.Identity; // Face forward (was already facing the right way)
+            bartenderModel.IsVisible = true;
+
+            // Play idle animation
+            if (bartenderModel is SkinnedRenderingEntity skinnedBartender)
+            {
+                var skinData = skinnedBartender.GetSkinningData();
+                if (skinData != null && skinData.AnimationClips.Count > 0)
+                {
+                    var firstClipName = skinData.AnimationClips.Keys.First();
+                    skinnedBartender.PlayAnimation(firstClipName, loop: true);
+                }
+            }
+
+            AddRenderingEntity(bartenderModel);
+
+            Console.WriteLine("========================================\n");
+        }
+
+        private void CreateBartenderCollider(Vector3 position)
+        {
+            // Create a box collider for the bartender (4x taller, bottom at floor level)
+            bartenderColliderWidth = 10f * LevelScale;
+            bartenderColliderHeight = 80f * LevelScale; // 4x the original 20f
+            bartenderColliderDepth = 10f * LevelScale;
+
+            var boxShape = new Box(bartenderColliderWidth, bartenderColliderHeight, bartenderColliderDepth);
+            var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
+
+            // Move the collider up so the bottom touches the floor (half of height up from position)
+            bartenderColliderCenter = position + new Vector3(0, bartenderColliderHeight / 2f, 0);
+
+            // Create static body at adjusted position
+            var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
+                bartenderColliderCenter.ToVector3N(),
+                Quaternion.Identity.ToQuaternionN(),
+                shapeIndex));
+
+            // Store the static handle in the bartender for interaction detection
+            bartender.SetStaticHandle(staticHandle);
+
+            Console.WriteLine($"Created bartender physics collider at {bartenderColliderCenter} (size: {bartenderColliderWidth}x{bartenderColliderHeight}x{bartenderColliderDepth})");
         }
 
         private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
@@ -479,12 +586,24 @@ namespace anakinsoft.game.scenes
             // Update the scene normally first
             Update(gameTime);
 
-            // Only update character movement if not in menu
+            // Update intro text timer
+            if (showIntroText)
+            {
+                introTextTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (introTextTimer >= IntroTextDuration)
+                {
+                    showIntroText = false;
+                }
+            }
+
+            // Only update character movement and interactions if not in menu
             if (!Globals.IsInMenuState())
             {
-                // Update character with camera (for movement direction based on camera look)
-                // Only allow character movement after load delay to prevent falling through floor
-                if (characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
+                // Update interaction system with camera for raycasting (always, even during intro)
+                interactionSystem?.Update(gameTime, camera);
+
+                // Only allow character movement after intro and after load delay
+                if (!showIntroText && characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
                 {
                     character.Value.UpdateCharacterGoals(Keyboard.GetState(), camera, (float)gameTime.ElapsedGameTime.TotalSeconds);
                 }
@@ -555,6 +674,18 @@ namespace anakinsoft.game.scenes
                 {
                     DrawAlienWireframe(gameTime, camera);
                 }
+
+                // Draw bartender character wireframe
+                if (bartenderModel != null && bartenderModel.IsVisible)
+                {
+                    DrawAlienWireframe(gameTime, camera); // Reuse the same method
+                }
+
+                // Draw bartender collider box
+                DrawBartenderCollider(camera);
+
+                // Draw interaction camera positions
+                DrawInteractionDebugVisualization(camera);
             }
         }
 
@@ -582,7 +713,74 @@ namespace anakinsoft.game.scenes
                         screenCenter - textSize / 2f,
                         Color.White * fadeAlpha);
                 }
+                // Show intro text on black background
+                else if (showIntroText)
+                {
+                    DrawIntroText(spriteBatch, font);
+                }
+
+                // Draw interaction UI (only when not showing intro)
+                if (!showIntroText)
+                {
+                    interactionSystem?.DrawUI(spriteBatch, font);
+                }
             }
+        }
+
+        /// <summary>
+        /// Draws the intro text on black background
+        /// </summary>
+        private void DrawIntroText(SpriteBatch spriteBatch, SpriteFont font)
+        {
+            var viewport = Globals.screenManager.GraphicsDevice.Viewport;
+
+            // Draw black background
+            var blackTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
+            blackTexture.SetData(new[] { Color.Black });
+            spriteBatch.Draw(blackTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black);
+
+            // Wrap and measure the intro text
+            string wrappedText = WrapText(IntroText, font, viewport.Width - 100); // 50px padding on each side
+            var textSize = font.MeasureString(wrappedText);
+
+            // Center the text on screen
+            var textPosition = new Vector2(
+                (viewport.Width - textSize.X) / 2f,
+                (viewport.Height - textSize.Y) / 2f
+            );
+
+            // Draw the text with a slight shadow for readability
+            spriteBatch.DrawString(font, wrappedText, textPosition + new Vector2(2, 2), Color.Black);
+            spriteBatch.DrawString(font, wrappedText, textPosition, Color.White);
+        }
+
+        /// <summary>
+        /// Wraps text to fit within a specified width
+        /// </summary>
+        private string WrapText(string text, SpriteFont font, float maxWidth)
+        {
+            string[] words = text.Split(' ');
+            string wrappedText = "";
+            string line = "";
+
+            foreach (string word in words)
+            {
+                string testLine = line + word + " ";
+                Vector2 testSize = font.MeasureString(testLine);
+
+                if (testSize.X > maxWidth && line.Length > 0)
+                {
+                    wrappedText += line.TrimEnd() + "\n";
+                    line = word + " ";
+                }
+                else
+                {
+                    line = testLine;
+                }
+            }
+
+            wrappedText += line.TrimEnd();
+            return wrappedText;
         }
 
         private void DrawStarfield(Camera camera)
@@ -936,10 +1134,229 @@ namespace anakinsoft.game.scenes
             }
         }
 
+        /// <summary>
+        /// Draws the bartender's interaction collider box
+        /// </summary>
+        private void DrawBartenderCollider(Camera camera)
+        {
+            if (bartender == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Check if bartender is being targeted
+            bool isTargeted = interactionSystem?.CurrentTarget == bartender;
+            Color colliderColor = isTargeted ? Color.Yellow : Color.Cyan;
+
+            // Use the exact same dimensions and position as the physics collider
+            DrawDebugBox(bartenderColliderCenter, bartenderColliderWidth, bartenderColliderHeight,
+                bartenderColliderDepth, colliderColor, basicEffect, graphicsDevice);
+
+            basicEffect.Dispose();
+        }
+
+        /// <summary>
+        /// Draws a debug box wireframe
+        /// </summary>
+        private void DrawDebugBox(Vector3 center, float width, float height, float depth, Color color, BasicEffect effect, GraphicsDevice graphicsDevice)
+        {
+            var vertices = new List<VertexPositionColor>();
+
+            // Calculate half extents
+            float halfWidth = width / 2f;
+            float halfHeight = height / 2f;
+            float halfDepth = depth / 2f;
+
+            // Define 8 corners of the box
+            Vector3[] corners = new Vector3[8];
+            corners[0] = center + new Vector3(-halfWidth, -halfHeight, -halfDepth);
+            corners[1] = center + new Vector3(halfWidth, -halfHeight, -halfDepth);
+            corners[2] = center + new Vector3(halfWidth, -halfHeight, halfDepth);
+            corners[3] = center + new Vector3(-halfWidth, -halfHeight, halfDepth);
+            corners[4] = center + new Vector3(-halfWidth, halfHeight, -halfDepth);
+            corners[5] = center + new Vector3(halfWidth, halfHeight, -halfDepth);
+            corners[6] = center + new Vector3(halfWidth, halfHeight, halfDepth);
+            corners[7] = center + new Vector3(-halfWidth, halfHeight, halfDepth);
+
+            // Bottom face edges
+            vertices.Add(new VertexPositionColor(corners[0], color));
+            vertices.Add(new VertexPositionColor(corners[1], color));
+            vertices.Add(new VertexPositionColor(corners[1], color));
+            vertices.Add(new VertexPositionColor(corners[2], color));
+            vertices.Add(new VertexPositionColor(corners[2], color));
+            vertices.Add(new VertexPositionColor(corners[3], color));
+            vertices.Add(new VertexPositionColor(corners[3], color));
+            vertices.Add(new VertexPositionColor(corners[0], color));
+
+            // Top face edges
+            vertices.Add(new VertexPositionColor(corners[4], color));
+            vertices.Add(new VertexPositionColor(corners[5], color));
+            vertices.Add(new VertexPositionColor(corners[5], color));
+            vertices.Add(new VertexPositionColor(corners[6], color));
+            vertices.Add(new VertexPositionColor(corners[6], color));
+            vertices.Add(new VertexPositionColor(corners[7], color));
+            vertices.Add(new VertexPositionColor(corners[7], color));
+            vertices.Add(new VertexPositionColor(corners[4], color));
+
+            // Vertical edges
+            vertices.Add(new VertexPositionColor(corners[0], color));
+            vertices.Add(new VertexPositionColor(corners[4], color));
+            vertices.Add(new VertexPositionColor(corners[1], color));
+            vertices.Add(new VertexPositionColor(corners[5], color));
+            vertices.Add(new VertexPositionColor(corners[2], color));
+            vertices.Add(new VertexPositionColor(corners[6], color));
+            vertices.Add(new VertexPositionColor(corners[3], color));
+            vertices.Add(new VertexPositionColor(corners[7], color));
+
+            if (vertices.Count > 0)
+            {
+                try
+                {
+                    effect.CurrentTechnique.Passes[0].Apply();
+                    graphicsDevice.DrawUserPrimitives(
+                        PrimitiveType.LineList,
+                        vertices.ToArray(),
+                        0,
+                        vertices.Count / 2);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error drawing bartender collider: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws debug visualization for interaction camera positions
+        /// </summary>
+        private void DrawInteractionDebugVisualization(Camera camera)
+        {
+            if (bartender == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            var vertices = new List<VertexPositionColor>();
+
+            // Draw sphere at bartender position (Green)
+            DrawDebugSphere(bartender.Position, 5f, Color.Green, vertices);
+
+            // Draw sphere at interaction camera position (Cyan)
+            DrawDebugSphere(bartender.CameraInteractionPosition, 5f, Color.Cyan, vertices);
+
+            // Draw line from camera position to look-at position (Yellow)
+            vertices.Add(new VertexPositionColor(bartender.CameraInteractionPosition, Color.Yellow));
+            vertices.Add(new VertexPositionColor(bartender.CameraInteractionLookAt, Color.Yellow));
+
+            // Draw sphere at look-at position (Magenta)
+            DrawDebugSphere(bartender.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
+
+            if (vertices.Count > 0)
+            {
+                try
+                {
+                    basicEffect.CurrentTechnique.Passes[0].Apply();
+                    graphicsDevice.DrawUserPrimitives(
+                        PrimitiveType.LineList,
+                        vertices.ToArray(),
+                        0,
+                        vertices.Count / 2);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error drawing interaction debug: {ex.Message}");
+                }
+            }
+
+            basicEffect.Dispose();
+        }
+
+        /// <summary>
+        /// Helper to draw a debug sphere using lines
+        /// </summary>
+        private void DrawDebugSphere(Vector3 center, float radius, Color color, List<VertexPositionColor> vertices)
+        {
+            const int segments = 16;
+            float angleStep = Microsoft.Xna.Framework.MathHelper.TwoPi / segments;
+
+            // Draw three circles (XY, XZ, YZ planes)
+            // XY plane
+            for (int i = 0; i < segments; i++)
+            {
+                float angle1 = i * angleStep;
+                float angle2 = (i + 1) * angleStep;
+
+                Vector3 p1 = center + new Vector3(
+                    (float)Math.Cos(angle1) * radius,
+                    (float)Math.Sin(angle1) * radius,
+                    0);
+                Vector3 p2 = center + new Vector3(
+                    (float)Math.Cos(angle2) * radius,
+                    (float)Math.Sin(angle2) * radius,
+                    0);
+
+                vertices.Add(new VertexPositionColor(p1, color));
+                vertices.Add(new VertexPositionColor(p2, color));
+            }
+
+            // XZ plane
+            for (int i = 0; i < segments; i++)
+            {
+                float angle1 = i * angleStep;
+                float angle2 = (i + 1) * angleStep;
+
+                Vector3 p1 = center + new Vector3(
+                    (float)Math.Cos(angle1) * radius,
+                    0,
+                    (float)Math.Sin(angle1) * radius);
+                Vector3 p2 = center + new Vector3(
+                    (float)Math.Cos(angle2) * radius,
+                    0,
+                    (float)Math.Sin(angle2) * radius);
+
+                vertices.Add(new VertexPositionColor(p1, color));
+                vertices.Add(new VertexPositionColor(p2, color));
+            }
+
+            // YZ plane
+            for (int i = 0; i < segments; i++)
+            {
+                float angle1 = i * angleStep;
+                float angle2 = (i + 1) * angleStep;
+
+                Vector3 p1 = center + new Vector3(
+                    0,
+                    (float)Math.Cos(angle1) * radius,
+                    (float)Math.Sin(angle1) * radius);
+                Vector3 p2 = center + new Vector3(
+                    0,
+                    (float)Math.Cos(angle2) * radius,
+                    (float)Math.Sin(angle2) * radius);
+
+                vertices.Add(new VertexPositionColor(p1, color));
+                vertices.Add(new VertexPositionColor(p2, color));
+            }
+        }
+
         // Utility methods for external access
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
+        public InteractableCharacter GetBartender() => bartender;
+        public InteractionSystem GetInteractionSystem() => interactionSystem;
+        public bool IsShowingIntroText() => showIntroText;
 
         protected override void Dispose(bool disposing)
         {

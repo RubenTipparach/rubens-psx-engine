@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.system;
+using anakinsoft.system;
+using System;
 
 namespace anakinsoft.game.scenes
 {
@@ -21,6 +23,11 @@ namespace anakinsoft.game.scenes
         public Vector3 CameraOffset = new Vector3(0, 16.0f, 0); // Y offset to mount camera above character center
         public Vector3 CameraLookOffset = new Vector3(0, -3, 0); // Additional offset for look direction
 
+        // Dialogue and camera transition systems
+        DialogueSystem dialogueSystem;
+        CameraTransitionSystem cameraTransitionSystem;
+        bool hasPlayedIntro = false;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -32,8 +39,96 @@ namespace anakinsoft.game.scenes
             // Create camera and set its rotation from the character's initial rotation
             fpsCamera.SetRotation(loungeScene.GetCharacterInitialRotation());
 
+            // Initialize dialogue system
+            dialogueSystem = new DialogueSystem();
+            cameraTransitionSystem = new CameraTransitionSystem(fpsCamera);
+
+            // Set up dialogue and camera transition event handlers
+            SetupDialogueAndInteractionSystems();
+
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
+        }
+
+        private void SetupDialogueAndInteractionSystems()
+        {
+            var bartender = loungeScene.GetBartender();
+            if (bartender != null)
+            {
+                // Set up bartender dialogue
+                bartender.OnDialogueTriggered += OnBartenderDialogueTriggered;
+
+                // Create intro dialogue sequence
+                var introSequence = CreateIntroDialogue();
+                bartender.SetDialogue(introSequence);
+            }
+
+            // Set up camera transition events
+            cameraTransitionSystem.OnTransitionToInteractionComplete += () =>
+            {
+                Console.WriteLine("Camera reached interaction position, ready for dialogue");
+            };
+
+            cameraTransitionSystem.OnTransitionToPlayerComplete += () =>
+            {
+                Console.WriteLine("Camera returned to player control");
+            };
+
+            // Set up dialogue events
+            dialogueSystem.OnDialogueStart += () =>
+            {
+                Console.WriteLine("Dialogue started");
+            };
+
+            dialogueSystem.OnDialogueEnd += () =>
+            {
+                Console.WriteLine("Dialogue ended, returning camera to player");
+                cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+            };
+        }
+
+        private DialogueSequence CreateIntroDialogue()
+        {
+            var sequence = new DialogueSequence("BartenderIntro");
+
+            sequence.AddLine("Bartender", "Welcome to the Lounge. You are a detective on board the UEFS Marron.");
+            sequence.AddLine("Bartender", "The Telirian ambassador is dead. This is no accident.");
+            sequence.AddLine("Bartender", "You need to question the suspects and determine motive, means, and opportunity.");
+            sequence.AddLine("Bartender", "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.");
+            sequence.AddLine("Bartender", "The pathologist is waiting for you in the medical bay. They have preliminary findings on the body.");
+            sequence.AddLine("Bartender", "Time is running out, detective. Good luck.");
+
+            return sequence;
+        }
+
+        private void OnBartenderDialogueTriggered(DialogueSequence sequence)
+        {
+            Console.WriteLine($"Bartender dialogue triggered: {sequence.SequenceName}");
+
+            // Transition camera to bartender
+            var bartender = loungeScene.GetBartender();
+            if (bartender != null)
+            {
+                cameraTransitionSystem.TransitionToInteraction(
+                    bartender.CameraInteractionPosition,
+                    bartender.CameraInteractionLookAt,
+                    1.0f);
+
+                // Start dialogue when transition is complete
+                cameraTransitionSystem.OnTransitionToInteractionComplete += StartDialogueAfterTransition;
+            }
+        }
+
+        private void StartDialogueAfterTransition()
+        {
+            // Unsubscribe from this event to avoid multiple triggers
+            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartDialogueAfterTransition;
+
+            var bartender = loungeScene.GetBartender();
+            if (bartender?.DialogueSequence != null)
+            {
+                dialogueSystem.StartDialogue(bartender.DialogueSequence);
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -41,8 +136,20 @@ namespace anakinsoft.game.scenes
             // Update scene with camera for character movement
             loungeScene.UpdateWithCamera(gameTime, fpsCamera);
 
-            // Mount FPS camera to character controller
-            UpdateCameraMountedToCharacter();
+            // Update dialogue system
+            if (dialogueSystem.IsActive)
+            {
+                dialogueSystem.Update(gameTime);
+            }
+
+            // Update camera transition system
+            cameraTransitionSystem.Update(gameTime);
+
+            // Mount FPS camera to character controller (only when not showing intro and not in dialogue/interaction mode)
+            if (!loungeScene.IsShowingIntroText() && !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning)
+            {
+                UpdateCameraMountedToCharacter();
+            }
 
             base.Update(gameTime);
         }
@@ -73,11 +180,24 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            fpsCamera.Update(gameTime);
+            // Only update FPS camera when not showing intro, not in dialogue, and not transitioning
+            if (!loungeScene.IsShowingIntroText() && !dialogueSystem.IsActive &&
+                !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning)
+            {
+                fpsCamera.Update(gameTime);
+            }
 
             if (InputManager.GetKeyboardClick(Keys.Escape))
             {
-                Globals.screenManager.AddScreen(new PauseMenu());
+                // If in dialogue, close dialogue instead of opening pause menu
+                if (dialogueSystem.IsActive)
+                {
+                    dialogueSystem.StopDialogue();
+                }
+                else
+                {
+                    Globals.screenManager.AddScreen(new PauseMenu());
+                }
             }
 
             // Add F1 key to switch to scene selection (only if enabled in config)
@@ -113,6 +233,16 @@ namespace anakinsoft.game.scenes
             // Draw UI
             var spriteBatch = Globals.screenManager.getSpriteBatch;
             loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch);
+
+            // Draw dialogue UI on top
+            if (dialogueSystem.IsActive)
+            {
+                var font = Globals.fontNTR;
+                if (font != null)
+                {
+                    dialogueSystem.Draw(spriteBatch, font);
+                }
+            }
         }
 
         public override void Draw3D(GameTime gameTime)

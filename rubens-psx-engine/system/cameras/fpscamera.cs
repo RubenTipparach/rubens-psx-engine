@@ -39,6 +39,18 @@ namespace anakinsoft.system.cameras
             pitch = (float)Math.Asin(forward.Y);
         }
 
+        /// <summary>
+        /// Points the camera to look at a specific world position
+        /// </summary>
+        /// <param name="targetPosition">The world position to look at</param>
+        public void LookAt(Vector3 targetPosition)
+        {
+            Vector3 direction = Vector3.Normalize(targetPosition - Position);
+            yaw = (float)Math.Atan2(-direction.X, -direction.Z);
+            pitch = (float)Math.Asin(direction.Y);
+            pitch = MathHelper.Clamp(pitch, -MathHelper.PiOver2 + 0.01f, MathHelper.PiOver2 - 0.01f);
+        }
+
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);

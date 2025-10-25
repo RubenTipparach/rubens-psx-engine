@@ -170,6 +170,15 @@ namespace anakinsoft.system
                         return door;
                     }
                 }
+                // If it's an InteractableCharacter, check its static handle
+                else if (interactable is InteractableCharacter character)
+                {
+                    var characterHandle = character.GetStaticHandle();
+                    if (characterHandle.HasValue && characterHandle.Value.Value == handle.Value)
+                    {
+                        return character;
+                    }
+                }
                 // Can be extended for other interactable types that have physics handles
             }
 
