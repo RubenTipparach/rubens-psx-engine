@@ -72,12 +72,12 @@ namespace anakinsoft.entities
 
         protected override void OnTargetEnterAction()
         {
-            Console.WriteLine($"Looking at {CharacterName}");
+            // Console.WriteLine($"Looking at {CharacterName}");
         }
 
         protected override void OnTargetExitAction()
         {
-            Console.WriteLine($"Stopped looking at {CharacterName}");
+            // Console.WriteLine($"Stopped looking at {CharacterName}");
         }
 
         /// <summary>

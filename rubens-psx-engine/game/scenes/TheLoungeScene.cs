@@ -532,7 +532,7 @@ namespace anakinsoft.game.scenes
             }
         }
 
-        public void UpdateWithCamera(GameTime gameTime, Camera camera)
+        public void UpdateWithCamera(GameTime gameTime, Camera camera, bool isDialogueActive = false)
         {
             // Update the scene normally first
             Update(gameTime);
@@ -587,8 +587,11 @@ namespace anakinsoft.game.scenes
             // Only update character movement and interactions if not in menu
             if (!Globals.IsInMenuState())
             {
-                // Update interaction system with camera for raycasting (always, even during intro)
-                interactionSystem?.Update(gameTime, camera);
+                // Update interaction system with camera for raycasting (skip during dialogue)
+                if (!isDialogueActive)
+                {
+                    interactionSystem?.Update(gameTime, camera);
+                }
 
                 // Only allow character movement after intro and after load delay
                 if (!showIntroText && characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
@@ -680,7 +683,7 @@ namespace anakinsoft.game.scenes
         /// <summary>
         /// Draws the UI elements
         /// </summary>
-        public void DrawUI(GameTime gameTime, Camera camera, SpriteBatch spriteBatch)
+        public void DrawUI(GameTime gameTime, Camera camera, SpriteBatch spriteBatch, bool isDialogueActive = false)
         {
             var font = Globals.fontNTR;
             if (font != null)
@@ -707,8 +710,8 @@ namespace anakinsoft.game.scenes
                     DrawIntroText(spriteBatch, font);
                 }
 
-                // Draw interaction UI (only when not showing intro)
-                if (!showIntroText)
+                // Draw interaction UI (only when not showing intro and not in dialogue)
+                if (!showIntroText && !isDialogueActive)
                 {
                     interactionSystem?.DrawUI(spriteBatch, font);
                 }

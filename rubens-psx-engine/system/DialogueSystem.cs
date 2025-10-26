@@ -60,11 +60,13 @@ namespace anakinsoft.system
         private int visibleCharacters = 0;
         private const float CharactersPerSecond = 30f; // Speed of teletype effect
         private bool teletypeComplete = false;
+        private bool acceptInput = false; // Prevent input on first frame after dialogue starts
 
         // Display settings
         private const float BoxPadding = 20f;
         private const float LineHeight = 30f;
         private const float SpeakerOffset = 40f;
+        private const float FixedBoxWidth = 800f; // Fixed width for consistency
         private readonly Color BoxColor = Color.Black * 0.85f;
         private readonly Color SpeakerColor = Color.Yellow;
         private readonly Color TextColor = Color.White;
@@ -99,6 +101,7 @@ namespace anakinsoft.system
             currentSequence = sequence;
             currentLineIndex = 0;
             isActive = true;
+            acceptInput = false; // Don't accept input on first frame
 
             // Reset teletype effect for first line
             ResetTeletype();
@@ -151,6 +154,7 @@ namespace anakinsoft.system
             {
                 // Reset teletype effect for new line
                 ResetTeletype();
+                acceptInput = false; // Don't accept input on first frame of new line
                 OnLineChanged?.Invoke(CurrentLine);
                 Console.WriteLine($"DialogueSystem: Line {currentLineIndex + 1}/{currentSequence.Lines.Count}");
             }
@@ -165,6 +169,14 @@ namespace anakinsoft.system
                 return;
 
             var keyboard = Keyboard.GetState();
+
+            // Enable input after first frame
+            if (!acceptInput)
+            {
+                acceptInput = true;
+                previousKeyboard = keyboard; // Consume any keys pressed on start frame
+                return;
+            }
 
             // Update teletype effect
             if (!teletypeComplete && CurrentLine != null)
@@ -190,19 +202,20 @@ namespace anakinsoft.system
                 }
                 else
                 {
-                    // Advance to next line
+                    // Advance to next line only when teletype is complete
                     NextLine();
                 }
             }
 
-            // Also allow Space to advance (for compatibility)
+            // Also allow Space to advance (for compatibility) - only when teletype is complete
             if (keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space) && teletypeComplete)
             {
                 NextLine();
             }
 
-            // Skip dialogue with Escape
-            if (keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape))
+            // Exit dialogue with Tab or Escape
+            if ((keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab)) ||
+                (keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape)))
             {
                 StopDialogue();
             }
@@ -230,19 +243,21 @@ namespace anakinsoft.system
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
 
+            // Use fixed box width for consistency
+            float boxWidth = Math.Min(FixedBoxWidth, viewport.Width - 100); // Ensure it fits on screen
+
             // Measure text
             var speakerText = CurrentLine.Speaker;
             var fullText = CurrentLine.Text;
             var visibleText = fullText.Substring(0, Math.Min(visibleCharacters, fullText.Length));
-            var dialogueText = WrapText(visibleText, font, viewport.Width - BoxPadding * 4);
+            var dialogueText = WrapText(visibleText, font, boxWidth - BoxPadding * 2);
             var promptText = teletypeComplete ? "Press [E] to continue..." : "Press [E] to skip...";
 
             var speakerSize = font.MeasureString(speakerText);
             var dialogueSize = font.MeasureString(dialogueText);
             var promptSize = font.MeasureString(promptText);
 
-            // Calculate box dimensions
-            float boxWidth = Math.Max(Math.Max(speakerSize.X, dialogueSize.X), promptSize.X) + BoxPadding * 2;
+            // Calculate box height (width is fixed)
             float boxHeight = speakerSize.Y + dialogueSize.Y + promptSize.Y + BoxPadding * 2 + SpeakerOffset + 10;
 
             // Position at bottom of screen

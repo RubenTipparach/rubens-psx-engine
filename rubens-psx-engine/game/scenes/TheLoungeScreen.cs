@@ -133,14 +133,14 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            // Update scene with camera for character movement
-            loungeScene.UpdateWithCamera(gameTime, fpsCamera);
-
-            // Update dialogue system
+            // Update dialogue system first
             if (dialogueSystem.IsActive)
             {
                 dialogueSystem.Update(gameTime);
             }
+
+            // Update scene with camera for character movement (pass dialogue active state to disable interactions)
+            loungeScene.UpdateWithCamera(gameTime, fpsCamera, dialogueSystem.IsActive);
 
             // Update camera transition system
             cameraTransitionSystem.Update(gameTime);
@@ -230,9 +230,9 @@ namespace anakinsoft.game.scenes
 
         public override void Draw2D(GameTime gameTime)
         {
-            // Draw UI
+            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue)
             var spriteBatch = Globals.screenManager.getSpriteBatch;
-            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch);
+            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, dialogueSystem.IsActive);
 
             // Draw dialogue UI on top
             if (dialogueSystem.IsActive)

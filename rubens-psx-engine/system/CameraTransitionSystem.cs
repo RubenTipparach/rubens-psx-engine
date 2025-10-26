@@ -178,10 +178,10 @@ namespace anakinsoft.system
             Vector3 targetEuler = QuaternionToEulerAngles(targetRotation);
             Vector3 interpolatedEuler = QuaternionToEulerAngles(newRotation);
 
-            Console.WriteLine($"Camera Rotation Debug (t={t:F2}):");
-            Console.WriteLine($"  Current Euler: Yaw={MathHelper.ToDegrees(currentEuler.X):F1}° Pitch={MathHelper.ToDegrees(currentEuler.Y):F1}° Roll={MathHelper.ToDegrees(currentEuler.Z):F1}°");
-            Console.WriteLine($"  Target Euler:  Yaw={MathHelper.ToDegrees(targetEuler.X):F1}° Pitch={MathHelper.ToDegrees(targetEuler.Y):F1}° Roll={MathHelper.ToDegrees(targetEuler.Z):F1}°");
-            Console.WriteLine($"  Interpolated:  Yaw={MathHelper.ToDegrees(interpolatedEuler.X):F1}° Pitch={MathHelper.ToDegrees(interpolatedEuler.Y):F1}° Roll={MathHelper.ToDegrees(interpolatedEuler.Z):F1}°");
+            // Console.WriteLine($"Camera Rotation Debug (t={t:F2}):");
+            // Console.WriteLine($"  Current Euler: Yaw={MathHelper.ToDegrees(currentEuler.X):F1}° Pitch={MathHelper.ToDegrees(currentEuler.Y):F1}° Roll={MathHelper.ToDegrees(currentEuler.Z):F1}°");
+            // Console.WriteLine($"  Target Euler:  Yaw={MathHelper.ToDegrees(targetEuler.X):F1}° Pitch={MathHelper.ToDegrees(targetEuler.Y):F1}° Roll={MathHelper.ToDegrees(targetEuler.Z):F1}°");
+            // Console.WriteLine($"  Interpolated:  Yaw={MathHelper.ToDegrees(interpolatedEuler.X):F1}° Pitch={MathHelper.ToDegrees(interpolatedEuler.Y):F1}° Roll={MathHelper.ToDegrees(interpolatedEuler.Z):F1}°");
 
             if (transitionProgress >= 1.0f)
             {
