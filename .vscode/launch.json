@@ -6,10 +6,10 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/rubens-psx-engine/bin/Debug/net9.0-windows7.0/rubens-psx-engine.dll",
+            "program": "${workspaceFolder}/rubens-psx-engine/bin/game/net9.0-windows7.0/win-x64/derelict.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/rubens-psx-engine",
-            "console": "internalConsole",
+            "cwd": "${workspaceFolder}/rubens-psx-engine/bin/game/net9.0-windows7.0/win-x64",
+            "console": "externalTerminal",
             "stopAtEntry": false
         },
         {

@@ -28,18 +28,6 @@ namespace anakinsoft.system.cameras
         }
 
         /// <summary>
-        /// Sets the camera's orientation from a quaternion
-        /// </summary>
-        /// <param name="rotation">Quaternion representing the desired orientation</param>
-        public void SetRotation(Quaternion rotation)
-        {
-            // Extract yaw and pitch from the quaternion
-            Vector3 forward = Vector3.Transform(Vector3.Forward, rotation);
-            yaw = (float)Math.Atan2(-forward.X, -forward.Z);
-            pitch = (float)Math.Asin(forward.Y);
-        }
-
-        /// <summary>
         /// Points the camera to look at a specific world position
         /// </summary>
         /// <param name="targetPosition">The world position to look at</param>
@@ -55,9 +43,9 @@ namespace anakinsoft.system.cameras
         {
             base.Update(gameTime);
             
-            // Disable controls when any menu is open (game is paused)
-            disableControls = HasActiveMenu();
-            
+            // Disable controls when any menu is open (game is paused) or rotation is locked
+            disableControls = HasActiveMenu() || IsRotationLocked;
+
             if (!disableControls)
             {
                 float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;

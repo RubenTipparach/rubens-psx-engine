@@ -31,7 +31,7 @@ namespace anakinsoft.game.scenes
     public class TheLoungeScene : Scene
     {
         // Debug settings
-        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -78,6 +78,13 @@ namespace anakinsoft.game.scenes
         private float introTextTimer = 0f;
         private const float IntroTextDuration = 4.0f; // Show for 8 seconds
         private const string IntroText = "Welcome to the Lounge. You are a detective on board the UEFS Marron. The Telirian ambassador is dead. Question the suspects, determine motive, means, and opportunity. Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.";
+
+        // Intro text teletype effect
+        private float introTeletypeTimer = 0f;
+        private int introVisibleCharacters = 0;
+        private const float IntroCharactersPerSecond = 30f;
+        private bool introTeletypeComplete = false;
+        private KeyboardState previousKeyboardState;
 
         // Starfield
         private struct Star
@@ -260,7 +267,7 @@ namespace anakinsoft.game.scenes
             Vector3 bartenderPosition = new Vector3(25, 0, -25);
 
             // Camera interaction position - pulled back and looking directly at bartender
-            Vector3 cameraInteractionPosition = new Vector3(20, 15, -5); // Same Z, pulled back on X
+            Vector3 cameraInteractionPosition = new Vector3(25, 20, -5); // Same Z, pulled back on X
             Vector3 cameraLookAt =  new Vector3(0, 0, -10); // Look at bartender's head height
 
             // Create bartender interactable
@@ -310,7 +317,7 @@ namespace anakinsoft.game.scenes
         {
             // Create a box collider for the bartender (4x taller, bottom at floor level)
             bartenderColliderWidth = 10f * LevelScale;
-            bartenderColliderHeight = 80f * LevelScale; // 4x the original 20f
+            bartenderColliderHeight = 48f * LevelScale; // 60% of original 80f height
             bartenderColliderDepth = 10f * LevelScale;
 
             var boxShape = new Box(bartenderColliderWidth, bartenderColliderHeight, bartenderColliderDepth);
@@ -530,13 +537,50 @@ namespace anakinsoft.game.scenes
             // Update the scene normally first
             Update(gameTime);
 
-            // Update intro text timer
+            // Update intro text timer and teletype effect
             if (showIntroText)
             {
-                introTextTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (introTextTimer >= IntroTextDuration)
+                var keyboard = Keyboard.GetState();
+
+                // Update teletype effect
+                if (!introTeletypeComplete)
                 {
-                    showIntroText = false;
+                    introTeletypeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    introVisibleCharacters = (int)(introTeletypeTimer * IntroCharactersPerSecond);
+
+                    if (introVisibleCharacters >= IntroText.Length)
+                    {
+                        introVisibleCharacters = IntroText.Length;
+                        introTeletypeComplete = true;
+                    }
+                }
+
+                // Handle E key press
+                if (keyboard.IsKeyDown(Keys.E) && !previousKeyboardState.IsKeyDown(Keys.E))
+                {
+                    if (!introTeletypeComplete)
+                    {
+                        // Complete teletype immediately
+                        introVisibleCharacters = IntroText.Length;
+                        introTeletypeComplete = true;
+                    }
+                    else
+                    {
+                        // Skip intro text entirely
+                        showIntroText = false;
+                    }
+                }
+
+                previousKeyboardState = keyboard;
+
+                // Auto-advance after duration if teletype is complete
+                if (introTeletypeComplete)
+                {
+                    introTextTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    if (introTextTimer >= IntroTextDuration)
+                    {
+                        showIntroText = false;
+                    }
                 }
             }
 
@@ -683,8 +727,11 @@ namespace anakinsoft.game.scenes
             blackTexture.SetData(new[] { Color.Black });
             spriteBatch.Draw(blackTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black);
 
+            // Get visible text based on teletype progress
+            string visibleText = IntroText.Substring(0, Math.Min(introVisibleCharacters, IntroText.Length));
+
             // Wrap and measure the intro text
-            string wrappedText = WrapText(IntroText, font, viewport.Width - 100); // 50px padding on each side
+            string wrappedText = WrapText(visibleText, font, viewport.Width - 100); // 50px padding on each side
             var textSize = font.MeasureString(wrappedText);
 
             // Center the text on screen
@@ -696,6 +743,15 @@ namespace anakinsoft.game.scenes
             // Draw the text with a slight shadow for readability
             spriteBatch.DrawString(font, wrappedText, textPosition + new Vector2(2, 2), Color.Black);
             spriteBatch.DrawString(font, wrappedText, textPosition, Color.White);
+
+            // Draw prompt
+            string promptText = introTeletypeComplete ? "Press [E] to continue..." : "Press [E] to skip...";
+            var promptSize = font.MeasureString(promptText);
+            var promptPosition = new Vector2(
+                (viewport.Width - promptSize.X) / 2f,
+                viewport.Height - 100
+            );
+            spriteBatch.DrawString(font, promptText, promptPosition, Color.Gray);
         }
 
         /// <summary>

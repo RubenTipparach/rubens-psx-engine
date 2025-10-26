@@ -55,6 +55,12 @@ namespace anakinsoft.system
         private bool isActive = false;
         private KeyboardState previousKeyboard;
 
+        // Teletype effect
+        private float teletypeTimer = 0f;
+        private int visibleCharacters = 0;
+        private const float CharactersPerSecond = 30f; // Speed of teletype effect
+        private bool teletypeComplete = false;
+
         // Display settings
         private const float BoxPadding = 20f;
         private const float LineHeight = 30f;
@@ -93,6 +99,9 @@ namespace anakinsoft.system
             currentSequence = sequence;
             currentLineIndex = 0;
             isActive = true;
+
+            // Reset teletype effect for first line
+            ResetTeletype();
 
             OnDialogueStart?.Invoke();
             OnLineChanged?.Invoke(CurrentLine);
@@ -140,13 +149,15 @@ namespace anakinsoft.system
             }
             else
             {
+                // Reset teletype effect for new line
+                ResetTeletype();
                 OnLineChanged?.Invoke(CurrentLine);
                 Console.WriteLine($"DialogueSystem: Line {currentLineIndex + 1}/{currentSequence.Lines.Count}");
             }
         }
 
         /// <summary>
-        /// Updates the dialogue system (handles input)
+        /// Updates the dialogue system (handles input and teletype effect)
         /// </summary>
         public void Update(GameTime gameTime)
         {
@@ -155,9 +166,37 @@ namespace anakinsoft.system
 
             var keyboard = Keyboard.GetState();
 
-            // Advance dialogue with Space or E key
-            if ((keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space)) ||
-                (keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)))
+            // Update teletype effect
+            if (!teletypeComplete && CurrentLine != null)
+            {
+                teletypeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                visibleCharacters = (int)(teletypeTimer * CharactersPerSecond);
+
+                if (visibleCharacters >= CurrentLine.Text.Length)
+                {
+                    visibleCharacters = CurrentLine.Text.Length;
+                    teletypeComplete = true;
+                }
+            }
+
+            // Handle E key press
+            if (keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E))
+            {
+                if (!teletypeComplete)
+                {
+                    // Complete teletype immediately
+                    visibleCharacters = CurrentLine?.Text.Length ?? 0;
+                    teletypeComplete = true;
+                }
+                else
+                {
+                    // Advance to next line
+                    NextLine();
+                }
+            }
+
+            // Also allow Space to advance (for compatibility)
+            if (keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space) && teletypeComplete)
             {
                 NextLine();
             }
@@ -172,6 +211,16 @@ namespace anakinsoft.system
         }
 
         /// <summary>
+        /// Resets the teletype effect for a new line
+        /// </summary>
+        private void ResetTeletype()
+        {
+            teletypeTimer = 0f;
+            visibleCharacters = 0;
+            teletypeComplete = false;
+        }
+
+        /// <summary>
         /// Draws the dialogue UI
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, SpriteFont font)
@@ -183,8 +232,10 @@ namespace anakinsoft.system
 
             // Measure text
             var speakerText = CurrentLine.Speaker;
-            var dialogueText = WrapText(CurrentLine.Text, font, viewport.Width - BoxPadding * 4);
-            var promptText = "Press [SPACE] or [E] to continue...";
+            var fullText = CurrentLine.Text;
+            var visibleText = fullText.Substring(0, Math.Min(visibleCharacters, fullText.Length));
+            var dialogueText = WrapText(visibleText, font, viewport.Width - BoxPadding * 4);
+            var promptText = teletypeComplete ? "Press [E] to continue..." : "Press [E] to skip...";
 
             var speakerSize = font.MeasureString(speakerText);
             var dialogueSize = font.MeasureString(dialogueText);
