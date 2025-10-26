@@ -27,7 +27,7 @@ namespace anakinsoft.entities
             CharacterName = characterName;
             this.position = position;
             CameraInteractionPosition = cameraPosition;
-            CameraInteractionLookAt = cameraLookAt;
+            CameraInteractionLookAt = CameraInteractionPosition + cameraLookAt;
 
             // Set default interaction properties
             interactionDistance = 150f; // Can interact from a distance

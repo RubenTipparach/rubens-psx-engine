@@ -64,7 +64,7 @@ namespace anakinsoft.game.scenes
         InteractionSystem interactionSystem;
 
         // Bartender character
-        InteractableCharacter bartender;
+        InteractableCharacter bartenderCharacterInteraction;
         SkinnedRenderingEntity bartenderModel;
 
         // Bartender collider dimensions (shared between physics and debug visualization)
@@ -76,7 +76,7 @@ namespace anakinsoft.game.scenes
         // Intro text state
         private bool showIntroText = true;
         private float introTextTimer = 0f;
-        private const float IntroTextDuration = 8.0f; // Show for 8 seconds
+        private const float IntroTextDuration = 4.0f; // Show for 8 seconds
         private const string IntroText = "Welcome to the Lounge. You are a detective on board the UEFS Marron. The Telirian ambassador is dead. Question the suspects, determine motive, means, and opportunity. Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.";
 
         // Starfield
@@ -242,63 +242,7 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("LOADING ALIEN CHARACTER");
             Console.WriteLine("========================================");
 
-            // Default SkinnedEffect (commented out)
-            //var alienMaterial = new UnlitSkinnedMaterial("textures/prototype/grass");
-            //alienMaterial.AmbientColor = new Vector3(0.7f, 0.7f, 0.8f); // Bright ambient with slight blue tint
-            //alienMaterial.EmissiveColor = new Vector3(0.4f, 0.4f, 0.45f); // Emissive to brighten dark areas
-            //alienMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, 0.5f));
-            //alienMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f); // Warm white directional light
-            //alienMaterial.LightIntensity = 0.6f;
-
-            // Custom shader
-            var alienMaterial = new UnlitSkinnedMaterial("textures/prototype/grass", "shaders/surface/SkinnedVertexLit", useDefault: false);
-            alienMaterial.AmbientColor = new Vector3(0.1f, 0.1f, 0.2f);
-            alienMaterial.EmissiveColor = new Vector3(0.1f, 0.1f, 0.2f);
-            alienMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, -0.5f));
-            alienMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
-            alienMaterial.LightIntensity = 0.9f;
-
-
-            alienCharacter = new SkinnedRenderingEntity("models/characters/alien", alienMaterial);
-            alienCharacter.Position = new Vector3(25, 0, -25);
-            alienCharacter.Scale = Vector3.One * 0.25f * LevelScale;
-            alienCharacter.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0,0,0);
-            alienCharacter.IsVisible = true;
-
-            Console.WriteLine($"Alien character created. Model loaded: {alienCharacter.Model != null}");
-
-            // Check if it's actually a skinned entity
-            if (alienCharacter is SkinnedRenderingEntity skinnedAlien)
-            {
-                Console.WriteLine("Alien is SkinnedRenderingEntity");
-                var skinData = skinnedAlien.GetSkinningData();
-                var animPlayer = skinnedAlien.GetAnimationPlayer();
-
-                Console.WriteLine($"  - SkinningData present: {skinData != null}");
-                Console.WriteLine($"  - AnimationPlayer present: {animPlayer != null}");
-
-                if (skinData != null)
-                {
-                    Console.WriteLine($"  - Animation clips available: {skinData.AnimationClips.Count}");
-                    foreach (var clipName in skinData.AnimationClips.Keys)
-                    {
-                        Console.WriteLine($"    * {clipName}");
-                    }
-                }
-
-                Console.WriteLine("\nAttempting to play animation...");
-                // Use the first available animation clip name
-                var firstClipName = skinData.AnimationClips.Keys.First();
-                Console.WriteLine($"Playing animation: {firstClipName}");
-                skinnedAlien.PlayAnimation(firstClipName, loop: true);
-            }
-            else
-            {
-                Console.WriteLine("ERROR: Alien is NOT a SkinnedRenderingEntity!");
-            }
-
-            // Add to rendering entities
-            AddRenderingEntity(alienCharacter);
+       
 
             Console.WriteLine("========================================\n");
 
@@ -317,14 +261,14 @@ namespace anakinsoft.game.scenes
 
             // Camera interaction position - pulled back and looking directly at bartender
             Vector3 cameraInteractionPosition = new Vector3(20, 15, -5); // Same Z, pulled back on X
-            Vector3 cameraLookAt =  new Vector3(20, 15, -29); // Look at bartender's head height
+            Vector3 cameraLookAt =  new Vector3(0, 0, -10); // Look at bartender's head height
 
             // Create bartender interactable
-            bartender = new InteractableCharacter("Bartender", bartenderPosition,
+            bartenderCharacterInteraction = new InteractableCharacter("Bartender", bartenderPosition,
                 cameraInteractionPosition, cameraLookAt);
 
             // Register with interaction system
-            interactionSystem.RegisterInteractable(bartender);
+            interactionSystem.RegisterInteractable(bartenderCharacterInteraction);
 
             // Create physics collider for bartender (invisible box for interaction raycasting)
             CreateBartenderCollider(bartenderPosition);
@@ -382,7 +326,7 @@ namespace anakinsoft.game.scenes
                 shapeIndex));
 
             // Store the static handle in the bartender for interaction detection
-            bartender.SetStaticHandle(staticHandle);
+            bartenderCharacterInteraction.SetStaticHandle(staticHandle);
 
             Console.WriteLine($"Created bartender physics collider at {bartenderColliderCenter} (size: {bartenderColliderWidth}x{bartenderColliderHeight}x{bartenderColliderDepth})");
         }
@@ -1139,7 +1083,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void DrawBartenderCollider(Camera camera)
         {
-            if (bartender == null) return;
+            if (bartenderCharacterInteraction == null) return;
 
             var graphicsDevice = Globals.screenManager.GraphicsDevice;
             var basicEffect = new BasicEffect(graphicsDevice)
@@ -1151,7 +1095,7 @@ namespace anakinsoft.game.scenes
             };
 
             // Check if bartender is being targeted
-            bool isTargeted = interactionSystem?.CurrentTarget == bartender;
+            bool isTargeted = interactionSystem?.CurrentTarget == bartenderCharacterInteraction;
             Color colliderColor = isTargeted ? Color.Yellow : Color.Cyan;
 
             // Use the exact same dimensions and position as the physics collider
@@ -1237,7 +1181,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void DrawInteractionDebugVisualization(Camera camera)
         {
-            if (bartender == null) return;
+            if (bartenderCharacterInteraction == null) return;
 
             var graphicsDevice = Globals.screenManager.GraphicsDevice;
             var basicEffect = new BasicEffect(graphicsDevice)
@@ -1251,17 +1195,17 @@ namespace anakinsoft.game.scenes
             var vertices = new List<VertexPositionColor>();
 
             // Draw sphere at bartender position (Green)
-            DrawDebugSphere(bartender.Position, 5f, Color.Green, vertices);
+            DrawDebugSphere(bartenderCharacterInteraction.Position, 5f, Color.Green, vertices);
 
             // Draw sphere at interaction camera position (Cyan)
-            DrawDebugSphere(bartender.CameraInteractionPosition, 5f, Color.Cyan, vertices);
+            DrawDebugSphere(bartenderCharacterInteraction.CameraInteractionPosition, 5f, Color.Cyan, vertices);
 
             // Draw line from camera position to look-at position (Yellow)
-            vertices.Add(new VertexPositionColor(bartender.CameraInteractionPosition, Color.Yellow));
-            vertices.Add(new VertexPositionColor(bartender.CameraInteractionLookAt, Color.Yellow));
+            vertices.Add(new VertexPositionColor(bartenderCharacterInteraction.CameraInteractionPosition, Color.Yellow));
+            vertices.Add(new VertexPositionColor(bartenderCharacterInteraction.CameraInteractionLookAt, Color.Yellow));
 
             // Draw sphere at look-at position (Magenta)
-            DrawDebugSphere(bartender.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
+            DrawDebugSphere(bartenderCharacterInteraction.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
 
             if (vertices.Count > 0)
             {
@@ -1354,7 +1298,7 @@ namespace anakinsoft.game.scenes
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
-        public InteractableCharacter GetBartender() => bartender;
+        public InteractableCharacter GetBartender() => bartenderCharacterInteraction;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => showIntroText;
 

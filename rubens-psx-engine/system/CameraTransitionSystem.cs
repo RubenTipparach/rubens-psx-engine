@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using rubens_psx_engine;
 using System;
 using anakinsoft.system.cameras;
+using rubens_psx_engine.Extensions;
 
 namespace anakinsoft.system
 {
@@ -64,9 +65,21 @@ namespace anakinsoft.system
             targetLookAt = lookAtPosition;
 
             // Calculate target rotation: look from interactionPosition towards lookAtPosition
+            // CreateLookAt creates a view matrix (from eye to target), we need to invert it for world rotation
+            Matrix lookAtMatrix = Matrix.CreateLookAt(interactionPosition, interactionPosition - Vector3.Forward, Vector3.Up);
+            targetRotation = Quaternion.CreateFromRotationMatrix( activeCamera.View);
+            
+
+            // Debug: print the look direction
             Vector3 lookDirection = Vector3.Normalize(lookAtPosition - interactionPosition);
-            Matrix lookAtMatrix = Matrix.CreateLookAt(interactionPosition, lookAtPosition, Vector3.Up);
-            targetRotation = Quaternion.CreateFromRotationMatrix(Matrix.Invert(lookAtMatrix));
+            Console.WriteLine($"=== Camera Transition Setup ===");
+            Console.WriteLine($"From: {interactionPosition} To: {lookAtPosition}");
+            Console.WriteLine($"Look direction: {lookDirection}");
+
+            // Test what the forward vector should be from the target rotation
+            Vector3 targetForward = Vector3.Transform(Vector3.Forward, targetRotation);
+            Console.WriteLine($"Target rotation forward vector: {targetForward}");
+            Console.WriteLine($"Expected to match look direction: {lookDirection}");
 
             transitionDuration = duration;
             transitionProgress = 0f;
@@ -75,6 +88,19 @@ namespace anakinsoft.system
             isInInteractionMode = false;
 
             Console.WriteLine($"CameraTransition: Starting transition to {interactionPosition} looking at {lookAtPosition}");
+
+            // Debug: Print rotation info as euler angles
+            Vector3 currentEuler = QuaternionToEulerAngles(Quaternion.CreateFromRotationMatrix(activeCamera.View));
+            Vector3 targetEuler = QuaternionToEulerAngles(targetRotation);
+
+            Quaternion newRotation = Quaternion.Slerp(startRotation, targetRotation, 0);
+            Vector3 interpolatedEuler = QuaternionToEulerAngles(newRotation);
+
+            Console.WriteLine($"Camera Rotation Debug (t=0):");
+            Console.WriteLine($"  Current Euler: Yaw={MathHelper.ToDegrees(currentEuler.X):F1}° Pitch={MathHelper.ToDegrees(currentEuler.Y):F1}° Roll={MathHelper.ToDegrees(currentEuler.Z):F1}°");
+            Console.WriteLine($"  Target Euler:  Yaw={MathHelper.ToDegrees(targetEuler.X):F1}° Pitch={MathHelper.ToDegrees(targetEuler.Y):F1}° Roll={MathHelper.ToDegrees(targetEuler.Z):F1}°");
+            Console.WriteLine($"  Interpolated:  Yaw={MathHelper.ToDegrees(interpolatedEuler.X):F1}° Pitch={MathHelper.ToDegrees(interpolatedEuler.Y):F1}° Roll={MathHelper.ToDegrees(interpolatedEuler.Z):F1}°");
+
         }
 
         /// <summary>
@@ -125,7 +151,7 @@ namespace anakinsoft.system
             }
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            transitionProgress += deltaTime / transitionDuration;
+            transitionProgress += (deltaTime / transitionDuration);
 
             if (transitionProgress >= 1.0f)
             {
@@ -134,7 +160,7 @@ namespace anakinsoft.system
             }
 
             // Smooth interpolation using smoothstep
-            float t = SmoothStep(transitionProgress);
+            float t = transitionProgress;//SmoothStep(transitionProgress);
 
             // Interpolate position
             Vector3 newPosition = Vector3.Lerp(startPosition, targetPosition, t);
@@ -145,14 +171,29 @@ namespace anakinsoft.system
             {
                 // Interpolate rotation by lerping the quaternion and extracting the direction
                 Quaternion newRotation = Quaternion.Slerp(startRotation, targetRotation, t);
-                Vector3 forward = Vector3.Transform(Vector3.Forward, newRotation);
-                Vector3 interpolatedTarget = activeCamera.Position + forward;
-                fpsCamera.LookAt(interpolatedTarget);
+                //Vector3 forward = Vector3.Transform(Vector3.Forward, newRotation);
+                //Vector3 interpolatedTarget = activeCamera.Position + forward;
+                fpsCamera.SetRotation(newRotation);
+
+                
             }
 
             if (transitionProgress >= 1.0f)
             {
                 CompleteTransition();
+
+                // Debug: Print rotation info as euler angles
+                Vector3 currentEuler = QuaternionToEulerAngles(Quaternion.CreateFromRotationMatrix(activeCamera.View));
+                Vector3 targetEuler = QuaternionToEulerAngles(targetRotation);
+
+                Quaternion newRotation = Quaternion.Slerp(startRotation, targetRotation, t);
+                Vector3 interpolatedEuler = QuaternionToEulerAngles(newRotation);
+
+                Console.WriteLine($"Camera Rotation Debug (t={t:F2}):");
+                Console.WriteLine($"  Current Euler: Yaw={MathHelper.ToDegrees(currentEuler.X):F1}° Pitch={MathHelper.ToDegrees(currentEuler.Y):F1}° Roll={MathHelper.ToDegrees(currentEuler.Z):F1}°");
+                Console.WriteLine($"  Target Euler:  Yaw={MathHelper.ToDegrees(targetEuler.X):F1}° Pitch={MathHelper.ToDegrees(targetEuler.Y):F1}° Roll={MathHelper.ToDegrees(targetEuler.Z):F1}°");
+                Console.WriteLine($"  Interpolated:  Yaw={MathHelper.ToDegrees(interpolatedEuler.X):F1}° Pitch={MathHelper.ToDegrees(interpolatedEuler.Y):F1}° Roll={MathHelper.ToDegrees(interpolatedEuler.Z):F1}°");
+
             }
         }
 
@@ -198,6 +239,30 @@ namespace anakinsoft.system
         private float SmoothStep(float t)
         {
             return t * t * (3f - 2f * t);
+        }
+
+        /// <summary>
+        /// Converts a quaternion to euler angles (yaw, pitch, roll) in YXZ order
+        /// Returns Vector3 with X=Yaw, Y=Pitch, Z=Roll (to match typical camera usage)
+        /// </summary>
+        private Vector3 QuaternionToEulerAngles(Quaternion q)
+        {
+            // Convert to matrix first for more stable extraction
+            Matrix m = Matrix.CreateFromQuaternion(q);
+
+            Vector3 euler;
+
+            // Extract yaw (Y-axis rotation) from forward vector
+            Vector3 forward = new Vector3(m.M31, m.M32, m.M33);
+            euler.X = (float)Math.Atan2(-forward.X, -forward.Z); // Yaw
+
+            // Extract pitch (X-axis rotation) from forward vector
+            euler.Y = (float)Math.Asin(forward.Y); // Pitch
+
+            // Roll (Z-axis rotation) - usually 0 for FPS camera
+            euler.Z = (float)Math.Atan2(m.M12, m.M22); // Roll
+
+            return euler;
         }
 
         /// <summary>
