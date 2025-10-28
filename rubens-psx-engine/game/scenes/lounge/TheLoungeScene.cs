@@ -323,7 +323,6 @@ namespace anakinsoft.game.scenes
                 return;
             }
 
-            pathologist.IsSpawned = true;
             InitializePathologist();
         }
 
