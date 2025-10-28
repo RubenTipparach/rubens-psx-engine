@@ -83,6 +83,7 @@ namespace anakinsoft.game.scenes
             dialogueSystem.OnDialogueEnd += () =>
             {
                 Console.WriteLine("Dialogue ended, returning camera to player");
+                loungeScene.ClearActiveDialogueCharacter();
                 cameraTransitionSystem.TransitionBackToPlayer(1.0f);
             };
         }
@@ -127,6 +128,7 @@ namespace anakinsoft.game.scenes
             var bartender = loungeScene.GetBartender();
             if (bartender?.DialogueSequence != null)
             {
+                loungeScene.SetActiveDialogueCharacter("NPC_Bartender");
                 dialogueSystem.StartDialogue(bartender.DialogueSequence);
             }
         }

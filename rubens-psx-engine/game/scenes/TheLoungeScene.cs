@@ -86,6 +86,12 @@ namespace anakinsoft.game.scenes
         private bool introTeletypeComplete = false;
         private KeyboardState previousKeyboardState;
 
+        // Character profiles (portraits)
+        private Dictionary<string, Texture2D> characterPortraits;
+        private string hoveredCharacter = null;
+        private string activeDialogueCharacter = null;
+        private Texture2D portraitFrame;
+
         // Starfield
         private struct Star
         {
@@ -135,6 +141,9 @@ namespace anakinsoft.game.scenes
             {
                 boundingBoxRenderer.ShowBoundingBoxes = false;
             }
+
+            // Initialize character portraits
+            InitializeCharacterPortraits();
 
             // Create first person character at starting position
             CreateCharacter(new Vector3(0, 5f, 0), Quaternion.Identity);
@@ -209,14 +218,14 @@ namespace anakinsoft.game.scenes
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar");
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_2");
             CreateStaticMesh(new Vector3(-1.70852f, 0, -3.29662f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
             CreateStaticMesh(new Vector3(-1.70852f, 0, -2) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
 
             CreateStaticMesh(new Vector3(-2.91486f, 0, 2.17103f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
             CreateStaticMesh(new Vector3(-2.91486f, 0, 3.41485f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
+                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
             CreateStaticMesh(new Vector3(-1.28593f, 0, 3.11644f) * posScale,
                 Quaternion.Identity, new[] { tableMat }, "models/lounge/furnitures/lounge_table");
             CreateStaticMesh(new Vector3(2.05432f, 0, 3.11644f) * posScale,
@@ -243,11 +252,6 @@ namespace anakinsoft.game.scenes
                 Intensity = 1.5f,
                 IsEnabled = true
             };
-
-            // Create alien character with skinned animation support
-            Console.WriteLine("\n========================================");
-            Console.WriteLine("LOADING ALIEN CHARACTER");
-            Console.WriteLine("========================================");
 
        
 
@@ -336,6 +340,30 @@ namespace anakinsoft.game.scenes
             bartenderCharacterInteraction.SetStaticHandle(staticHandle);
 
             Console.WriteLine($"Created bartender physics collider at {bartenderColliderCenter} (size: {bartenderColliderWidth}x{bartenderColliderHeight}x{bartenderColliderDepth})");
+        }
+
+        private void InitializeCharacterPortraits()
+        {
+            characterPortraits = new Dictionary<string, Texture2D>();
+
+            // Load character portraits from chars folder
+            characterPortraits["NPC_Bartender"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) bartender zix");
+            characterPortraits["NPC_Ambassador"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Ambassador Tesh");
+            characterPortraits["NPC_DrThorne"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Dr thorne - xenopathologist");
+            characterPortraits["DrHarmon"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Dr Harmon - CMO");
+            characterPortraits["CommanderSylar"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Commander Sylar Von - Body guard");
+            characterPortraits["LtWebb"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Lt. Marcus Webb");
+            characterPortraits["EnsignTork"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Ensign Tork - Junior Eng");
+            characterPortraits["ChiefSolis"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Chief Kala Solis - Sec Cheif");
+            characterPortraits["MavenKilroth"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Maven Kilroth - Smuggler");
+            characterPortraits["Tehvora"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Tehvora - Diplomatic Atache (Kullan)");
+            characterPortraits["LuckyChen"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Lucky Chen - Quartermaster");
+
+            // Create portrait frame (simple colored rectangle)
+            var whiteTexture = Globals.screenManager.Content.Load<Texture2D>("textures/white");
+            portraitFrame = whiteTexture;
+
+            Console.WriteLine($"Initialized {characterPortraits.Count} character portraits");
         }
 
         private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
@@ -591,6 +619,21 @@ namespace anakinsoft.game.scenes
                 if (!isDialogueActive)
                 {
                     interactionSystem?.Update(gameTime, camera);
+
+                    // Track hovered character for portrait display
+                    if (interactionSystem?.CurrentTarget is InteractableCharacter hoveredChar)
+                    {
+                        hoveredCharacter = "NPC_Bartender"; // Match the key from characterPortraits dictionary
+                    }
+                    else
+                    {
+                        hoveredCharacter = null;
+                    }
+                }
+                else
+                {
+                    // During dialogue, keep showing the active character's portrait
+                    hoveredCharacter = activeDialogueCharacter;
                 }
 
                 // Only allow character movement after intro and after load delay
@@ -715,7 +758,50 @@ namespace anakinsoft.game.scenes
                 {
                     interactionSystem?.DrawUI(spriteBatch, font);
                 }
+
+                // Draw character portrait if hovering or in dialogue
+                if (!showIntroText && hoveredCharacter != null)
+                {
+                    DrawCharacterPortrait(spriteBatch, hoveredCharacter);
+                }
             }
+        }
+
+        private void DrawCharacterPortrait(SpriteBatch spriteBatch, string characterKey)
+        {
+            if (!characterPortraits.ContainsKey(characterKey))
+                return;
+
+            var viewport = Globals.screenManager.GraphicsDevice.Viewport;
+            var portrait = characterPortraits[characterKey];
+
+            // Portrait dimensions (matching 64x96 ratio = 2:3 aspect ratio)
+            int portraitWidth = 128;  // 2x scale of 64
+            int portraitHeight = 192; // 2x scale of 96
+            int frameThickness = 4;
+            int margin = 20;
+
+            // Position in top-right corner
+            Rectangle portraitRect = new Rectangle(
+                viewport.Width - portraitWidth - margin - frameThickness,
+                margin,
+                portraitWidth,
+                portraitHeight
+            );
+
+            // Frame rectangle (slightly larger)
+            Rectangle frameRect = new Rectangle(
+                portraitRect.X - frameThickness,
+                portraitRect.Y - frameThickness,
+                portraitRect.Width + frameThickness * 2,
+                portraitRect.Height + frameThickness * 2
+            );
+
+            // Draw frame
+            spriteBatch.Draw(portraitFrame, frameRect, Color.Gold);
+
+            // Draw portrait
+            spriteBatch.Draw(portrait, portraitRect, Color.White);
         }
 
         /// <summary>
@@ -1360,6 +1446,16 @@ namespace anakinsoft.game.scenes
         public InteractableCharacter GetBartender() => bartenderCharacterInteraction;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => showIntroText;
+
+        public void SetActiveDialogueCharacter(string characterKey)
+        {
+            activeDialogueCharacter = characterKey;
+        }
+
+        public void ClearActiveDialogueCharacter()
+        {
+            activeDialogueCharacter = null;
+        }
 
         protected override void Dispose(bool disposing)
         {

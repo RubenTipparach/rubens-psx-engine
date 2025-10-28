@@ -90,6 +90,25 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/models/characters/alien.fbx;Assets/models/characters/alien
 
+#begin Assets/models/characters/alien-2.fbx
+/importer:FbxImporter
+/processor:SkinnedModelProcessor
+/processorParam:DefaultEffect=SkinnedEffect
+/processorParam:ColorKeyColor=0,0,0,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=True
+/processorParam:GenerateTangentFrames=False
+/processorParam:PremultiplyTextureAlpha=True
+/processorParam:PremultiplyVertexColors=True
+/processorParam:ResizeTexturesToPowerOfTwo=False
+/processorParam:RotationX=0
+/processorParam:RotationY=0
+/processorParam:RotationZ=0
+/processorParam:Scale=1
+/processorParam:SwapWindingOrder=False
+/processorParam:TextureFormat=Compressed
+/build:Assets/models/characters/alien-2.fbx;Assets/models/characters/alien-2
+
 #begin Assets/models/corridor_single.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
@@ -1166,6 +1185,138 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:Assets/sound/rollover.wav;Assets/sound/rollover
+
+#begin Assets/textures/chars/(NPC) Ambassador Tesh.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/(NPC) Ambassador Tesh.png;Assets/textures/chars/(NPC) Ambassador Tesh
+
+#begin Assets/textures/chars/(NPC) bartender zix.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/(NPC) bartender zix.png;Assets/textures/chars/(NPC) bartender zix
+
+#begin Assets/textures/chars/(NPC) Dr thorne - xenopathologist.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/(NPC) Dr thorne - xenopathologist.png;Assets/textures/chars/(NPC) Dr thorne - xenopathologist
+
+#begin Assets/textures/chars/Chief Kala Solis - Sec Cheif.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Chief Kala Solis - Sec Cheif.png;Assets/textures/chars/Chief Kala Solis - Sec Cheif
+
+#begin Assets/textures/chars/Commander Sylar Von - Body guard.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Commander Sylar Von - Body guard.png;Assets/textures/chars/Commander Sylar Von - Body guard
+
+#begin Assets/textures/chars/Dr Harmon - CMO.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Dr Harmon - CMO.png;Assets/textures/chars/Dr Harmon - CMO
+
+#begin Assets/textures/chars/Ensign Tork - Junior Eng.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Ensign Tork - Junior Eng.png;Assets/textures/chars/Ensign Tork - Junior Eng
+
+#begin Assets/textures/chars/Lt. Marcus Webb.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Lt. Marcus Webb.png;Assets/textures/chars/Lt. Marcus Webb
+
+#begin Assets/textures/chars/Lucky Chen - Quartermaster.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Lucky Chen - Quartermaster.png;Assets/textures/chars/Lucky Chen - Quartermaster
+
+#begin Assets/textures/chars/Maven Kilroth - Smuggler.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Maven Kilroth - Smuggler.png;Assets/textures/chars/Maven Kilroth - Smuggler
+
+#begin Assets/textures/chars/Tehvora - Diplomatic Atache (Kullan).png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/textures/chars/Tehvora - Diplomatic Atache (Kullan).png;Assets/textures/chars/Tehvora - Diplomatic Atache (Kullan)
 
 #begin Assets/textures/corridor_wall.png
 /importer:TextureImporter
