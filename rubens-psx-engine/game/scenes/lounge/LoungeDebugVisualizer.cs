@@ -15,6 +15,78 @@ namespace anakinsoft.game.scenes
     /// </summary>
     public class LoungeDebugVisualizer
     {
+        public void DrawStaticMeshWireframes(List<List<Vector3>> meshTriangleVertices,
+            List<(Vector3 position, Quaternion rotation)> staticMeshTransforms, Camera camera)
+        {
+            if (meshTriangleVertices == null || staticMeshTransforms == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Draw wireframes for each static mesh
+            for (int meshIndex = 0; meshIndex < meshTriangleVertices.Count; meshIndex++)
+            {
+                if (meshIndex < staticMeshTransforms.Count)
+                {
+                    var triangleVertices = meshTriangleVertices[meshIndex];
+                    var (position, rotation) = staticMeshTransforms[meshIndex];
+
+                    if (triangleVertices != null && triangleVertices.Count > 0)
+                    {
+                        // Create transform matrix for this static mesh
+                        var worldMatrix = Matrix.CreateFromQuaternion(rotation) * Matrix.CreateTranslation(position);
+
+                        // Create wireframe edges from triangles
+                        var wireframeVertices = new List<VertexPositionColor>();
+
+                        for (int i = 0; i < triangleVertices.Count; i += 3)
+                        {
+                            if (i + 2 < triangleVertices.Count)
+                            {
+                                // Apply world transform to vertices
+                                var v1 = Vector3.Transform(triangleVertices[i], worldMatrix);
+                                var v2 = Vector3.Transform(triangleVertices[i + 1], worldMatrix);
+                                var v3 = Vector3.Transform(triangleVertices[i + 2], worldMatrix);
+
+                                // Create the three edges of the triangle
+                                wireframeVertices.Add(new VertexPositionColor(v1, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v2, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v2, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v3, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v3, Color.Yellow));
+                                wireframeVertices.Add(new VertexPositionColor(v1, Color.Yellow));
+                            }
+                        }
+
+                        if (wireframeVertices.Count > 0)
+                        {
+                            try
+                            {
+                                basicEffect.CurrentTechnique.Passes[0].Apply();
+                                graphicsDevice.DrawUserPrimitives(
+                                    PrimitiveType.LineList,
+                                    wireframeVertices.ToArray(),
+                                    0,
+                                    wireframeVertices.Count / 2);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error drawing static mesh wireframe: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            basicEffect.Dispose();
+        }
+
         public void DrawCharacterWireframe(SkinnedRenderingEntity character, Camera camera, Color color)
         {
             if (character?.Model == null) return;
