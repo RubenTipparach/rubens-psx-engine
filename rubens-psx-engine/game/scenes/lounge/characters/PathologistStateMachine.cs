@@ -51,7 +51,7 @@ namespace anakinsoft.game.scenes.lounge.characters
                 case "PathologistEvidence":
                     // Evidence presented - transition to investigation state
                     SetFlag("evidence_presented", true);
-                    TransitionTo("evidence_presented");
+                    //TransitionTo("evidence_presented");
                     Console.WriteLine("[PathologistStateMachine] Evidence presented, investigation can begin");
                     break;
 

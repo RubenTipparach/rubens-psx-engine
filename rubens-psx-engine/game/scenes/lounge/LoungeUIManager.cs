@@ -229,6 +229,7 @@ namespace anakinsoft.game.scenes
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
             var portrait = characterPortraits[characterKey];
+            var font = Globals.fontNTR;
 
             // Portrait dimensions (matching 64x96 ratio = 2:3 aspect ratio)
             int portraitWidth = 128;  // 2x scale of 64
@@ -257,6 +258,61 @@ namespace anakinsoft.game.scenes
 
             // Draw portrait
             spriteBatch.Draw(portrait, portraitRect, Color.White);
+
+            // Get character info
+            var (name, role) = GetCharacterInfo(characterKey);
+
+            // Draw name and role below portrait
+            if (!string.IsNullOrEmpty(name))
+            {
+                int textYOffset = 8;
+                float textScale = 0.7f; // Scale down text to 70%
+                float maxTextWidth = portraitWidth; // Don't exceed portrait width
+
+                // Wrap name if needed
+                string wrappedName = WrapText(name, font, maxTextWidth / textScale);
+                Vector2 nameSize = font.MeasureString(wrappedName) * textScale;
+                Vector2 namePosition = new Vector2(
+                    portraitRect.X + (portraitWidth - nameSize.X) / 2,
+                    portraitRect.Bottom + textYOffset
+                );
+
+                // Draw name with scale
+                spriteBatch.DrawString(font, wrappedName, namePosition, Color.Gold,
+                    0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+
+                // Draw role if available
+                if (!string.IsNullOrEmpty(role))
+                {
+                    string wrappedRole = WrapText(role, font, maxTextWidth / textScale);
+                    Vector2 roleSize = font.MeasureString(wrappedRole) * textScale;
+                    Vector2 rolePosition = new Vector2(
+                        portraitRect.X + (portraitWidth - roleSize.X) / 2,
+                        namePosition.Y + nameSize.Y + 2
+                    );
+                    spriteBatch.DrawString(font, wrappedRole, rolePosition, Color.Gray,
+                        0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                }
+            }
+        }
+
+        private (string name, string role) GetCharacterInfo(string characterKey)
+        {
+            return characterKey switch
+            {
+                "NPC_Bartender" => ("Zix", "Bartender"),
+                "DrHarmon" => ("Dr. Harmon Kerrigan", "Chief Medical Officer"),
+                "NPC_Ambassador" => ("Ambassador Telir", "Telirian Diplomat"),
+                "NPC_DrThorne" => ("Dr. Lyssa Thorne", "Xenopathologist"),
+                "CommanderSylar" => ("Commander Sylara Von", "Security Chief"),
+                "LtWebb" => ("Lt. Marcus Webb", "Navigation Officer"),
+                "EnsignTork" => ("Ensign Tork", "Junior Engineer"),
+                "ChiefSolis" => ("Chief Kala Solis", "Security Chief"),
+                "MavenKilroth" => ("Maven Kilroth", "Smuggler"),
+                "Tehvora" => ("Tehvora", "Diplomatic Attaché"),
+                "LuckyChen" => ("Lucky Chen", "Quartermaster"),
+                _ => (characterKey, "Unknown")
+            };
         }
 
         private string WrapText(string text, SpriteFont font, float maxWidth)

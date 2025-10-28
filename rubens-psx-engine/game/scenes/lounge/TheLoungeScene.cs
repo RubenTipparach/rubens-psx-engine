@@ -53,9 +53,6 @@ namespace anakinsoft.game.scenes
         // Input handling
         KeyboardState previousKeyboard;
 
-        // Alien character with skeletal animation support
-        SkinnedRenderingEntity alienCharacter;
-
         // Point light
         PointLight centerLight;
 
@@ -241,8 +238,8 @@ namespace anakinsoft.game.scenes
             Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f); 
 
             // Camera interaction position - looking at the pathologist from across the table
-            Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(15, 20, 0);
-            Vector3 cameraLookAt = pathologistPosition + new Vector3(0, 10, 0); // Look at head level
+            Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-10, 15, 0);
+            Vector3 cameraLookAt = new Vector3(2, 0, 0); // Look at head level
 
             // Create pathologist interactable
             pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
