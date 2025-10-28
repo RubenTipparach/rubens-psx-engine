@@ -5,8 +5,10 @@ using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.system;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge.characters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace anakinsoft.game.scenes
 {
@@ -42,6 +44,11 @@ namespace anakinsoft.game.scenes
         // Transcript review system
         TranscriptReviewUI transcriptReviewUI;
 
+        // Character state machines
+        anakinsoft.game.scenes.lounge.characters.LoungeCharactersData charactersData;
+        BartenderStateMachine bartenderStateMachine;
+        PathologistStateMachine pathologistStateMachine;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -68,6 +75,9 @@ namespace anakinsoft.game.scenes
             dialogueChoiceSystem = new DialogueChoiceSystem();
             transcriptReviewUI = new TranscriptReviewUI();
 
+            // Load character data from YAML and initialize state machines
+            LoadCharacterDataAndStateMachines();
+
             // Set up dialogue and camera transition event handlers
             SetupDialogueAndInteractionSystems();
 
@@ -81,17 +91,55 @@ namespace anakinsoft.game.scenes
             Globals.screenManager.IsMouseVisible = false;
         }
 
+        private void LoadCharacterDataAndStateMachines()
+        {
+            try
+            {
+                // Load character data from YAML
+                string yamlPath = Path.Combine("Content", "Data", "Lounge", "characters.yml");
+                charactersData = LoungeCharacterDataLoader.LoadCharacters(yamlPath);
+
+                // Initialize bartender state machine
+                if (charactersData.bartender != null)
+                {
+                    bartenderStateMachine = new BartenderStateMachine(charactersData.bartender);
+                    Console.WriteLine($"[TheLoungeScreen] Initialized bartender state machine for {charactersData.bartender.name}");
+                }
+
+                // Initialize pathologist state machine
+                if (charactersData.pathologist != null)
+                {
+                    pathologistStateMachine = new PathologistStateMachine(charactersData.pathologist);
+                    Console.WriteLine($"[TheLoungeScreen] Initialized pathologist state machine for {charactersData.pathologist.name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[TheLoungeScreen] ERROR: Failed to load character data: {ex.Message}");
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
+        }
+
         private void SetupDialogueAndInteractionSystems()
         {
             var bartender = loungeScene.GetBartender();
-            if (bartender != null)
+            if (bartender != null && bartenderStateMachine != null)
             {
-                // Set up bartender dialogue
+                // Set up bartender dialogue - dialogue will be fetched dynamically from state machine
                 bartender.OnDialogueTriggered += OnBartenderDialogueTriggered;
 
-                // Create intro dialogue sequence
-                var introSequence = CreateIntroDialogue();
-                bartender.SetDialogue(introSequence);
+                // Set initial dialogue from state machine so character appears interactable
+                var initialDialogue = GetBartenderDialogue();
+                if (initialDialogue != null)
+                {
+                    bartender.SetDialogue(initialDialogue);
+                    Console.WriteLine($"[TheLoungeScreen] Set initial bartender dialogue: {initialDialogue.SequenceName}");
+                }
+                else
+                {
+                    Console.WriteLine("[TheLoungeScreen] WARNING: Could not get initial bartender dialogue");
+                }
             }
 
             // Pathologist dialogue will be set up after spawning (in SetupPathologistDialogue)
@@ -162,54 +210,75 @@ namespace anakinsoft.game.scenes
         private void SetupPathologistDialogue()
         {
             var pathologist = loungeScene.GetPathologist();
-            if (pathologist != null)
+            if (pathologist != null && pathologistStateMachine != null)
             {
                 Console.WriteLine("Setting up pathologist dialogue");
 
-                // Set up pathologist dialogue
+                // Set up pathologist dialogue - dialogue will be fetched dynamically from state machine
                 pathologist.OnDialogueTriggered += OnPathologistDialogueTriggered;
 
-                // Create pathologist evidence dialogue
-                var pathologistSequence = CreatePathologistDialogue();
-                pathologist.SetDialogue(pathologistSequence);
+                // Set initial dialogue from state machine so character appears interactable
+                var initialDialogue = GetPathologistDialogue();
+                if (initialDialogue != null)
+                {
+                    pathologist.SetDialogue(initialDialogue);
+                    Console.WriteLine($"[TheLoungeScreen] Set initial pathologist dialogue: {initialDialogue.SequenceName}");
+                }
+                else
+                {
+                    Console.WriteLine("[TheLoungeScreen] WARNING: Could not get initial pathologist dialogue");
+                }
             }
             else
             {
-                Console.WriteLine("ERROR: Pathologist not found when setting up dialogue");
+                Console.WriteLine("ERROR: Pathologist not found or state machine not initialized");
             }
         }
 
-        private DialogueSequence CreateIntroDialogue()
+        private DialogueSequence GetBartenderDialogue()
         {
-            var sequence = new DialogueSequence("BartenderIntro");
-
-            // Check if player has already gotten the intro
-            if (gameProgress.HasTalkedToBartender)
+            if (bartenderStateMachine == null)
             {
-                // Shortened dialogue - just reminder to talk to Dr. Harmon
-                sequence.AddLine("Bartender", "Go talk to Dr. Harmon, he's got the autopsy and evidence reports to go over with you.");
+                Console.WriteLine("[TheLoungeScreen] ERROR: Bartender state machine not initialized");
+                return null;
             }
-            else
-            {
-                // Full intro dialogue (first time)
-                sequence.AddLine("Bartender", "Welcome to the Lounge. You are a detective on board the UEFS Marron.");
-                sequence.AddLine("Bartender", "The Telirian ambassador is dead. This is no accident.");
-                sequence.AddLine("Bartender", "You need to question the suspects and determine motive, means, and opportunity.");
-                sequence.AddLine("Bartender", "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.");
-                sequence.AddLine("Bartender", "I've called the pathologist. They should be arriving at the table shortly with preliminary findings.");
-                sequence.AddLine("Bartender", "Time is running out, detective. Good luck.");
 
-                // Mark intro as complete
+            // Get current dialogue from state machine
+            var yamlDialogue = bartenderStateMachine.GetCurrentDialogue();
+            if (yamlDialogue == null)
+            {
+                Console.WriteLine("[TheLoungeScreen] No dialogue available from bartender state machine");
+                return null;
+            }
+
+            // Convert YAML dialogue to DialogueSequence
+            var sequence = new DialogueSequence(yamlDialogue.sequence_name);
+            foreach (var line in yamlDialogue.lines)
+            {
+                sequence.AddLine(line.speaker, line.text);
+            }
+
+            // Wire up completion callback to state machine
+            if (!string.IsNullOrEmpty(yamlDialogue.on_complete))
+            {
                 sequence.OnSequenceComplete = () =>
                 {
-                    Console.WriteLine("Bartender intro dialogue complete - marking as seen and spawning pathologist");
+                    Console.WriteLine($"[TheLoungeScreen] Bartender dialogue '{yamlDialogue.sequence_name}' complete");
+
+                    // Update game progress
                     gameProgress.HasTalkedToBartender = true;
                     gameProgress.HasSeenIntro = true;
-                    gameProgress.PathologistSpawned = true;
-                    loungeScene.SpawnPathologist();
 
-                    // Set up pathologist dialogue after spawning
-                    SetupPathologistDialogue();
+                    // Notify state machine
+                    bartenderStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
+
+                    // Handle completion actions
+                    if (yamlDialogue.on_complete == "spawn_pathologist")
+                    {
+                        gameProgress.PathologistSpawned = true;
+                        loungeScene.SpawnPathologist();
+                        SetupPathologistDialogue();
+                    }
 
                     gameProgress.LogProgress();
                 };
@@ -218,36 +287,40 @@ namespace anakinsoft.game.scenes
             return sequence;
         }
 
-        private DialogueSequence CreatePathologistDialogue()
+        private DialogueSequence GetPathologistDialogue()
         {
-            var sequence = new DialogueSequence("PathologistEvidence");
-
-            // Check if player has the vial
-            if (!inventory.HasItemById("evidence_vial"))
+            if (pathologistStateMachine == null)
             {
-                // Intro: Set up the crime scene and tutorial
-                sequence.AddLine("Dr. Harmon Kerrigan", "Detective. I'm Dr. Harmon Kerrigan, Chief Medical Officer.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "Ambassador Telir was found dead in his quarters at 0300 hours this morning.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "The body shows signs of a sophisticated assassination - breturium poisoning via injection.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "This wasn't a crime of passion. Someone planned this carefully.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "I've compiled a suspects file on the table here. It contains everyone with access to that section of the ship.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "You'll be able to review interview transcripts as you question people.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "But first, I need to teach you how to gather and present evidence properly.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "See that vial on the bar counter? Go pick it up. You can only carry one item at a time.");
-                sequence.AddLine("Dr. Harmon Kerrigan", "Bring it back to me so I can show you how to present evidence during interrogations.");
-
-                return sequence;
+                Console.WriteLine("[TheLoungeScreen] ERROR: Pathologist state machine not initialized");
+                return null;
             }
 
-            // Player has the vial - ask if they want to show it
-            sequence.AddLine("Dr. Harmon Kerrigan", "Ah, you have the vial. Good.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "When talking to suspects, you'll be able to present evidence. Let's practice.");
-
-            // This will trigger dialogue choices
-            sequence.OnSequenceComplete = () =>
+            // Get current dialogue from state machine
+            var yamlDialogue = pathologistStateMachine.GetCurrentDialogue();
+            if (yamlDialogue == null)
             {
-                ShowItemConfirmation();
-            };
+                Console.WriteLine("[TheLoungeScreen] No dialogue available from pathologist state machine");
+                return null;
+            }
+
+            // Convert YAML dialogue to DialogueSequence
+            var sequence = new DialogueSequence(yamlDialogue.sequence_name);
+            foreach (var line in yamlDialogue.lines)
+            {
+                sequence.AddLine(line.speaker, line.text);
+            }
+
+            // Wire up completion callback to state machine
+            if (!string.IsNullOrEmpty(yamlDialogue.on_complete))
+            {
+                sequence.OnSequenceComplete = () =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Pathologist dialogue '{yamlDialogue.sequence_name}' complete");
+
+                    // Notify state machine
+                    pathologistStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
+                };
+            }
 
             return sequence;
         }
@@ -394,12 +467,25 @@ namespace anakinsoft.game.scenes
 
         private void OnBartenderDialogueTriggered(DialogueSequence sequence)
         {
-            Console.WriteLine($"Bartender dialogue triggered: {sequence.SequenceName}");
+            Console.WriteLine($"Bartender dialogue triggered");
+
+            // Get current dialogue from state machine
+            var currentDialogue = GetBartenderDialogue();
+            if (currentDialogue == null)
+            {
+                Console.WriteLine("[TheLoungeScreen] No dialogue available from bartender state machine");
+                return;
+            }
+
+            Console.WriteLine($"[TheLoungeScreen] Retrieved dialogue: {currentDialogue.SequenceName} from state: {bartenderStateMachine.CurrentState}");
 
             // Transition camera to bartender
             var bartender = loungeScene.GetBartender();
             if (bartender != null)
             {
+                // Update the character's dialogue to the current state machine dialogue
+                bartender.SetDialogue(currentDialogue);
+
                 cameraTransitionSystem.TransitionToInteraction(
                     bartender.CameraInteractionPosition,
                     bartender.CameraInteractionLookAt,
@@ -412,12 +498,25 @@ namespace anakinsoft.game.scenes
 
         private void OnPathologistDialogueTriggered(DialogueSequence sequence)
         {
-            Console.WriteLine($"Pathologist dialogue triggered: {sequence.SequenceName}");
+            Console.WriteLine($"Pathologist dialogue triggered");
+
+            // Get current dialogue from state machine
+            var currentDialogue = GetPathologistDialogue();
+            if (currentDialogue == null)
+            {
+                Console.WriteLine("[TheLoungeScreen] No dialogue available from pathologist state machine");
+                return;
+            }
+
+            Console.WriteLine($"[TheLoungeScreen] Retrieved dialogue: {currentDialogue.SequenceName} from state: {pathologistStateMachine.CurrentState}");
 
             // Transition camera to pathologist
             var pathologist = loungeScene.GetPathologist();
             if (pathologist != null)
             {
+                // Update the character's dialogue to the current state machine dialogue
+                pathologist.SetDialogue(currentDialogue);
+
                 cameraTransitionSystem.TransitionToInteraction(
                     pathologist.CameraInteractionPosition,
                     pathologist.CameraInteractionLookAt,

@@ -3,7 +3,7 @@ using anakinsoft.entities;
 using anakinsoft.system;
 using rubens_psx_engine.entities;
 
-namespace anakinsoft.game.scenes
+namespace anakinsoft.game.scenes.lounge.characters
 {
     /// <summary>
     /// Data container for a character in The Lounge scene

@@ -4,6 +4,7 @@ using rubens_psx_engine;
 using rubens_psx_engine.entities;
 using anakinsoft.system;
 using anakinsoft.entities;
+using anakinsoft.game.scenes.lounge.characters;
 using System;
 using System.Collections.Generic;
 

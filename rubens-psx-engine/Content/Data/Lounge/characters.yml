@@ -113,45 +113,45 @@ pathologist:
 
   # Dialogue sequence - Evidence presentation
   dialogue:
-    sequence_name: "PathologistEvidence"
-    lines:
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Breturium shards? In an injection? That's not murder, Detective, that's a statement."
+    - sequence_name: "PathologistEvidence"
+      lines:
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Breturium shards? In an injection? That's not murder, Detective, that's a statement."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Whoever did this wanted it personal, painful, and invisible to scanners."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Whoever did this wanted it personal, painful, and invisible to scanners."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs."
 
-      - speaker: "Dr. Harmon Kerrigan"
-        text: "That's all I have for now, Detective. The rest is up to you. Good luck."
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "That's all I have for now, Detective. The rest is up to you. Good luck."
 
-    on_complete: "show_character_selection"
+      on_complete: "show_character_selection"
 
 # SUSPECTS - Available for interrogation
 
@@ -209,15 +209,15 @@ commander_von:
 
   # Opening dialogue
   dialogue:
-    sequence_name: "CommanderVonInterrogation"
-    lines:
-      - speaker: "Commander Sylara Von"
-        text: "The Ambassador was more than my assignment, Detective. He was the finest example of Telirian honor I've ever known."
+    - sequence_name: "CommanderVonInterrogation"
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "The Ambassador was more than my assignment, Detective. He was the finest example of Telirian honor I've ever known."
 
-      - speaker: "Commander Sylara Von"
-        text: "Whoever did this didn't just kill a diplomat—they murdered hope itself. I should have been there. I should have protected him."
+        - speaker: "Commander Sylara Von"
+          text: "Whoever did this didn't just kill a diplomat—they murdered hope itself. I should have been there. I should have protected him."
 
-      # TODO: Add full interrogation dialogue
+        # TODO: Add full interrogation dialogue
 
 dr_thorne:
   name: "Dr. Lyssa Thorne"
@@ -274,18 +274,18 @@ dr_thorne:
 
   # Opening dialogue
   dialogue:
-    sequence_name: "DrThorneInterrogation"
-    lines:
-      - speaker: "Dr. Lyssa Thorne"
-        text: "Oh, Detective, this is just—it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
+    - sequence_name: "DrThorneInterrogation"
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Oh, Detective, this is just—it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
 
-      - speaker: "Dr. Lyssa Thorne"
-        text: "He was so vital to my research on Telirian-human relations. I can't believe—I mean, who would—*nervous laugh*—this is just terrible for everyone involved."
+        - speaker: "Dr. Lyssa Thorne"
+          text: "He was so vital to my research on Telirian-human relations. I can't believe—I mean, who would—*nervous laugh*—this is just terrible for everyone involved."
 
-      - speaker: "Dr. Lyssa Thorne"
-        text: "Do you need me to explain Telirian death rituals? I can explain those."
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Do you need me to explain Telirian death rituals? I can explain those."
 
-      # TODO: Add full interrogation dialogue
+        # TODO: Add full interrogation dialogue
 
 lt_webb:
   name: "Lieutenant Marcus Webb"
