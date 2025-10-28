@@ -1,0 +1,577 @@
+# The Lounge - Murder Mystery Characters Configuration
+# All character data including positions, dialogues, and metadata
+
+bartender:
+  name: "Zix"
+  pronouns: "They/Them"
+  species: "Andorian/Human Hybrid"
+  role: "Bartender"
+  portrait: "textures/chars/(NPC) bartender zix"
+  model: "models/characters/alien"
+
+  # Position in the lounge
+  position:
+    x: 25.0
+    y: 0.0
+    z: -25.0
+
+  rotation:
+    yaw: 0.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.25
+
+  # Camera interaction settings
+  camera_position:
+    x: 25.0
+    y: 20.0
+    z: -5.0
+
+  camera_look_at:
+    x: 0.0
+    y: 0.0
+    z: -10.0
+
+  # Collider dimensions
+  collider:
+    width: 10.0
+    height: 48.0
+    depth: 10.0
+
+  # Dialogue sequence
+  dialogue:
+    sequence_name: "BartenderIntro"
+    lines:
+      - speaker: "Bartender"
+        text: "Welcome to the Lounge. You are a detective on board the UEFS Marron."
+
+      - speaker: "Bartender"
+        text: "The Telirian ambassador is dead. This is no accident."
+
+      - speaker: "Bartender"
+        text: "You need to question the suspects and determine motive, means, and opportunity."
+
+      - speaker: "Bartender"
+        text: "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war."
+
+      - speaker: "Bartender"
+        text: "I've called the pathologist. They should be arriving at the table shortly with preliminary findings."
+
+      - speaker: "Bartender"
+        text: "Time is running out, detective. Good luck."
+
+    on_complete: "spawn_pathologist"
+
+pathologist:
+  name: "Dr. Harmon Kerrigan"
+  species: "Human"
+  gender: "Male"
+  age: "50s"
+  role: "Chief Medical Officer / Pathologist"
+  personality: "Exhausted, sardonic, clinically detached with dark humor"
+  portrait: "textures/chars/Dr Harmon - CMO"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge (sitting at table)
+  position:
+    x: -290.0
+    y: 0.0
+    z: 280.0
+
+  rotation:
+    yaw: 90.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: -275.0
+    y: 20.0
+    z: 280.0
+
+  camera_look_at:
+    x: -290.0
+    y: 10.0
+    z: 280.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Secret information (for game logic)
+  secret: "Gambling problem; owes money to crew; sells exotic medical samples on black market"
+
+  # Dialogue sequence - Evidence presentation
+  dialogue:
+    sequence_name: "PathologistEvidence"
+    lines:
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Breturium shards? In an injection? That's not murder, Detective, that's a statement."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Whoever did this wanted it personal, painful, and invisible to scanners."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs."
+
+      - speaker: "Dr. Harmon Kerrigan"
+        text: "That's all I have for now, Detective. The rest is up to you. Good luck."
+
+    on_complete: "show_character_selection"
+
+# SUSPECTS - Available for interrogation
+
+commander_von:
+  name: "Commander Sylara Von"
+  species: "Telirian"
+  gender: "Female"
+  age: "40s"
+  role: "Ambassador's Head of Security"
+  personality: "Intense, fiercely loyal, barely contained energy"
+  portrait: "textures/chars/Commander Sylar Von - Body guard"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge (sitting at booth)
+  position:
+    x: 10.0
+    y: 0.0
+    z: 280.0
+
+  rotation:
+    yaw: 180.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: 10.0
+    y: 20.0
+    z: 260.0
+
+  camera_look_at:
+    x: 10.0
+    y: 10.0
+    z: 280.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Off-duty during murder; claims she was in the gym"
+  secret: "In love with the Ambassador (who was arranged-married to her sister); wanted to free him through death for spiritual reunion; embezzling from security budget to fund underground Telirian romance novel empire"
+  is_killer: true
+  killer_type: "primary"
+
+  key_evidence:
+    - "Has diplomatic access codes"
+    - "Sister is on the ship"
+    - "Advanced combat medicine training"
+    - "Took emergency personal leave from her own security post that night"
+
+  # Opening dialogue
+  dialogue:
+    sequence_name: "CommanderVonInterrogation"
+    lines:
+      - speaker: "Commander Sylara Von"
+        text: "The Ambassador was more than my assignment, Detective. He was the finest example of Telirian honor I've ever known."
+
+      - speaker: "Commander Sylara Von"
+        text: "Whoever did this didn't just kill a diplomat—they murdered hope itself. I should have been there. I should have protected him."
+
+      # TODO: Add full interrogation dialogue
+
+dr_thorne:
+  name: "Dr. Lyssa Thorne"
+  species: "Human"
+  gender: "Female"
+  age: "40s"
+  role: "Xenoanthropologist & Cultural Liaison"
+  personality: "Awkward, over-explains, nervous laughter"
+  portrait: "textures/chars/(NPC) Dr thorne - xenopathologist"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge (sitting at table)
+  position:
+    x: 310.0
+    y: 0.0
+    z: 280.0
+
+  rotation:
+    yaw: 270.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: 295.0
+    y: 20.0
+    z: 280.0
+
+  camera_look_at:
+    x: 310.0
+    y: 10.0
+    z: 280.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Mediating cultural protocols for peace talks"
+  secret: "Ambassador planned to recommend against peace (found humans 'boring'); would destroy her life's work; killed him to write 'definitive tragic romance' for tenure; ghost-writing Sylara's romance novels"
+  is_killer: true
+  killer_type: "accomplice"
+
+  key_evidence:
+    - "Has diplomatic access"
+    - "Knows Telirian physiology intimately"
+    - "Quarters adjacent to Ambassador's"
+    - "T.B. meeting = Thorne - Briefing"
+    - "Served wine to Ambassador that evening"
+
+  # Opening dialogue
+  dialogue:
+    sequence_name: "DrThorneInterrogation"
+    lines:
+      - speaker: "Dr. Lyssa Thorne"
+        text: "Oh, Detective, this is just—it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
+
+      - speaker: "Dr. Lyssa Thorne"
+        text: "He was so vital to my research on Telirian-human relations. I can't believe—I mean, who would—*nervous laugh*—this is just terrible for everyone involved."
+
+      - speaker: "Dr. Lyssa Thorne"
+        text: "Do you need me to explain Telirian death rituals? I can explain those."
+
+      # TODO: Add full interrogation dialogue
+
+lt_webb:
+  name: "Lieutenant Marcus Webb"
+  species: "Human"
+  gender: "Male"
+  age: "30s"
+  role: "Tactical Officer"
+  personality: "Ambitious, charming, overconfident"
+  portrait: "textures/chars/Lt. Marcus Webb"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: -100.0
+    y: 0.0
+    z: 220.0
+
+  rotation:
+    yaw: 45.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: -85.0
+    y: 20.0
+    z: 205.0
+
+  camera_look_at:
+    x: -100.0
+    y: 10.0
+    z: 220.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "On bridge duty during murder"
+  secret: "Deep-cover Fregoilli sympathizer (supports peace); wanted to frame someone to unite Federation against common scapegoat; believes he's destined to be Captain"
+  is_killer: false
+  red_herring: true
+
+  key_evidence:
+    - "Has security override codes"
+    - "Alone on night bridge shift"
+    - "Requisitioned exotic materials for tactical research"
+
+ensign_tork:
+  name: "Ensign Tork"
+  species: "Fregoilli"
+  gender: "Male"
+  age: "20s"
+  role: "Junior Engineer"
+  personality: "Young, nervous, speaks rapidly, sweats visibly"
+  portrait: "textures/chars/Ensign Tork - Junior Eng"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: 200.0
+    y: 0.0
+    z: 220.0
+
+  rotation:
+    yaw: 315.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: 185.0
+    y: 20.0
+    z: 205.0
+
+  camera_look_at:
+    x: 200.0
+    y: 10.0
+    z: 220.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Working late in Engineering"
+  secret: "Fregoilli Collective ordered him to protect Ambassador; secret relationship with Commander Von's sister; tried to fake death with temporary toxin but mixed up chemicals and used actual breturium by accident"
+  is_killer: false
+  red_herring: true
+
+maven_kilroth:
+  name: "Maven Kilroth"
+  species: "Telirian"
+  gender: "Male"
+  age: "60s"
+  role: "Trade Negotiator (Civilian)"
+  personality: "Smooth, corporate, everything's a transaction"
+  portrait: "textures/chars/Maven Kilroth - Smuggler"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: -200.0
+    y: 0.0
+    z: 150.0
+
+  rotation:
+    yaw: 135.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: -185.0
+    y: 20.0
+    z: 135.0
+
+  camera_look_at:
+    x: -200.0
+    y: 10.0
+    z: 150.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "In trade route talks with Ambassador"
+  secret: "Peace treaty would make him wealthy; Ambassador about to expose his breturium smuggling operation; sells to both sides of conflict; secret passion: competitive zero-G ballroom dancing"
+  is_killer: false
+  red_herring: true
+
+chief_solis:
+  name: "Chief Petty Officer Raina Solis"
+  species: "Human"
+  gender: "Female"
+  age: "35"
+  role: "Head of Ship Security / Master-at-Arms"
+  personality: "By-the-book, stern, no-nonsense"
+  portrait: "textures/chars/Chief Kala Solis - Sec Cheif"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: 100.0
+    y: 0.0
+    z: 150.0
+
+  rotation:
+    yaw: 225.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: 85.0
+    y: 20.0
+    z: 135.0
+
+  camera_look_at:
+    x: 100.0
+    y: 10.0
+    z: 150.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Coordinating overnight security sweeps"
+  secret: "Investigating Maven Kilroth's smuggling for months; broke into Ambassador's quarters to plant surveillance devices; used override code; accidentally left lockbox open"
+  is_killer: false
+  red_herring: true
+
+tvora:
+  name: "T'Vora"
+  species: "Vulcan"
+  gender: "Female"
+  age: "120"
+  role: "Federation Diplomatic Attaché"
+  personality: "Logical, precise, subtly condescending"
+  portrait: "textures/chars/Tehvora - Diplomatic Atache (Kullan)"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: -150.0
+    y: 0.0
+    z: 100.0
+
+  rotation:
+    yaw: 90.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: -135.0
+    y: 20.0
+    z: 100.0
+
+  camera_look_at:
+    x: -150.0
+    y: 10.0
+    z: 100.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Meditating in quarters during murder"
+  secret: "Undercover Vulcan intelligence operative; monitoring illegal breturium trade network; knew about murder in advance but let it happen (needs of many outweigh needs of few); manipulating investigation to protect her operation"
+  is_killer: false
+  red_herring: true
+
+lucky_chen:
+  name: "Lucky Chen"
+  species: "Human"
+  gender: "Male"
+  age: "50s"
+  role: "Ship's Quartermaster & Supply Officer"
+  personality: "Jovial, wheeler-dealer, knows everyone's business"
+  portrait: "textures/chars/Lucky Chen - Quartermaster"
+  model: "models/characters/alien-2"
+
+  # Position in the lounge
+  position:
+    x: 150.0
+    y: 0.0
+    z: 100.0
+
+  rotation:
+    yaw: 270.0
+    pitch: 0.0
+    roll: 0.0
+
+  scale: 0.3
+
+  # Camera interaction settings
+  camera_position:
+    x: 135.0
+    y: 20.0
+    z: 100.0
+
+  camera_look_at:
+    x: 150.0
+    y: 10.0
+    z: 100.0
+
+  # Collider dimensions (sitting)
+  collider:
+    width: 15.0
+    height: 30.0
+    depth: 15.0
+
+  # Investigation details
+  public_story: "Doing inventory in Cargo Bay 3"
+  secret: "Dr. Kerrigan's bookie and breturium fence; runs black market side business; supplied the breturium that killed Ambassador (unknowingly); trying to figure out who he sold it to; also selling fake 'authentic Earth antiques'"
+  is_killer: false
+  red_herring: true
+
+# Game configuration
+game_settings:
+  level_scale: 0.5
+  position_scale: 10.0  # Multiply all position values by this
+
+  # Character spawn order
+  spawn_sequence:
+    - bartender  # Always present
+    - pathologist  # Spawns after bartender dialogue
+    - commander_von  # Available after pathologist dialogue
+    - dr_thorne  # Available after pathologist dialogue
+    # Others can be added as game progresses

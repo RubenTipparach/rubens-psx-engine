@@ -26,7 +26,9 @@
       "Bash(dotnet mgcb:*)",
       "Bash(dotnet sln remove:*)",
       "Bash(dotnet add reference:*)",
-      "Bash(dotnet remove reference:*)"
+      "Bash(dotnet remove reference:*)",
+      "Bash(dotnet list:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

@@ -28,6 +28,9 @@ namespace anakinsoft.game.scenes
         CameraTransitionSystem cameraTransitionSystem;
         bool hasPlayedIntro = false;
 
+        // Character selection menu
+        CharacterSelectionMenu characterSelectionMenu;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -42,6 +45,9 @@ namespace anakinsoft.game.scenes
             // Initialize dialogue system
             dialogueSystem = new DialogueSystem();
             cameraTransitionSystem = new CameraTransitionSystem(fpsCamera);
+
+            // Initialize character selection menu
+            characterSelectionMenu = new CharacterSelectionMenu();
 
             // Set up dialogue and camera transition event handlers
             SetupDialogueAndInteractionSystems();
@@ -61,6 +67,17 @@ namespace anakinsoft.game.scenes
                 // Create intro dialogue sequence
                 var introSequence = CreateIntroDialogue();
                 bartender.SetDialogue(introSequence);
+            }
+
+            var pathologist = loungeScene.GetPathologist();
+            if (pathologist != null)
+            {
+                // Set up pathologist dialogue
+                pathologist.OnDialogueTriggered += OnPathologistDialogueTriggered;
+
+                // Create pathologist evidence dialogue
+                var pathologistSequence = CreatePathologistDialogue();
+                pathologist.SetDialogue(pathologistSequence);
             }
 
             // Set up camera transition events
@@ -86,6 +103,18 @@ namespace anakinsoft.game.scenes
                 loungeScene.ClearActiveDialogueCharacter();
                 cameraTransitionSystem.TransitionBackToPlayer(1.0f);
             };
+
+            // Set up character selection menu events
+            characterSelectionMenu.OnCharacterSelected += (character) =>
+            {
+                Console.WriteLine($"Character selected for interrogation: {character.Name}");
+                // TODO: Start interrogation dialogue for selected character
+            };
+
+            characterSelectionMenu.OnMenuClosed += () =>
+            {
+                Console.WriteLine("Character selection menu closed");
+            };
         }
 
         private DialogueSequence CreateIntroDialogue()
@@ -96,8 +125,55 @@ namespace anakinsoft.game.scenes
             sequence.AddLine("Bartender", "The Telirian ambassador is dead. This is no accident.");
             sequence.AddLine("Bartender", "You need to question the suspects and determine motive, means, and opportunity.");
             sequence.AddLine("Bartender", "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.");
-            sequence.AddLine("Bartender", "The pathologist is waiting for you in the medical bay. They have preliminary findings on the body.");
+            sequence.AddLine("Bartender", "I've called the pathologist. They should be arriving at the table shortly with preliminary findings.");
             sequence.AddLine("Bartender", "Time is running out, detective. Good luck.");
+
+            // Spawn pathologist after bartender dialogue completes
+            sequence.OnSequenceComplete = () =>
+            {
+                Console.WriteLine("Bartender dialogue complete - spawning pathologist");
+                loungeScene.SpawnPathologist();
+            };
+
+            return sequence;
+        }
+
+        private DialogueSequence CreatePathologistDialogue()
+        {
+            var sequence = new DialogueSequence("PathologistEvidence");
+
+            // Opening statement (from evidence.md - Dr. Harmon Kerrigan sample dialogue)
+            sequence.AddLine("Dr. Harmon Kerrigan", "Breturium shards? In an injection? That's not murder, Detective, that's a statement.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Whoever did this wanted it personal, painful, and invisible to scanners.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it.");
+
+            // Time of death
+            sequence.AddLine("Dr. Harmon Kerrigan", "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled.");
+
+            // Injection details
+            sequence.AddLine("Dr. Harmon Kerrigan", "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge.");
+
+            // Sedative findings
+            sequence.AddLine("Dr. Harmon Kerrigan", "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill.");
+
+            // The crime scene
+            sequence.AddLine("Dr. Harmon Kerrigan", "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative.");
+
+            // Security findings
+            sequence.AddLine("Dr. Harmon Kerrigan", "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes.");
+
+            // Conclusion and what to do next
+            sequence.AddLine("Dr. Harmon Kerrigan", "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "That's all I have for now, Detective. The rest is up to you. Good luck.");
+
+            // Set up callback for when dialogue ends - show character selection menu
+            sequence.OnSequenceComplete = () =>
+            {
+                Console.WriteLine("Pathologist dialogue complete - showing character selection");
+                characterSelectionMenu.Show();
+            };
 
             return sequence;
         }
@@ -116,14 +192,32 @@ namespace anakinsoft.game.scenes
                     1.0f);
 
                 // Start dialogue when transition is complete
-                cameraTransitionSystem.OnTransitionToInteractionComplete += StartDialogueAfterTransition;
+                cameraTransitionSystem.OnTransitionToInteractionComplete += StartBartenderDialogueAfterTransition;
             }
         }
 
-        private void StartDialogueAfterTransition()
+        private void OnPathologistDialogueTriggered(DialogueSequence sequence)
+        {
+            Console.WriteLine($"Pathologist dialogue triggered: {sequence.SequenceName}");
+
+            // Transition camera to pathologist
+            var pathologist = loungeScene.GetPathologist();
+            if (pathologist != null)
+            {
+                cameraTransitionSystem.TransitionToInteraction(
+                    pathologist.CameraInteractionPosition,
+                    pathologist.CameraInteractionLookAt,
+                    1.0f);
+
+                // Start dialogue when transition is complete
+                cameraTransitionSystem.OnTransitionToInteractionComplete += StartPathologistDialogueAfterTransition;
+            }
+        }
+
+        private void StartBartenderDialogueAfterTransition()
         {
             // Unsubscribe from this event to avoid multiple triggers
-            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartDialogueAfterTransition;
+            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartBartenderDialogueAfterTransition;
 
             var bartender = loungeScene.GetBartender();
             if (bartender?.DialogueSequence != null)
@@ -133,9 +227,29 @@ namespace anakinsoft.game.scenes
             }
         }
 
+        private void StartPathologistDialogueAfterTransition()
+        {
+            // Unsubscribe from this event to avoid multiple triggers
+            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartPathologistDialogueAfterTransition;
+
+            var pathologist = loungeScene.GetPathologist();
+            if (pathologist?.DialogueSequence != null)
+            {
+                loungeScene.SetActiveDialogueCharacter("DrHarmon");
+                dialogueSystem.StartDialogue(pathologist.DialogueSequence);
+            }
+        }
+
         public override void Update(GameTime gameTime)
         {
-            // Update dialogue system first
+            // Update character selection menu first (has highest priority)
+            if (characterSelectionMenu.IsActive)
+            {
+                characterSelectionMenu.Update(gameTime);
+                return; // Don't update other systems while menu is active
+            }
+
+            // Update dialogue system
             if (dialogueSystem.IsActive)
             {
                 dialogueSystem.Update(gameTime);
@@ -232,18 +346,23 @@ namespace anakinsoft.game.scenes
 
         public override void Draw2D(GameTime gameTime)
         {
-            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue)
             var spriteBatch = Globals.screenManager.getSpriteBatch;
+            var font = Globals.fontNTR;
+
+            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue)
             loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, dialogueSystem.IsActive);
 
             // Draw dialogue UI on top
-            if (dialogueSystem.IsActive)
+            if (dialogueSystem.IsActive && font != null)
             {
-                var font = Globals.fontNTR;
-                if (font != null)
-                {
-                    dialogueSystem.Draw(spriteBatch, font);
-                }
+                dialogueSystem.Draw(spriteBatch, font);
+            }
+
+            // Draw character selection menu on top of everything
+            if (characterSelectionMenu.IsActive && font != null)
+            {
+                var portraits = loungeScene.GetCharacterPortraits();
+                characterSelectionMenu.Draw(spriteBatch, font, portraits);
             }
         }
 

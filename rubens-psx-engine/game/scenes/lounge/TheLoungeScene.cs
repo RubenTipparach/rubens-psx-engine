@@ -5,8 +5,6 @@ using anakinsoft.system.physics;
 using anakinsoft.utilities;
 using BepuPhysics;
 using BepuPhysics.Collidables;
-using BepuUtilities;
-using BepuUtilities.Memory;
 using Demos.Demos.Characters;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -14,14 +12,11 @@ using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.entities;
 using rubens_psx_engine.Extensions;
-using rubens_psx_engine.system.config;
 using rubens_psx_engine.system.lighting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Matrix = Microsoft.Xna.Framework.Matrix;
-using Vector3N = System.Numerics.Vector3;
-using BepuPhysics.Trees;
 
 namespace anakinsoft.game.scenes
 {
@@ -31,7 +26,7 @@ namespace anakinsoft.game.scenes
     public class TheLoungeScene : Scene
     {
         // Debug settings
-        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -72,6 +67,15 @@ namespace anakinsoft.game.scenes
         private float bartenderColliderHeight;
         private float bartenderColliderDepth;
         private Vector3 bartenderColliderCenter;
+
+        // Pathologist character (Dr. Harmon Kerrigan)
+        InteractableCharacter pathologistCharacterInteraction;
+        SkinnedRenderingEntity pathologistModel;
+        private float pathologistColliderWidth;
+        private float pathologistColliderHeight;
+        private float pathologistColliderDepth;
+        private Vector3 pathologistColliderCenter;
+        private bool pathologistSpawned = false;
 
         // Intro text state
         private bool showIntroText = true;
@@ -259,6 +263,9 @@ namespace anakinsoft.game.scenes
 
             // Create bartender character
             InitializeBartender();
+
+            // Pathologist will be spawned after bartender dialogue
+            // Don't initialize pathologist here - will be called from TheLoungeScreen after bartender dialogue
         }
 
         private void InitializeBartender()
@@ -315,6 +322,100 @@ namespace anakinsoft.game.scenes
             AddRenderingEntity(bartenderModel);
 
             Console.WriteLine("========================================\n");
+        }
+
+        public void SpawnPathologist()
+        {
+            if (pathologistSpawned)
+            {
+                Console.WriteLine("Pathologist already spawned, skipping...");
+                return;
+            }
+
+            pathologistSpawned = true;
+            InitializePathologist();
+        }
+
+        private void InitializePathologist()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("LOADING PATHOLOGIST CHARACTER (DR. HARMON KERRIGAN)");
+            Console.WriteLine("========================================");
+
+            // Position pathologist at table (left side of lounge)
+            // Using the booth table position from the scene
+            Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f); 
+
+            // Camera interaction position - looking at the pathologist from across the table
+            Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(15, 20, 0);
+            Vector3 cameraLookAt = pathologistPosition + new Vector3(0, 10, 0); // Look at head level
+
+            // Create pathologist interactable
+            pathologistCharacterInteraction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
+                cameraInteractionPosition, cameraLookAt);
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(pathologistCharacterInteraction);
+
+            // Create physics collider for pathologist (sitting, so shorter)
+            CreatePathologistCollider(pathologistPosition);
+
+            Console.WriteLine($"Pathologist created at position: {pathologistPosition}");
+            Console.WriteLine($"Interaction camera position: {cameraInteractionPosition}");
+
+            // Create pathologist model using alien-2 (sitting character)
+            var pathologistMaterial = new UnlitSkinnedMaterial("textures/prototype/grass", "shaders/surface/SkinnedVertexLit", useDefault: false);
+            pathologistMaterial.AmbientColor = new Vector3(0.1f, 0.1f, 0.2f);
+            pathologistMaterial.EmissiveColor = new Vector3(0.1f, 0.1f, 0.2f);
+            pathologistMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, -0.5f));
+            pathologistMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
+            pathologistMaterial.LightIntensity = 0.9f;
+
+            pathologistModel = new SkinnedRenderingEntity("models/characters/alien-2", pathologistMaterial);
+            pathologistModel.Position = pathologistPosition;
+            pathologistModel.Scale = Vector3.One * 0.25f * LevelScale; // Slightly larger for sitting pose
+            pathologistModel.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0); // Face towards camera
+            pathologistModel.IsVisible = true;
+
+            // Play idle animation
+            if (pathologistModel is SkinnedRenderingEntity skinnedPathologist)
+            {
+                var skinData = skinnedPathologist.GetSkinningData();
+                if (skinData != null && skinData.AnimationClips.Count > 0)
+                {
+                    var firstClipName = skinData.AnimationClips.Keys.First();
+                    skinnedPathologist.PlayAnimation(firstClipName, loop: true);
+                }
+            }
+
+            AddRenderingEntity(pathologistModel);
+
+            Console.WriteLine("========================================\n");
+        }
+
+        private void CreatePathologistCollider(Vector3 position)
+        {
+            // Create a box collider for the pathologist (sitting, so shorter)
+            pathologistColliderWidth = 15f * LevelScale;
+            pathologistColliderHeight = 30f * LevelScale; // Sitting height
+            pathologistColliderDepth = 15f * LevelScale;
+
+            var boxShape = new Box(pathologistColliderWidth, pathologistColliderHeight, pathologistColliderDepth);
+            var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
+
+            // Move the collider up so the bottom touches the floor
+            pathologistColliderCenter = position + new Vector3(0, pathologistColliderHeight / 2f, 0);
+
+            // Create static body at adjusted position
+            var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
+                pathologistColliderCenter.ToVector3N(),
+                Quaternion.Identity.ToQuaternionN(),
+                shapeIndex));
+
+            // Store the static handle in the pathologist for interaction detection
+            pathologistCharacterInteraction.SetStaticHandle(staticHandle);
+
+            Console.WriteLine($"Created pathologist physics collider at {pathologistColliderCenter} (size: {pathologistColliderWidth}x{pathologistColliderHeight}x{pathologistColliderDepth})");
         }
 
         private void CreateBartenderCollider(Vector3 position)
@@ -623,7 +724,13 @@ namespace anakinsoft.game.scenes
                     // Track hovered character for portrait display
                     if (interactionSystem?.CurrentTarget is InteractableCharacter hoveredChar)
                     {
-                        hoveredCharacter = "NPC_Bartender"; // Match the key from characterPortraits dictionary
+                        // Map the character to their portrait key
+                        if (hoveredChar == bartenderCharacterInteraction)
+                            hoveredCharacter = "NPC_Bartender";
+                        else if (pathologistSpawned && hoveredChar == pathologistCharacterInteraction)
+                            hoveredCharacter = "DrHarmon";
+                        else
+                            hoveredCharacter = null;
                     }
                     else
                     {
@@ -715,8 +822,20 @@ namespace anakinsoft.game.scenes
                     DrawAlienWireframe(gameTime, camera); // Reuse the same method
                 }
 
+                // Draw pathologist character wireframe (only if spawned)
+                if (pathologistSpawned && pathologistModel != null && pathologistModel.IsVisible)
+                {
+                    DrawAlienWireframe(gameTime, camera); // Reuse the same method
+                }
+
                 // Draw bartender collider box
                 DrawBartenderCollider(camera);
+
+                // Draw pathologist collider box (only if spawned)
+                if (pathologistSpawned)
+                {
+                    DrawPathologistCollider(camera);
+                }
 
                 // Draw interaction camera positions
                 DrawInteractionDebugVisualization(camera);
@@ -1251,6 +1370,33 @@ namespace anakinsoft.game.scenes
         }
 
         /// <summary>
+        /// Draws the pathologist's interaction collider box
+        /// </summary>
+        private void DrawPathologistCollider(Camera camera)
+        {
+            if (pathologistCharacterInteraction == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Check if pathologist is being targeted
+            bool isTargeted = interactionSystem?.CurrentTarget == pathologistCharacterInteraction;
+            Color colliderColor = isTargeted ? Color.Yellow : Color.Magenta;
+
+            // Use the exact same dimensions and position as the physics collider
+            DrawDebugBox(pathologistColliderCenter, pathologistColliderWidth, pathologistColliderHeight,
+                pathologistColliderDepth, colliderColor, basicEffect, graphicsDevice);
+
+            basicEffect.Dispose();
+        }
+
+        /// <summary>
         /// Draws a debug box wireframe
         /// </summary>
         private void DrawDebugBox(Vector3 center, float width, float height, float depth, Color color, BasicEffect effect, GraphicsDevice graphicsDevice)
@@ -1444,8 +1590,10 @@ namespace anakinsoft.game.scenes
         public CharacterInput? GetCharacter() => character;
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
         public InteractableCharacter GetBartender() => bartenderCharacterInteraction;
+        public InteractableCharacter GetPathologist() => pathologistCharacterInteraction;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => showIntroText;
+        public Dictionary<string, Texture2D> GetCharacterPortraits() => characterPortraits;
 
         public void SetActiveDialogueCharacter(string characterKey)
         {
