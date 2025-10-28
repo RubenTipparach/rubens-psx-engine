@@ -17,7 +17,7 @@ dither:
   strength: 1.0
   
   # Color quantization levels (lower = fewer colors, more retro)
-  colorLevels: 10.0
+  colorLevels: 20.0
   
   # Whether to use point sampling (pixelated) or linear sampling
   usePointSampling: true

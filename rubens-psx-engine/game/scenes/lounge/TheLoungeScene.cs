@@ -22,10 +22,21 @@ namespace anakinsoft.game.scenes
 {
     /// <summary>
     /// The Lounge scene with models from models/lounge and first person controller
+    ///
+    /// TODO: Refactor mesh loading code into LoungeSceneMeshLoader
+    /// TODO: Move CreateStaticMesh() and related physics mesh code to mesh loader
+    /// TODO: Move debug wireframe drawing (DrawDebugBox, DrawDebugSphere, DrawEvidenceTableGrid) to mesh loader
+    /// TODO: Move physics collision mesh data (meshTriangleVertices, staticMeshTransforms) to dedicated physics class
+    /// TODO: Consider breaking scene into smaller focused components:
+    ///       - LoungeVisualSetup (rendering/meshes)
+    ///       - LoungePhysicsSetup (collision)
+    ///       - LoungeCharacterSetup (NPCs, already partially done with LoungeCharacterManager)
+    ///       - LoungeInteractionSetup (items, evidence table)
     /// </summary>
     public class TheLoungeScene : Scene
     {
         // Debug settings
+        // TODO: Move to LoungeSceneMeshLoader or debug helper class
         public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
@@ -76,6 +87,16 @@ namespace anakinsoft.game.scenes
         private float pathologistColliderDepth;
         private Vector3 pathologistColliderCenter;
         private bool pathologistSpawned = false;
+
+        // Evidence vial item
+        InteractableItem evidenceVial;
+
+        // Evidence table system
+        EvidenceTable evidenceTable;
+
+        // Crime scene file
+        CrimeSceneFile crimeSceneFile;
+        RenderingEntity crimeSceneFileVisual; // Cube placeholder for the file
 
         // Intro text state
         private bool showIntroText = true;
@@ -264,6 +285,15 @@ namespace anakinsoft.game.scenes
             // Create bartender character
             InitializeBartender();
 
+            // Initialize evidence table system
+            InitializeEvidenceTable();
+
+            // Create evidence vial item
+            InitializeEvidenceVial();
+
+            // Create crime scene file on table
+            InitializeCrimeSceneFile();
+
             // Pathologist will be spawned after bartender dialogue
             // Don't initialize pathologist here - will be called from TheLoungeScreen after bartender dialogue
         }
@@ -441,6 +471,115 @@ namespace anakinsoft.game.scenes
             bartenderCharacterInteraction.SetStaticHandle(staticHandle);
 
             Console.WriteLine($"Created bartender physics collider at {bartenderColliderCenter} (size: {bartenderColliderWidth}x{bartenderColliderHeight}x{bartenderColliderDepth})");
+        }
+
+        private void InitializeEvidenceTable()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("INITIALIZING EVIDENCE TABLE");
+            Console.WriteLine("========================================");
+
+            // Define table area near pathologist's location
+            // Table center positioned on the left side of the lounge
+            Vector3 tableCenter = new Vector3(-9.5f, 12f, 28f); // Same general area as pathologist
+            Vector3 tableSize = new Vector3(20f, 2f, 15f); // 20 units wide, 15 units deep
+
+            // Create 3x3 grid (9 slots for evidence items)
+            // This gives us organized positions for:
+            // - Crime scene file (center)
+            // - Evidence items (surrounding slots)
+            // - Future collectibles
+            evidenceTable = new EvidenceTable(tableCenter, tableSize, 3, 3);
+
+            Console.WriteLine($"Evidence table created at {tableCenter}");
+            Console.WriteLine($"Table size: {tableSize.X}x{tableSize.Z}, Grid: 3x3 (9 slots)");
+            Console.WriteLine("========================================\n");
+        }
+
+        private void InitializeEvidenceVial()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("CREATING EVIDENCE VIAL ITEM");
+            Console.WriteLine("========================================");
+
+            // Position vial on the bar counter near the bartender
+            Vector3 vialPosition = new Vector3(20, 12, -25); // On bar counter
+
+            // Camera interaction position - look at the vial
+            Vector3 cameraInteractionPosition = new Vector3(20, 15, -10);
+            Vector3 cameraLookAt = vialPosition;
+
+            // Create inventory item data
+            var vialItem = new InventoryItem(
+                id: "evidence_vial",
+                name: "Evidence Vial",
+                description: "A small vial containing trace amounts of breturium - the substance used to kill the ambassador."
+            );
+
+            // Create interactable item
+            evidenceVial = new InteractableItem(
+                "Evidence Vial",
+                vialPosition,
+                cameraInteractionPosition,
+                cameraLookAt,
+                vialItem
+            );
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(evidenceVial);
+
+            Console.WriteLine($"Evidence vial created at position: {vialPosition}");
+            Console.WriteLine("========================================\n");
+        }
+
+        private void InitializeCrimeSceneFile()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("CREATING CRIME SCENE FILE");
+            Console.WriteLine("========================================");
+
+            // Place crime scene file in center slot of evidence table (slot [1,1])
+            // Grid layout (3x3):
+            // [0,0] [0,1] [0,2]
+            // [1,0] [1,1] [1,2]  <- Center slot [1,1] for crime scene file
+            // [2,0] [2,1] [2,2]
+            Vector3 filePosition = evidenceTable.GetSlotPosition(1, 1); // Center of 3x3 grid
+
+            // Create crime scene file interactable
+            crimeSceneFile = new CrimeSceneFile(
+                "Suspects File",
+                filePosition
+            );
+
+            // Register file with evidence table
+            evidenceTable.PlaceItem("crime_scene_file", 1, 1, crimeSceneFile);
+
+            // Initialize with all suspect entries (empty transcripts until interviewed)
+            crimeSceneFile.AddTranscript("Bartender Zix", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Dr. Harmon Kerrigan", "Chief Medical Officer - performed the autopsy.", false);
+            crimeSceneFile.AddTranscript("Commander Sylar Von", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Lt. Marcus Webb", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Ensign Tork", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Chief Kala Solis", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Maven Kilroth", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Tehvora", "Not yet interviewed.", false);
+            crimeSceneFile.AddTranscript("Lucky Chen", "Not yet interviewed.", false);
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(crimeSceneFile);
+
+            // Create visual placeholder (cube) - 90% smaller for a small file/tablet appearance
+            var fileMaterial = new UnlitMaterial("textures/prototype/concrete");
+            crimeSceneFileVisual = new RenderingEntity("models/cube", "textures/prototype/concrete");
+            crimeSceneFileVisual.Position = filePosition;
+            crimeSceneFileVisual.Scale = new Vector3(0.3f, 0.05f, 0.2f) * LevelScale; // 90% smaller - small tablet/file size
+            crimeSceneFileVisual.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0);
+            crimeSceneFileVisual.IsVisible = true;
+
+            AddRenderingEntity(crimeSceneFileVisual);
+
+            Console.WriteLine($"Crime scene file created at position: {filePosition}");
+            Console.WriteLine("========================================\n");
         }
 
         private void InitializeCharacterPortraits()
@@ -1498,6 +1637,9 @@ namespace anakinsoft.game.scenes
             // Draw sphere at look-at position (Magenta)
             DrawDebugSphere(bartenderCharacterInteraction.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
 
+            // Draw evidence table grid
+            DrawEvidenceTableGrid(vertices);
+
             if (vertices.Count > 0)
             {
                 try
@@ -1585,12 +1727,116 @@ namespace anakinsoft.game.scenes
             }
         }
 
+        /// <summary>
+        /// Draw evidence table grid for debugging
+        /// </summary>
+        private void DrawEvidenceTableGrid(List<VertexPositionColor> vertices)
+        {
+            if (evidenceTable == null)
+                return;
+
+            var slots = evidenceTable.GetAllSlots();
+            int rows = evidenceTable.GridRows;
+            int cols = evidenceTable.GridColumns;
+
+            // Draw grid lines and slot markers
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    var slot = slots[row, col];
+                    Vector3 pos = slot.Position;
+                    Vector3 size = slot.Size;
+
+                    // Determine color based on occupancy
+                    Color slotColor = slot.IsOccupied ? Color.Red : Color.Green;
+
+                    // Draw slot boundary as a box outline
+                    float halfWidth = size.X / 2f;
+                    float halfDepth = size.Z / 2f;
+                    float y = pos.Y;
+
+                    // Bottom rectangle (at table surface)
+                    Vector3 bl = new Vector3(pos.X - halfWidth, y, pos.Z - halfDepth); // Bottom-left
+                    Vector3 br = new Vector3(pos.X + halfWidth, y, pos.Z - halfDepth); // Bottom-right
+                    Vector3 tl = new Vector3(pos.X - halfWidth, y, pos.Z + halfDepth); // Top-left
+                    Vector3 tr = new Vector3(pos.X + halfWidth, y, pos.Z + halfDepth); // Top-right
+
+                    // Draw rectangle edges
+                    vertices.Add(new VertexPositionColor(bl, slotColor));
+                    vertices.Add(new VertexPositionColor(br, slotColor));
+
+                    vertices.Add(new VertexPositionColor(br, slotColor));
+                    vertices.Add(new VertexPositionColor(tr, slotColor));
+
+                    vertices.Add(new VertexPositionColor(tr, slotColor));
+                    vertices.Add(new VertexPositionColor(tl, slotColor));
+
+                    vertices.Add(new VertexPositionColor(tl, slotColor));
+                    vertices.Add(new VertexPositionColor(bl, slotColor));
+
+                    // Draw center marker (small cross)
+                    float markerSize = 2f;
+                    vertices.Add(new VertexPositionColor(pos + new Vector3(-markerSize, 0, 0), Color.Yellow));
+                    vertices.Add(new VertexPositionColor(pos + new Vector3(markerSize, 0, 0), Color.Yellow));
+
+                    vertices.Add(new VertexPositionColor(pos + new Vector3(0, 0, -markerSize), Color.Yellow));
+                    vertices.Add(new VertexPositionColor(pos + new Vector3(0, 0, markerSize), Color.Yellow));
+                }
+            }
+
+            // Draw table boundary
+            var tableBounds = evidenceTable.GetTableBounds();
+            DrawDebugBox(evidenceTable.TableCenter, evidenceTable.TableSize.X, evidenceTable.TableSize.Y,
+                evidenceTable.TableSize.Z, Color.Cyan, null, null, vertices);
+        }
+
+        /// <summary>
+        /// Overload DrawDebugBox to work with vertex list for grid drawing
+        /// </summary>
+        private void DrawDebugBox(Vector3 center, float width, float height, float depth, Color color,
+            BasicEffect effect, GraphicsDevice graphicsDevice, List<VertexPositionColor> vertices)
+        {
+            float halfWidth = width / 2f;
+            float halfHeight = height / 2f;
+            float halfDepth = depth / 2f;
+
+            // Define 8 corners of the box
+            Vector3[] corners = new Vector3[8];
+            corners[0] = center + new Vector3(-halfWidth, -halfHeight, -halfDepth);
+            corners[1] = center + new Vector3(halfWidth, -halfHeight, -halfDepth);
+            corners[2] = center + new Vector3(halfWidth, halfHeight, -halfDepth);
+            corners[3] = center + new Vector3(-halfWidth, halfHeight, -halfDepth);
+            corners[4] = center + new Vector3(-halfWidth, -halfHeight, halfDepth);
+            corners[5] = center + new Vector3(halfWidth, -halfHeight, halfDepth);
+            corners[6] = center + new Vector3(halfWidth, halfHeight, halfDepth);
+            corners[7] = center + new Vector3(-halfWidth, halfHeight, halfDepth);
+
+            // Define the 12 edges of the box
+            int[][] edges = new int[][]
+            {
+                new int[] {0, 1}, new int[] {1, 2}, new int[] {2, 3}, new int[] {3, 0}, // Bottom face
+                new int[] {4, 5}, new int[] {5, 6}, new int[] {6, 7}, new int[] {7, 4}, // Top face
+                new int[] {0, 4}, new int[] {1, 5}, new int[] {2, 6}, new int[] {3, 7}  // Vertical edges
+            };
+
+            // Add edges to vertex list
+            foreach (var edge in edges)
+            {
+                vertices.Add(new VertexPositionColor(corners[edge[0]], color));
+                vertices.Add(new VertexPositionColor(corners[edge[1]], color));
+            }
+        }
+
         // Utility methods for external access
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
         public InteractableCharacter GetBartender() => bartenderCharacterInteraction;
         public InteractableCharacter GetPathologist() => pathologistCharacterInteraction;
+        public InteractableItem GetEvidenceVial() => evidenceVial;
+        public CrimeSceneFile GetCrimeSceneFile() => crimeSceneFile;
+        public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => showIntroText;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => characterPortraits;

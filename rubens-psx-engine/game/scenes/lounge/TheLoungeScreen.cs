@@ -6,6 +6,7 @@ using rubens_psx_engine;
 using rubens_psx_engine.system;
 using anakinsoft.system;
 using System;
+using System.Collections.Generic;
 
 namespace anakinsoft.game.scenes
 {
@@ -31,6 +32,16 @@ namespace anakinsoft.game.scenes
         // Character selection menu
         CharacterSelectionMenu characterSelectionMenu;
 
+        // Game progress tracker
+        LoungeGameProgress gameProgress;
+
+        // Inventory and dialogue choices
+        LoungeInventory inventory;
+        DialogueChoiceSystem dialogueChoiceSystem;
+
+        // Transcript review system
+        TranscriptReviewUI transcriptReviewUI;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -49,8 +60,22 @@ namespace anakinsoft.game.scenes
             // Initialize character selection menu
             characterSelectionMenu = new CharacterSelectionMenu();
 
+            // Initialize game progress tracker
+            gameProgress = new LoungeGameProgress();
+
+            // Initialize inventory and dialogue choices
+            inventory = new LoungeInventory();
+            dialogueChoiceSystem = new DialogueChoiceSystem();
+            transcriptReviewUI = new TranscriptReviewUI();
+
             // Set up dialogue and camera transition event handlers
             SetupDialogueAndInteractionSystems();
+
+            // Set up evidence vial item collection
+            SetupEvidenceVial();
+
+            // Set up crime scene file interaction
+            SetupCrimeSceneFile();
 
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
@@ -69,16 +94,8 @@ namespace anakinsoft.game.scenes
                 bartender.SetDialogue(introSequence);
             }
 
-            var pathologist = loungeScene.GetPathologist();
-            if (pathologist != null)
-            {
-                // Set up pathologist dialogue
-                pathologist.OnDialogueTriggered += OnPathologistDialogueTriggered;
-
-                // Create pathologist evidence dialogue
-                var pathologistSequence = CreatePathologistDialogue();
-                pathologist.SetDialogue(pathologistSequence);
-            }
+            // Pathologist dialogue will be set up after spawning (in SetupPathologistDialogue)
+            // because pathologist doesn't exist at initialization time
 
             // Set up camera transition events
             cameraTransitionSystem.OnTransitionToInteractionComplete += () =>
@@ -117,23 +134,87 @@ namespace anakinsoft.game.scenes
             };
         }
 
+        private void SetupEvidenceVial()
+        {
+            var vial = loungeScene.GetEvidenceVial();
+            if (vial != null)
+            {
+                vial.OnItemCollected += (item) =>
+                {
+                    Console.WriteLine($"Collected item: {item.Item.Name}");
+                    inventory.PickUpItem(item.Item);
+                };
+            }
+        }
+
+        private void SetupCrimeSceneFile()
+        {
+            var file = loungeScene.GetCrimeSceneFile();
+            if (file != null)
+            {
+                file.OnFileOpened += (crimeFile) =>
+                {
+                    Console.WriteLine("Opening crime scene file");
+                    transcriptReviewUI.Open(crimeFile);
+                };
+            }
+        }
+
+        private void SetupPathologistDialogue()
+        {
+            var pathologist = loungeScene.GetPathologist();
+            if (pathologist != null)
+            {
+                Console.WriteLine("Setting up pathologist dialogue");
+
+                // Set up pathologist dialogue
+                pathologist.OnDialogueTriggered += OnPathologistDialogueTriggered;
+
+                // Create pathologist evidence dialogue
+                var pathologistSequence = CreatePathologistDialogue();
+                pathologist.SetDialogue(pathologistSequence);
+            }
+            else
+            {
+                Console.WriteLine("ERROR: Pathologist not found when setting up dialogue");
+            }
+        }
+
         private DialogueSequence CreateIntroDialogue()
         {
             var sequence = new DialogueSequence("BartenderIntro");
 
-            sequence.AddLine("Bartender", "Welcome to the Lounge. You are a detective on board the UEFS Marron.");
-            sequence.AddLine("Bartender", "The Telirian ambassador is dead. This is no accident.");
-            sequence.AddLine("Bartender", "You need to question the suspects and determine motive, means, and opportunity.");
-            sequence.AddLine("Bartender", "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.");
-            sequence.AddLine("Bartender", "I've called the pathologist. They should be arriving at the table shortly with preliminary findings.");
-            sequence.AddLine("Bartender", "Time is running out, detective. Good luck.");
-
-            // Spawn pathologist after bartender dialogue completes
-            sequence.OnSequenceComplete = () =>
+            // Check if player has already gotten the intro
+            if (gameProgress.HasTalkedToBartender)
             {
-                Console.WriteLine("Bartender dialogue complete - spawning pathologist");
-                loungeScene.SpawnPathologist();
-            };
+                // Shortened dialogue - just reminder to talk to Dr. Harmon
+                sequence.AddLine("Bartender", "Go talk to Dr. Harmon, he's got the autopsy and evidence reports to go over with you.");
+            }
+            else
+            {
+                // Full intro dialogue (first time)
+                sequence.AddLine("Bartender", "Welcome to the Lounge. You are a detective on board the UEFS Marron.");
+                sequence.AddLine("Bartender", "The Telirian ambassador is dead. This is no accident.");
+                sequence.AddLine("Bartender", "You need to question the suspects and determine motive, means, and opportunity.");
+                sequence.AddLine("Bartender", "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.");
+                sequence.AddLine("Bartender", "I've called the pathologist. They should be arriving at the table shortly with preliminary findings.");
+                sequence.AddLine("Bartender", "Time is running out, detective. Good luck.");
+
+                // Mark intro as complete
+                sequence.OnSequenceComplete = () =>
+                {
+                    Console.WriteLine("Bartender intro dialogue complete - marking as seen and spawning pathologist");
+                    gameProgress.HasTalkedToBartender = true;
+                    gameProgress.HasSeenIntro = true;
+                    gameProgress.PathologistSpawned = true;
+                    loungeScene.SpawnPathologist();
+
+                    // Set up pathologist dialogue after spawning
+                    SetupPathologistDialogue();
+
+                    gameProgress.LogProgress();
+                };
+            }
 
             return sequence;
         }
@@ -141,6 +222,61 @@ namespace anakinsoft.game.scenes
         private DialogueSequence CreatePathologistDialogue()
         {
             var sequence = new DialogueSequence("PathologistEvidence");
+
+            // Check if player has the vial
+            if (!inventory.HasItemById("evidence_vial"))
+            {
+                // Intro: Set up the crime scene and tutorial
+                sequence.AddLine("Dr. Harmon Kerrigan", "Detective. I'm Dr. Harmon Kerrigan, Chief Medical Officer.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "Ambassador Telir was found dead in his quarters at 0300 hours this morning.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "The body shows signs of a sophisticated assassination - breturium poisoning via injection.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "This wasn't a crime of passion. Someone planned this carefully.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "I've compiled a suspects file on the table here. It contains everyone with access to that section of the ship.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "You'll be able to review interview transcripts as you question people.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "But first, I need to teach you how to gather and present evidence properly.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "See that vial on the bar counter? Go pick it up. You can only carry one item at a time.");
+                sequence.AddLine("Dr. Harmon Kerrigan", "Bring it back to me so I can show you how to present evidence during interrogations.");
+
+                return sequence;
+            }
+
+            // Player has the vial - ask if they want to show it
+            sequence.AddLine("Dr. Harmon Kerrigan", "Ah, you have the vial. Good.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "When talking to suspects, you'll be able to present evidence. Let's practice.");
+
+            // This will trigger dialogue choices
+            sequence.OnSequenceComplete = () =>
+            {
+                ShowItemConfirmation();
+            };
+
+            return sequence;
+        }
+
+        /// <summary>
+        /// Show dialogue choice to present item or not
+        /// </summary>
+        private void ShowItemConfirmation()
+        {
+            var choices = new List<DialogueOption>
+            {
+                new DialogueOption($"Show {inventory.CurrentItem.Name}", () => PresentEvidenceToPathologist()),
+                new DialogueOption("Don't show anything", () => PathologistNoEvidence()),
+                new DialogueOption("Say something else", () => PathologistSmallTalk())
+            };
+
+            dialogueChoiceSystem.ShowChoices("What do you want to do?", choices);
+        }
+
+        /// <summary>
+        /// Player presents the vial to pathologist
+        /// </summary>
+        private void PresentEvidenceToPathologist()
+        {
+            var sequence = new DialogueSequence("PathologistVialResponse");
+
+            sequence.AddLine("Dr. Harmon Kerrigan", "Perfect! This is exactly the kind of evidence you'll need to gather.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Now, let me brief you on what we found at the crime scene...");
 
             // Opening statement (from evidence.md - Dr. Harmon Kerrigan sample dialogue)
             sequence.AddLine("Dr. Harmon Kerrigan", "Breturium shards? In an injection? That's not murder, Detective, that's a statement.");
@@ -172,10 +308,89 @@ namespace anakinsoft.game.scenes
             sequence.OnSequenceComplete = () =>
             {
                 Console.WriteLine("Pathologist dialogue complete - showing character selection");
+                gameProgress.HasTalkedToPathologist = true;
+                gameProgress.CanInterrogate = true;
                 characterSelectionMenu.Show();
+                gameProgress.LogProgress();
             };
 
-            return sequence;
+            dialogueSystem.StartDialogue(sequence);
+        }
+
+        /// <summary>
+        /// Player chooses not to show evidence
+        /// </summary>
+        private void PathologistNoEvidence()
+        {
+            var sequence = new DialogueSequence("PathologistNoEvidence");
+
+            sequence.AddLine("Dr. Harmon Kerrigan", "Keeping your cards close to your chest? I respect that.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "But you'll need to start gathering and presenting evidence if you want to solve this case.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Now, let me tell you what we found...");
+
+            // Continue with same evidence briefing
+            AddEvidenceBriefingLines(sequence);
+
+            dialogueSystem.StartDialogue(sequence);
+        }
+
+        /// <summary>
+        /// Player chooses small talk option
+        /// </summary>
+        private void PathologistSmallTalk()
+        {
+            var sequence = new DialogueSequence("PathologistSmallTalk");
+
+            sequence.AddLine("Dr. Harmon Kerrigan", "Detective, we don't have time for pleasantries.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "The Telirians will be here in hours, and we need answers.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Let me brief you on what we know...");
+
+            // Continue with same evidence briefing
+            AddEvidenceBriefingLines(sequence);
+
+            dialogueSystem.StartDialogue(sequence);
+        }
+
+        /// <summary>
+        /// Add all the evidence briefing lines (reusable across branches)
+        /// </summary>
+        private void AddEvidenceBriefingLines(DialogueSequence sequence)
+        {
+            // Opening statement
+            sequence.AddLine("Dr. Harmon Kerrigan", "Breturium shards? In an injection? That's not murder, Detective, that's a statement.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Whoever did this wanted it personal, painful, and invisible to scanners.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it.");
+
+            // Time of death
+            sequence.AddLine("Dr. Harmon Kerrigan", "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled.");
+
+            // Injection details
+            sequence.AddLine("Dr. Harmon Kerrigan", "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge.");
+
+            // Sedative findings
+            sequence.AddLine("Dr. Harmon Kerrigan", "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill.");
+
+            // The crime scene
+            sequence.AddLine("Dr. Harmon Kerrigan", "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative.");
+
+            // Security findings
+            sequence.AddLine("Dr. Harmon Kerrigan", "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes.");
+
+            // Conclusion
+            sequence.AddLine("Dr. Harmon Kerrigan", "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs.");
+            sequence.AddLine("Dr. Harmon Kerrigan", "That's all I have for now, Detective. The rest is up to you. Good luck.");
+
+            // Mark progression
+            sequence.OnSequenceComplete = () =>
+            {
+                Console.WriteLine("Pathologist dialogue complete - showing character selection");
+                gameProgress.HasTalkedToPathologist = true;
+                gameProgress.CanInterrogate = true;
+                characterSelectionMenu.Show();
+                gameProgress.LogProgress();
+            };
         }
 
         private void OnBartenderDialogueTriggered(DialogueSequence sequence)
@@ -242,11 +457,25 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            // Update character selection menu first (has highest priority)
+            // Update transcript review UI first (highest priority when open)
+            if (transcriptReviewUI.IsActive)
+            {
+                transcriptReviewUI.Update(gameTime);
+                return; // Don't update other systems while reviewing transcripts
+            }
+
+            // Update character selection menu (has highest priority after transcript UI)
             if (characterSelectionMenu.IsActive)
             {
                 characterSelectionMenu.Update(gameTime);
                 return; // Don't update other systems while menu is active
+            }
+
+            // Update dialogue choice system (higher priority than regular dialogue)
+            if (dialogueChoiceSystem.IsActive)
+            {
+                dialogueChoiceSystem.Update(gameTime);
+                return; // Don't update other systems while making a choice
             }
 
             // Update dialogue system
@@ -256,7 +485,7 @@ namespace anakinsoft.game.scenes
             }
 
             // Update scene with camera for character movement (pass dialogue active state to disable interactions)
-            loungeScene.UpdateWithCamera(gameTime, fpsCamera, dialogueSystem.IsActive);
+            loungeScene.UpdateWithCamera(gameTime, fpsCamera, dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || transcriptReviewUI.IsActive);
 
             // Update camera transition system
             cameraTransitionSystem.Update(gameTime);
@@ -350,7 +579,7 @@ namespace anakinsoft.game.scenes
             var font = Globals.fontNTR;
 
             // Draw UI (pass dialogue active state to hide interaction prompts during dialogue)
-            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, dialogueSystem.IsActive);
+            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, dialogueSystem.IsActive || dialogueChoiceSystem.IsActive);
 
             // Draw dialogue UI on top
             if (dialogueSystem.IsActive && font != null)
@@ -358,11 +587,40 @@ namespace anakinsoft.game.scenes
                 dialogueSystem.Draw(spriteBatch, font);
             }
 
-            // Draw character selection menu on top of everything
+            // Draw dialogue choice UI
+            if (dialogueChoiceSystem.IsActive && font != null)
+            {
+                dialogueChoiceSystem.Draw(spriteBatch, font);
+            }
+
+            // Draw inventory at bottom of screen
+            if (inventory.HasItem && font != null && !transcriptReviewUI.IsActive)
+            {
+                var viewport = Globals.screenManager.GraphicsDevice.Viewport;
+                string inventoryText = inventory.GetDisplayText();
+                Vector2 textSize = font.MeasureString(inventoryText);
+                Vector2 position = new Vector2(
+                    (viewport.Width - textSize.X) / 2,
+                    viewport.Height - textSize.Y - 20
+                );
+
+                // Draw shadow
+                spriteBatch.DrawString(font, inventoryText, position + new Vector2(2, 2), Color.Black);
+                // Draw text
+                spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
+            }
+
+            // Draw character selection menu
             if (characterSelectionMenu.IsActive && font != null)
             {
                 var portraits = loungeScene.GetCharacterPortraits();
                 characterSelectionMenu.Draw(spriteBatch, font, portraits);
+            }
+
+            // Draw transcript review UI on top of everything
+            if (transcriptReviewUI.IsActive && font != null)
+            {
+                transcriptReviewUI.Draw(spriteBatch, font);
             }
         }
 

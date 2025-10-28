@@ -28,7 +28,8 @@
       "Bash(dotnet add reference:*)",
       "Bash(dotnet remove reference:*)",
       "Bash(dotnet list:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(Select-String -Pattern \"error|Build succeeded|Build FAILED\")"
     ],
     "deny": [],
     "ask": []
