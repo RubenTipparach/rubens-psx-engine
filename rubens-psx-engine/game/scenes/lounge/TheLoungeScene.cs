@@ -69,24 +69,18 @@ namespace anakinsoft.game.scenes
         // Interaction system
         InteractionSystem interactionSystem;
 
-        // Bartender character
-        InteractableCharacter bartenderCharacterInteraction;
-        SkinnedRenderingEntity bartenderModel;
+        // Characters
+        private LoungeCharacterData bartender;
+        private LoungeCharacterData pathologist;
 
-        // Bartender collider dimensions (shared between physics and debug visualization)
-        private float bartenderColliderWidth;
-        private float bartenderColliderHeight;
-        private float bartenderColliderDepth;
-        private Vector3 bartenderColliderCenter;
+        // Debug visualizer
+        private LoungeDebugVisualizer debugVisualizer;
 
-        // Pathologist character (Dr. Harmon Kerrigan)
-        InteractableCharacter pathologistCharacterInteraction;
-        SkinnedRenderingEntity pathologistModel;
-        private float pathologistColliderWidth;
-        private float pathologistColliderHeight;
-        private float pathologistColliderDepth;
-        private Vector3 pathologistColliderCenter;
-        private bool pathologistSpawned = false;
+        // UI Manager
+        private LoungeUIManager uiManager;
+
+        // Starfield
+        private LoungeStarfield starfield;
 
         // Evidence vial item
         InteractableItem evidenceVial;
@@ -97,42 +91,6 @@ namespace anakinsoft.game.scenes
         // Crime scene file
         CrimeSceneFile crimeSceneFile;
         RenderingEntity crimeSceneFileVisual; // Cube placeholder for the file
-
-        // Intro text state
-        private bool showIntroText = true;
-        private float introTextTimer = 0f;
-        private const float IntroTextDuration = 4.0f; // Show for 8 seconds
-        private const string IntroText = "Welcome to the Lounge. You are a detective on board the UEFS Marron. The Telirian ambassador is dead. Question the suspects, determine motive, means, and opportunity. Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war.";
-
-        // Intro text teletype effect
-        private float introTeletypeTimer = 0f;
-        private int introVisibleCharacters = 0;
-        private const float IntroCharactersPerSecond = 30f;
-        private bool introTeletypeComplete = false;
-        private KeyboardState previousKeyboardState;
-
-        // Character profiles (portraits)
-        private Dictionary<string, Texture2D> characterPortraits;
-        private string hoveredCharacter = null;
-        private string activeDialogueCharacter = null;
-        private Texture2D portraitFrame;
-
-        // Starfield
-        private struct Star
-        {
-            public Vector3 Position;
-            public Color Color;
-            public float Depth; // 0 = farthest, 1 = closest
-            public float Speed; // Movement speed based on depth
-        }
-        private List<Star> stars;
-        private const int StarCount = 1000;
-        private const float StarfieldZStart = 8000f; // Stars spawn here (front)
-        private const float StarfieldZEnd = -200f; // Stars despawn here (far back)
-        private const float StarfieldRadius = 2000f; // Large radius to extend beyond lounge geometry
-        private const float StarfieldMinRadius = 100f; // Exclude center area to avoid lounge geometry
-        private const float StarLineLength = 500.0f; // 3 meter streak length (3x longer)
-        private const float StarBaseSpeed = 2000f; // Base movement speed in units/second
 
         public TheLoungeScene() : base()
         {
@@ -147,9 +105,12 @@ namespace anakinsoft.game.scenes
             // Initialize interaction system
             interactionSystem = new InteractionSystem(physicsSystem);
 
-            // Initialize starfield
-            stars = new List<Star>();
-            InitializeStarfield();
+            // Initialize managers
+            bartender = new LoungeCharacterData("Bartender Zix");
+            pathologist = new LoungeCharacterData("Dr. Harmon Kerrigan");
+            debugVisualizer = new LoungeDebugVisualizer();
+            uiManager = new LoungeUIManager();
+            starfield = new LoungeStarfield();
 
             // Set black background for lounge scene
             BackgroundColor = Color.Black;
@@ -167,8 +128,8 @@ namespace anakinsoft.game.scenes
                 boundingBoxRenderer.ShowBoundingBoxes = false;
             }
 
-            // Initialize character portraits
-            InitializeCharacterPortraits();
+            // Initialize UI Manager (loads portraits)
+            uiManager.Initialize();
 
             // Create first person character at starting position
             CreateCharacter(new Vector3(0, 5f, 0), Quaternion.Identity);
@@ -312,11 +273,11 @@ namespace anakinsoft.game.scenes
             Vector3 cameraLookAt =  new Vector3(0, 0, -10); // Look at bartender's head height
 
             // Create bartender interactable
-            bartenderCharacterInteraction = new InteractableCharacter("Bartender", bartenderPosition,
+            bartender.Interaction = new InteractableCharacter("Bartender", bartenderPosition,
                 cameraInteractionPosition, cameraLookAt);
 
             // Register with interaction system
-            interactionSystem.RegisterInteractable(bartenderCharacterInteraction);
+            interactionSystem.RegisterInteractable(bartender.Interaction);
 
             // Create physics collider for bartender (invisible box for interaction raycasting)
             CreateBartenderCollider(bartenderPosition);
@@ -332,14 +293,14 @@ namespace anakinsoft.game.scenes
             bartenderMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
             bartenderMaterial.LightIntensity = 0.9f;
 
-            bartenderModel = new SkinnedRenderingEntity("models/characters/alien", bartenderMaterial);
-            bartenderModel.Position = bartenderPosition;
-            bartenderModel.Scale = Vector3.One * 0.25f * LevelScale;
-            bartenderModel.Rotation = Quaternion.Identity; // Face forward (was already facing the right way)
-            bartenderModel.IsVisible = true;
+            bartender.Model = new SkinnedRenderingEntity("models/characters/alien", bartenderMaterial);
+            bartender.Model.Position = bartenderPosition;
+            bartender.Model.Scale = Vector3.One * 0.25f * LevelScale;
+            bartender.Model.Rotation = Quaternion.Identity; // Face forward (was already facing the right way)
+            bartender.Model.IsVisible = true;
 
             // Play idle animation
-            if (bartenderModel is SkinnedRenderingEntity skinnedBartender)
+            if (bartender.Model is SkinnedRenderingEntity skinnedBartender)
             {
                 var skinData = skinnedBartender.GetSkinningData();
                 if (skinData != null && skinData.AnimationClips.Count > 0)
@@ -349,20 +310,20 @@ namespace anakinsoft.game.scenes
                 }
             }
 
-            AddRenderingEntity(bartenderModel);
+            AddRenderingEntity(bartender.Model);
 
             Console.WriteLine("========================================\n");
         }
 
         public void SpawnPathologist()
         {
-            if (pathologistSpawned)
+            if (pathologist.IsSpawned)
             {
                 Console.WriteLine("Pathologist already spawned, skipping...");
                 return;
             }
 
-            pathologistSpawned = true;
+            pathologist.IsSpawned = true;
             InitializePathologist();
         }
 
@@ -381,11 +342,11 @@ namespace anakinsoft.game.scenes
             Vector3 cameraLookAt = pathologistPosition + new Vector3(0, 10, 0); // Look at head level
 
             // Create pathologist interactable
-            pathologistCharacterInteraction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
+            pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
                 cameraInteractionPosition, cameraLookAt);
 
             // Register with interaction system
-            interactionSystem.RegisterInteractable(pathologistCharacterInteraction);
+            interactionSystem.RegisterInteractable(pathologist.Interaction);
 
             // Create physics collider for pathologist (sitting, so shorter)
             CreatePathologistCollider(pathologistPosition);
@@ -401,14 +362,14 @@ namespace anakinsoft.game.scenes
             pathologistMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
             pathologistMaterial.LightIntensity = 0.9f;
 
-            pathologistModel = new SkinnedRenderingEntity("models/characters/alien-2", pathologistMaterial);
-            pathologistModel.Position = pathologistPosition;
-            pathologistModel.Scale = Vector3.One * 0.25f * LevelScale; // Slightly larger for sitting pose
-            pathologistModel.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0); // Face towards camera
-            pathologistModel.IsVisible = true;
+            pathologist.Model = new SkinnedRenderingEntity("models/characters/alien-2", pathologistMaterial);
+            pathologist.Model.Position = pathologistPosition;
+            pathologist.Model.Scale = Vector3.One * 0.25f * LevelScale; // Slightly larger for sitting pose
+            pathologist.Model.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0); // Face towards camera
+            pathologist.Model.IsVisible = true;
 
             // Play idle animation
-            if (pathologistModel is SkinnedRenderingEntity skinnedPathologist)
+            if (pathologist.Model is SkinnedRenderingEntity skinnedPathologist)
             {
                 var skinData = skinnedPathologist.GetSkinningData();
                 if (skinData != null && skinData.AnimationClips.Count > 0)
@@ -418,7 +379,7 @@ namespace anakinsoft.game.scenes
                 }
             }
 
-            AddRenderingEntity(pathologistModel);
+            AddRenderingEntity(pathologist.Model);
 
             Console.WriteLine("========================================\n");
         }
@@ -426,51 +387,51 @@ namespace anakinsoft.game.scenes
         private void CreatePathologistCollider(Vector3 position)
         {
             // Create a box collider for the pathologist (sitting, so shorter)
-            pathologistColliderWidth = 15f * LevelScale;
-            pathologistColliderHeight = 30f * LevelScale; // Sitting height
-            pathologistColliderDepth = 15f * LevelScale;
+            pathologist.ColliderWidth = 15f * LevelScale;
+            pathologist.ColliderHeight = 30f * LevelScale; // Sitting height
+            pathologist.ColliderDepth = 15f * LevelScale;
 
-            var boxShape = new Box(pathologistColliderWidth, pathologistColliderHeight, pathologistColliderDepth);
+            var boxShape = new Box(pathologist.ColliderWidth, pathologist.ColliderHeight, pathologist.ColliderDepth);
             var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
 
             // Move the collider up so the bottom touches the floor
-            pathologistColliderCenter = position + new Vector3(0, pathologistColliderHeight / 2f, 0);
+            pathologist.ColliderCenter = position + new Vector3(0, pathologist.ColliderHeight / 2f, 0);
 
             // Create static body at adjusted position
             var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
-                pathologistColliderCenter.ToVector3N(),
+                pathologist.ColliderCenter.ToVector3N(),
                 Quaternion.Identity.ToQuaternionN(),
                 shapeIndex));
 
             // Store the static handle in the pathologist for interaction detection
-            pathologistCharacterInteraction.SetStaticHandle(staticHandle);
+            pathologist.Interaction.SetStaticHandle(staticHandle);
 
-            Console.WriteLine($"Created pathologist physics collider at {pathologistColliderCenter} (size: {pathologistColliderWidth}x{pathologistColliderHeight}x{pathologistColliderDepth})");
+            Console.WriteLine($"Created pathologist physics collider at {pathologist.ColliderCenter} (size: {pathologist.ColliderWidth}x{pathologist.ColliderHeight}x{pathologist.ColliderDepth})");
         }
 
         private void CreateBartenderCollider(Vector3 position)
         {
             // Create a box collider for the bartender (4x taller, bottom at floor level)
-            bartenderColliderWidth = 10f * LevelScale;
-            bartenderColliderHeight = 48f * LevelScale; // 60% of original 80f height
-            bartenderColliderDepth = 10f * LevelScale;
+            bartender.ColliderWidth = 10f * LevelScale;
+            bartender.ColliderHeight = 48f * LevelScale; // 60% of original 80f height
+            bartender.ColliderDepth = 10f * LevelScale;
 
-            var boxShape = new Box(bartenderColliderWidth, bartenderColliderHeight, bartenderColliderDepth);
+            var boxShape = new Box(bartender.ColliderWidth, bartender.ColliderHeight, bartender.ColliderDepth);
             var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
 
             // Move the collider up so the bottom touches the floor (half of height up from position)
-            bartenderColliderCenter = position + new Vector3(0, bartenderColliderHeight / 2f, 0);
+            bartender.ColliderCenter = position + new Vector3(0, bartender.ColliderHeight / 2f, 0);
 
             // Create static body at adjusted position
             var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
-                bartenderColliderCenter.ToVector3N(),
+                bartender.ColliderCenter.ToVector3N(),
                 Quaternion.Identity.ToQuaternionN(),
                 shapeIndex));
 
             // Store the static handle in the bartender for interaction detection
-            bartenderCharacterInteraction.SetStaticHandle(staticHandle);
+            bartender.Interaction.SetStaticHandle(staticHandle);
 
-            Console.WriteLine($"Created bartender physics collider at {bartenderColliderCenter} (size: {bartenderColliderWidth}x{bartenderColliderHeight}x{bartenderColliderDepth})");
+            Console.WriteLine($"Created bartender physics collider at {bartender.ColliderCenter} (size: {bartender.ColliderWidth}x{bartender.ColliderHeight}x{bartender.ColliderDepth})");
         }
 
         private void InitializeEvidenceTable()
@@ -582,30 +543,6 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("========================================\n");
         }
 
-        private void InitializeCharacterPortraits()
-        {
-            characterPortraits = new Dictionary<string, Texture2D>();
-
-            // Load character portraits from chars folder
-            characterPortraits["NPC_Bartender"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) bartender zix");
-            characterPortraits["NPC_Ambassador"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Ambassador Tesh");
-            characterPortraits["NPC_DrThorne"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Dr thorne - xenopathologist");
-            characterPortraits["DrHarmon"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Dr Harmon - CMO");
-            characterPortraits["CommanderSylar"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Commander Sylar Von - Body guard");
-            characterPortraits["LtWebb"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Lt. Marcus Webb");
-            characterPortraits["EnsignTork"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Ensign Tork - Junior Eng");
-            characterPortraits["ChiefSolis"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Chief Kala Solis - Sec Cheif");
-            characterPortraits["MavenKilroth"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Maven Kilroth - Smuggler");
-            characterPortraits["Tehvora"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Tehvora - Diplomatic Atache (Kullan)");
-            characterPortraits["LuckyChen"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Lucky Chen - Quartermaster");
-
-            // Create portrait frame (simple colored rectangle)
-            var whiteTexture = Globals.screenManager.Content.Load<Texture2D>("textures/white");
-            portraitFrame = whiteTexture;
-
-            Console.WriteLine($"Initialized {characterPortraits.Count} character portraits");
-        }
-
         private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
         {
             // Create corridor entity with material channels
@@ -627,84 +564,6 @@ namespace anakinsoft.game.scenes
             // Create physics mesh for the model
             CreatePhysicsMesh(mesh, offset, rotation,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
-        }
-
-        // Star color table
-        private static readonly Color[] StarColors = new Color[]
-        {
-            ColorExtensions.FromHex("#492d38"), // Farthest - dark purple
-            ColorExtensions.FromHex("#ab5236"), // Medium-far - tan
-            ColorExtensions.FromHex("#ffccaa"), // Medium-close - peach
-            ColorExtensions.FromHex("#fff1e8")  // Closest - light peach
-        };
-
-        // Calculate max distance based on farthest possible spawn point
-        private static readonly float MaxStarDistance = (float)Math.Sqrt(StarfieldRadius * StarfieldRadius + StarfieldZEnd * StarfieldZEnd);
-
-        private Color GetStarColorFromPosition(Vector3 position)
-        {
-            // Calculate depth based on distance from origin (0,0,0)
-            float distanceFromOrigin = position.Length();
-            float depth = 1f - Math.Min(distanceFromOrigin / StarfieldZStart, 1f);
-
-            // Hard transition between 4 color bands based on depth
-            if (depth < 0.33f)
-            {
-                return StarColors[0]; // Farthest
-            }
-            else if (depth < 0.46f)
-            {
-                return StarColors[1]; // Medium-far
-            }
-            else if (depth < 0.6f)
-            {
-                return StarColors[2]; // Medium-close
-            }
-            else
-            {
-                return StarColors[3]; // Closest
-            }
-        }
-
-        private void InitializeStarfield()
-        {
-            Random random = new Random();
-
-            // Create evenly distributed stars along the Z axis
-            for (int i = 0; i < StarCount; i++)
-            {
-                // Random position in XY plane within radius, excluding center area (donut shape)
-                float angle = (float)(random.NextDouble() * Math.PI * 2);
-
-                // Map random value to range between MinRadius and MaxRadius
-                float normalizedDistance = (float)Math.Sqrt(random.NextDouble());
-                float distance = StarfieldMinRadius + normalizedDistance * (StarfieldRadius - StarfieldMinRadius);
-
-                float x = distance * (float)Math.Cos(angle);
-                float y = distance * (float)Math.Sin(angle);
-
-                // Evenly distribute along Z axis from start to end (prewarm the starfield)
-                // This ensures stars are visible immediately when the game loads
-                float z = StarfieldZStart + (float)random.NextDouble() * (StarfieldZEnd - StarfieldZStart);
-
-                Vector3 position = new Vector3(x, y, z);
-
-                // Get color based on position
-                Color starColor = GetStarColorFromPosition(position);
-
-                // Calculate depth for speed variation
-                float distanceFromOrigin = position.Length();
-                float depth = 1f - Math.Min(distanceFromOrigin / MaxStarDistance, 1f);
-                float speed = StarBaseSpeed * (0.5f + depth * 0.5f);
-
-                stars.Add(new Star
-                {
-                    Position = position,
-                    Color = starColor,
-                    Depth = depth,
-                    Speed = speed
-                });
-            }
         }
 
         private void CreatePhysicsMesh(string mesh, Vector3 offset, Quaternion rotation,
@@ -805,52 +664,8 @@ namespace anakinsoft.game.scenes
             // Update the scene normally first
             Update(gameTime);
 
-            // Update intro text timer and teletype effect
-            if (showIntroText)
-            {
-                var keyboard = Keyboard.GetState();
-
-                // Update teletype effect
-                if (!introTeletypeComplete)
-                {
-                    introTeletypeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    introVisibleCharacters = (int)(introTeletypeTimer * IntroCharactersPerSecond);
-
-                    if (introVisibleCharacters >= IntroText.Length)
-                    {
-                        introVisibleCharacters = IntroText.Length;
-                        introTeletypeComplete = true;
-                    }
-                }
-
-                // Handle E key press
-                if (keyboard.IsKeyDown(Keys.E) && !previousKeyboardState.IsKeyDown(Keys.E))
-                {
-                    if (!introTeletypeComplete)
-                    {
-                        // Complete teletype immediately
-                        introVisibleCharacters = IntroText.Length;
-                        introTeletypeComplete = true;
-                    }
-                    else
-                    {
-                        // Skip intro text entirely
-                        showIntroText = false;
-                    }
-                }
-
-                previousKeyboardState = keyboard;
-
-                // Auto-advance after duration if teletype is complete
-                if (introTeletypeComplete)
-                {
-                    introTextTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    if (introTextTimer >= IntroTextDuration)
-                    {
-                        showIntroText = false;
-                    }
-                }
-            }
+            // Update intro text via UI Manager
+            uiManager.UpdateIntroText(gameTime);
 
             // Only update character movement and interactions if not in menu
             if (!Globals.IsInMenuState())
@@ -864,62 +679,28 @@ namespace anakinsoft.game.scenes
                     if (interactionSystem?.CurrentTarget is InteractableCharacter hoveredChar)
                     {
                         // Map the character to their portrait key
-                        if (hoveredChar == bartenderCharacterInteraction)
-                            hoveredCharacter = "NPC_Bartender";
-                        else if (pathologistSpawned && hoveredChar == pathologistCharacterInteraction)
-                            hoveredCharacter = "DrHarmon";
+                        if (hoveredChar == bartender.Interaction)
+                            uiManager.SetHoveredCharacter("NPC_Bartender");
+                        else if (pathologist.IsSpawned && hoveredChar == pathologist.Interaction)
+                            uiManager.SetHoveredCharacter("DrHarmon");
                         else
-                            hoveredCharacter = null;
+                            uiManager.SetHoveredCharacter(null);
                     }
                     else
                     {
-                        hoveredCharacter = null;
+                        uiManager.SetHoveredCharacter(null);
                     }
-                }
-                else
-                {
-                    // During dialogue, keep showing the active character's portrait
-                    hoveredCharacter = activeDialogueCharacter;
                 }
 
                 // Only allow character movement after intro and after load delay
-                if (!showIntroText && characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
+                if (!uiManager.ShowIntroText && characterActive && character.HasValue && timeSinceLoad > characterLoadDelay)
                 {
                     character.Value.UpdateCharacterGoals(Keyboard.GetState(), camera, (float)gameTime.ElapsedGameTime.TotalSeconds);
                 }
             }
 
             // Update starfield
-            UpdateStarfield(gameTime);
-        }
-
-        private void UpdateStarfield(GameTime gameTime)
-        {
-            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-            for (int i = 0; i < stars.Count; i++)
-            {
-                var star = stars[i];
-
-                // Move star backward along -Z axis (away from camera)
-                star.Position.Z -= star.Speed * deltaTime;
-
-                // If star passed the end point, respawn at start
-                if (star.Position.Z < StarfieldZEnd)
-                {
-                    // Reset Z to start position (close to camera)
-                    star.Position.Z = StarfieldZStart;
-                }
-
-                // Update color based on current position (distance from origin)
-                star.Color = GetStarColorFromPosition(star.Position);
-
-                // Update depth for speed variation
-                float distanceFromOrigin = star.Position.Length();
-                star.Depth = 1f - Math.Min(distanceFromOrigin / MaxStarDistance, 1f);
-
-                stars[i] = star;
-            }
+            starfield.Update(gameTime);
         }
 
         private void HandleInput()
@@ -939,7 +720,7 @@ namespace anakinsoft.game.scenes
         public override void Draw(GameTime gameTime, Camera camera)
         {
             // Draw starfield first (background)
-            DrawStarfield(camera);
+            starfield.Draw(camera);
 
             // Draw all entities using the base scene drawing
             base.Draw(gameTime, camera);
@@ -956,13 +737,13 @@ namespace anakinsoft.game.scenes
                 }
 
                 // Draw bartender character wireframe
-                if (bartenderModel != null && bartenderModel.IsVisible)
+                if (bartender.Model != null && bartender.Model.IsVisible)
                 {
                     DrawAlienWireframe(gameTime, camera); // Reuse the same method
                 }
 
                 // Draw pathologist character wireframe (only if spawned)
-                if (pathologistSpawned && pathologistModel != null && pathologistModel.IsVisible)
+                if (pathologist.IsSpawned && pathologist.Model != null && pathologist.Model.IsVisible)
                 {
                     DrawAlienWireframe(gameTime, camera); // Reuse the same method
                 }
@@ -971,7 +752,7 @@ namespace anakinsoft.game.scenes
                 DrawBartenderCollider(camera);
 
                 // Draw pathologist collider box (only if spawned)
-                if (pathologistSpawned)
+                if (pathologist.IsSpawned)
                 {
                     DrawPathologistCollider(camera);
                 }
@@ -987,188 +768,7 @@ namespace anakinsoft.game.scenes
         public void DrawUI(GameTime gameTime, Camera camera, SpriteBatch spriteBatch, bool isDialogueActive = false)
         {
             var font = Globals.fontNTR;
-            if (font != null)
-            {
-                // Show loading indicator during character load delay
-                if (timeSinceLoad <= characterLoadDelay)
-                {
-                    string loadingText = "Loading The Lounge...";
-                    var textSize = font.MeasureString(loadingText);
-                    var screenCenter = new Vector2(
-                        Globals.screenManager.GraphicsDevice.Viewport.Width / 2f,
-                        Globals.screenManager.GraphicsDevice.Viewport.Height / 2f
-                    );
-
-                    // Draw loading text with fade effect
-                    float fadeAlpha = 1.0f - (timeSinceLoad / characterLoadDelay);
-                    spriteBatch.DrawString(font, loadingText,
-                        screenCenter - textSize / 2f,
-                        Color.White * fadeAlpha);
-                }
-                // Show intro text on black background
-                else if (showIntroText)
-                {
-                    DrawIntroText(spriteBatch, font);
-                }
-
-                // Draw interaction UI (only when not showing intro and not in dialogue)
-                if (!showIntroText && !isDialogueActive)
-                {
-                    interactionSystem?.DrawUI(spriteBatch, font);
-                }
-
-                // Draw character portrait if hovering or in dialogue
-                if (!showIntroText && hoveredCharacter != null)
-                {
-                    DrawCharacterPortrait(spriteBatch, hoveredCharacter);
-                }
-            }
-        }
-
-        private void DrawCharacterPortrait(SpriteBatch spriteBatch, string characterKey)
-        {
-            if (!characterPortraits.ContainsKey(characterKey))
-                return;
-
-            var viewport = Globals.screenManager.GraphicsDevice.Viewport;
-            var portrait = characterPortraits[characterKey];
-
-            // Portrait dimensions (matching 64x96 ratio = 2:3 aspect ratio)
-            int portraitWidth = 128;  // 2x scale of 64
-            int portraitHeight = 192; // 2x scale of 96
-            int frameThickness = 4;
-            int margin = 20;
-
-            // Position in top-right corner
-            Rectangle portraitRect = new Rectangle(
-                viewport.Width - portraitWidth - margin - frameThickness,
-                margin,
-                portraitWidth,
-                portraitHeight
-            );
-
-            // Frame rectangle (slightly larger)
-            Rectangle frameRect = new Rectangle(
-                portraitRect.X - frameThickness,
-                portraitRect.Y - frameThickness,
-                portraitRect.Width + frameThickness * 2,
-                portraitRect.Height + frameThickness * 2
-            );
-
-            // Draw frame
-            spriteBatch.Draw(portraitFrame, frameRect, Color.Gold);
-
-            // Draw portrait
-            spriteBatch.Draw(portrait, portraitRect, Color.White);
-        }
-
-        /// <summary>
-        /// Draws the intro text on black background
-        /// </summary>
-        private void DrawIntroText(SpriteBatch spriteBatch, SpriteFont font)
-        {
-            var viewport = Globals.screenManager.GraphicsDevice.Viewport;
-
-            // Draw black background
-            var blackTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
-            blackTexture.SetData(new[] { Color.Black });
-            spriteBatch.Draw(blackTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black);
-
-            // Get visible text based on teletype progress
-            string visibleText = IntroText.Substring(0, Math.Min(introVisibleCharacters, IntroText.Length));
-
-            // Wrap and measure the intro text
-            string wrappedText = WrapText(visibleText, font, viewport.Width - 100); // 50px padding on each side
-            var textSize = font.MeasureString(wrappedText);
-
-            // Center the text on screen
-            var textPosition = new Vector2(
-                (viewport.Width - textSize.X) / 2f,
-                (viewport.Height - textSize.Y) / 2f
-            );
-
-            // Draw the text with a slight shadow for readability
-            spriteBatch.DrawString(font, wrappedText, textPosition + new Vector2(2, 2), Color.Black);
-            spriteBatch.DrawString(font, wrappedText, textPosition, Color.White);
-
-            // Draw prompt
-            string promptText = introTeletypeComplete ? "Press [E] to continue..." : "Press [E] to skip...";
-            var promptSize = font.MeasureString(promptText);
-            var promptPosition = new Vector2(
-                (viewport.Width - promptSize.X) / 2f,
-                viewport.Height - 100
-            );
-            spriteBatch.DrawString(font, promptText, promptPosition, Color.Gray);
-        }
-
-        /// <summary>
-        /// Wraps text to fit within a specified width
-        /// </summary>
-        private string WrapText(string text, SpriteFont font, float maxWidth)
-        {
-            string[] words = text.Split(' ');
-            string wrappedText = "";
-            string line = "";
-
-            foreach (string word in words)
-            {
-                string testLine = line + word + " ";
-                Vector2 testSize = font.MeasureString(testLine);
-
-                if (testSize.X > maxWidth && line.Length > 0)
-                {
-                    wrappedText += line.TrimEnd() + "\n";
-                    line = word + " ";
-                }
-                else
-                {
-                    line = testLine;
-                }
-            }
-
-            wrappedText += line.TrimEnd();
-            return wrappedText;
-        }
-
-        private void DrawStarfield(Camera camera)
-        {
-            var graphicsDevice = Globals.screenManager.GraphicsDevice;
-
-            // Create a basic effect for rendering star streaks
-            var basicEffect = new BasicEffect(graphicsDevice);
-            basicEffect.VertexColorEnabled = true;
-            basicEffect.View = camera.View;
-            basicEffect.Projection = camera.Projection;
-            basicEffect.World = Matrix.Identity;
-
-            // Create star streak lines pointing along the Z axis (direction of movement)
-            var starVertices = new List<VertexPositionColor>();
-
-            foreach (var star in stars)
-            {
-                // Create a line streak pointing forward along +Z axis (trail effect showing motion away from camera)
-                Vector3 startPoint = star.Position;
-                Vector3 endPoint = star.Position + new Vector3(0, 0, StarLineLength);
-
-                // Add the line (2 vertices per star)
-                starVertices.Add(new VertexPositionColor(startPoint, star.Color));
-                starVertices.Add(new VertexPositionColor(endPoint, star.Color));
-            }
-
-            // Draw the star streaks as line list
-            if (starVertices.Count > 0)
-            {
-                foreach (var pass in basicEffect.CurrentTechnique.Passes)
-                {
-                    pass.Apply();
-                    graphicsDevice.DrawUserPrimitives(
-                        PrimitiveType.LineList,
-                        starVertices.ToArray(),
-                        0,
-                        starVertices.Count / 2
-                    );
-                }
-            }
+            uiManager.DrawUI(gameTime, spriteBatch, font, interactionSystem, isDialogueActive);
         }
 
         private void DrawStaticMeshWireframes(GameTime gameTime, Camera camera)
@@ -1486,7 +1086,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void DrawBartenderCollider(Camera camera)
         {
-            if (bartenderCharacterInteraction == null) return;
+            if (bartender.Interaction == null) return;
 
             var graphicsDevice = Globals.screenManager.GraphicsDevice;
             var basicEffect = new BasicEffect(graphicsDevice)
@@ -1498,12 +1098,12 @@ namespace anakinsoft.game.scenes
             };
 
             // Check if bartender is being targeted
-            bool isTargeted = interactionSystem?.CurrentTarget == bartenderCharacterInteraction;
+            bool isTargeted = interactionSystem?.CurrentTarget == bartender.Interaction;
             Color colliderColor = isTargeted ? Color.Yellow : Color.Cyan;
 
             // Use the exact same dimensions and position as the physics collider
-            DrawDebugBox(bartenderColliderCenter, bartenderColliderWidth, bartenderColliderHeight,
-                bartenderColliderDepth, colliderColor, basicEffect, graphicsDevice);
+            DrawDebugBox(bartender.ColliderCenter, bartender.ColliderWidth, bartender.ColliderHeight,
+                bartender.ColliderDepth, colliderColor, basicEffect, graphicsDevice);
 
             basicEffect.Dispose();
         }
@@ -1513,7 +1113,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void DrawPathologistCollider(Camera camera)
         {
-            if (pathologistCharacterInteraction == null) return;
+            if (pathologist.Interaction == null) return;
 
             var graphicsDevice = Globals.screenManager.GraphicsDevice;
             var basicEffect = new BasicEffect(graphicsDevice)
@@ -1525,12 +1125,12 @@ namespace anakinsoft.game.scenes
             };
 
             // Check if pathologist is being targeted
-            bool isTargeted = interactionSystem?.CurrentTarget == pathologistCharacterInteraction;
+            bool isTargeted = interactionSystem?.CurrentTarget == pathologist.Interaction;
             Color colliderColor = isTargeted ? Color.Yellow : Color.Magenta;
 
             // Use the exact same dimensions and position as the physics collider
-            DrawDebugBox(pathologistColliderCenter, pathologistColliderWidth, pathologistColliderHeight,
-                pathologistColliderDepth, colliderColor, basicEffect, graphicsDevice);
+            DrawDebugBox(pathologist.ColliderCenter, pathologist.ColliderWidth, pathologist.ColliderHeight,
+                pathologist.ColliderDepth, colliderColor, basicEffect, graphicsDevice);
 
             basicEffect.Dispose();
         }
@@ -1611,7 +1211,7 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void DrawInteractionDebugVisualization(Camera camera)
         {
-            if (bartenderCharacterInteraction == null) return;
+            if (bartender.Interaction == null) return;
 
             var graphicsDevice = Globals.screenManager.GraphicsDevice;
             var basicEffect = new BasicEffect(graphicsDevice)
@@ -1625,17 +1225,17 @@ namespace anakinsoft.game.scenes
             var vertices = new List<VertexPositionColor>();
 
             // Draw sphere at bartender position (Green)
-            DrawDebugSphere(bartenderCharacterInteraction.Position, 5f, Color.Green, vertices);
+            DrawDebugSphere(bartender.Interaction.Position, 5f, Color.Green, vertices);
 
             // Draw sphere at interaction camera position (Cyan)
-            DrawDebugSphere(bartenderCharacterInteraction.CameraInteractionPosition, 5f, Color.Cyan, vertices);
+            DrawDebugSphere(bartender.Interaction.CameraInteractionPosition, 5f, Color.Cyan, vertices);
 
             // Draw line from camera position to look-at position (Yellow)
-            vertices.Add(new VertexPositionColor(bartenderCharacterInteraction.CameraInteractionPosition, Color.Yellow));
-            vertices.Add(new VertexPositionColor(bartenderCharacterInteraction.CameraInteractionLookAt, Color.Yellow));
+            vertices.Add(new VertexPositionColor(bartender.Interaction.CameraInteractionPosition, Color.Yellow));
+            vertices.Add(new VertexPositionColor(bartender.Interaction.CameraInteractionLookAt, Color.Yellow));
 
             // Draw sphere at look-at position (Magenta)
-            DrawDebugSphere(bartenderCharacterInteraction.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
+            DrawDebugSphere(bartender.Interaction.CameraInteractionLookAt, 3f, Color.Magenta, vertices);
 
             // Draw evidence table grid
             DrawEvidenceTableGrid(vertices);
@@ -1832,23 +1432,23 @@ namespace anakinsoft.game.scenes
         public bool IsCharacterActive() => characterActive;
         public CharacterInput? GetCharacter() => character;
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
-        public InteractableCharacter GetBartender() => bartenderCharacterInteraction;
-        public InteractableCharacter GetPathologist() => pathologistCharacterInteraction;
+        public InteractableCharacter GetBartender() => bartender.Interaction;
+        public InteractableCharacter GetPathologist() => pathologist.Interaction;
         public InteractableItem GetEvidenceVial() => evidenceVial;
         public CrimeSceneFile GetCrimeSceneFile() => crimeSceneFile;
         public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
-        public bool IsShowingIntroText() => showIntroText;
-        public Dictionary<string, Texture2D> GetCharacterPortraits() => characterPortraits;
+        public bool IsShowingIntroText() => uiManager.ShowIntroText;
+        public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
 
         public void SetActiveDialogueCharacter(string characterKey)
         {
-            activeDialogueCharacter = characterKey;
+            uiManager.SetActiveDialogueCharacter(characterKey);
         }
 
         public void ClearActiveDialogueCharacter()
         {
-            activeDialogueCharacter = null;
+            uiManager.ClearActiveDialogueCharacter();
         }
 
         protected override void Dispose(bool disposing)
