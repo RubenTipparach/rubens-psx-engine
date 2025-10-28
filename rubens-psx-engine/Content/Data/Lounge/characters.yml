@@ -41,27 +41,32 @@ bartender:
 
   # Dialogue sequence
   dialogue:
-    sequence_name: "BartenderIntro"
-    lines:
-      - speaker: "Bartender"
-        text: "Welcome to the Lounge. You are a detective on board the UEFS Marron."
+    - sequence_name: "BartenderIntro"
+      lines:
+        - speaker: "Bartender"
+          text: "Welcome to the Lounge, detective."
 
-      - speaker: "Bartender"
-        text: "The Telirian ambassador is dead. This is no accident."
+        - speaker: "Bartender"
+          text: "The Telirian ambassador is dead. This is no accident."
 
-      - speaker: "Bartender"
-        text: "You need to question the suspects and determine motive, means, and opportunity."
+        - speaker: "Bartender"
+          text: "You need to question the suspects and determine motive, means, and opportunity."
 
-      - speaker: "Bartender"
-        text: "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war."
+        - speaker: "Bartender"
+          text: "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war."
 
-      - speaker: "Bartender"
-        text: "I've called the pathologist. They should be arriving at the table shortly with preliminary findings."
+        - speaker: "Bartender"
+          text: "I've called the pathologist. They should be arriving at the table shortly with preliminary findings."
 
-      - speaker: "Bartender"
-        text: "Time is running out, detective. Good luck."
+        - speaker: "Bartender"
+          text: "Time is running out, detective. Good luck."
 
-    on_complete: "spawn_pathologist"
+      on_complete: "spawn_pathologist"
+
+    - sequence_name: "BartenderPostIntro"
+      lines:
+        - speaker: "Bartender"
+          text: "Go talk to Dr. Kerrigan, the ship's pathologist."
 
 pathologist:
   name: "Dr. Harmon Kerrigan"

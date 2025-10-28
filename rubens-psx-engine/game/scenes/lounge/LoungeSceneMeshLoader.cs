@@ -203,17 +203,17 @@ namespace rubens_psx_engine
 
             // Load booths
             CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
-                Quaternion.Identity, new[] { boothMat }, "models/lounge/furnitures/lounge_boot");
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
             CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_boot");
+                Quaternion.Identity, new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
             CreateStaticMesh(new Vector3(3.18364f, 0, 2.8772f) * posScale,
-                Quaternion.Identity, new[] { boothMat }, "models/lounge/furnitures/lounge_boot");
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
 
             // Load bar shelves
             CreateStaticMesh(new Vector3(-3.82676f, 0, 2.89935f) * posScale,
-                Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_stelf");
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
             CreateStaticMesh(new Vector3(3.68024f, 0, 2.89935f) * posScale,
-                Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_stelf");
+                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
 
             Console.WriteLine("Furniture loaded");
         }

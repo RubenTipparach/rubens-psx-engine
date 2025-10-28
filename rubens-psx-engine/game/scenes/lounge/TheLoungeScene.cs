@@ -49,13 +49,6 @@ namespace anakinsoft.game.scenes
         float timeSinceLoad = 0f;
         Quaternion characterInitialRotation = Quaternion.Identity; // Initial camera rotation
 
-        // Direct BepuPhysics meshes for models
-        List<Mesh> loungeBepuMeshes;
-
-        // Collision mesh wireframe data
-        List<List<Vector3>> meshTriangleVertices; // Store triangle vertices for wireframe
-        List<(Vector3 position, Quaternion rotation)> staticMeshTransforms; // Store mesh transforms
-
         // Input handling
         KeyboardState previousKeyboard;
 
@@ -81,6 +74,9 @@ namespace anakinsoft.game.scenes
         // Starfield
         private LoungeStarfield starfield;
 
+        // Mesh loader
+        private LoungeSceneMeshLoader meshLoader;
+
         // Evidence vial item
         InteractableItem evidenceVial;
 
@@ -97,10 +93,6 @@ namespace anakinsoft.game.scenes
             characters = null; // Will be initialized in physics system
             physicsSystem = new PhysicsSystem(ref characters);
 
-            loungeBepuMeshes = new List<Mesh>();
-            meshTriangleVertices = new List<List<Vector3>>();
-            staticMeshTransforms = new List<(Vector3 position, Quaternion rotation)>();
-
             // Initialize interaction system
             interactionSystem = new InteractionSystem(physicsSystem);
 
@@ -110,6 +102,9 @@ namespace anakinsoft.game.scenes
             debugVisualizer = new LoungeDebugVisualizer();
             uiManager = new LoungeUIManager();
             starfield = new LoungeStarfield();
+
+            // Initialize mesh loader
+            meshLoader = new LoungeSceneMeshLoader(LevelScale, physicsSystem, entity => AddRenderingEntity(entity));
 
             // Set black background for lounge scene
             BackgroundColor = Color.Black;
@@ -133,100 +128,9 @@ namespace anakinsoft.game.scenes
             // Create first person character at starting position
             CreateCharacter(new Vector3(0, 5f, 0), Quaternion.Identity);
 
-            float jitter = 3;
-            var affine = 0;
-
-            // Create unlit materials for each lounge texture
-            var ceilingMat = new UnlitMaterial("textures/Lounge/Cieling");
-            ceilingMat.VertexJitterAmount = jitter;
-            ceilingMat.Brightness = 1.2f;
-            ceilingMat.AffineAmount = affine;
-
-            var doorMat = new UnlitMaterial("textures/Lounge/door");
-            doorMat.VertexJitterAmount = jitter;
-            doorMat.Brightness = 1.2f;
-            doorMat.AffineAmount = affine;
-
-            var floorMat = new UnlitMaterial("textures/Lounge/floor_1");
-            floorMat.VertexJitterAmount = jitter;
-            floorMat.AffineAmount = affine;
-            floorMat.Brightness = 1.2f;
-
-            var wall1Mat = new UnlitMaterial("textures/Lounge/wall_1");
-            wall1Mat.VertexJitterAmount = jitter;
-            wall1Mat.Brightness = 1.2f;
-            wall1Mat.AffineAmount = affine;
-
-            var wall2Mat = new UnlitMaterial("textures/Lounge/wall_2");
-            wall2Mat.VertexJitterAmount = jitter;
-            wall2Mat.Brightness = 1.2f;
-            wall2Mat.AffineAmount = affine;
-            var windowMat = new UnlitMaterial("textures/Lounge/window");
-            wall2Mat.VertexJitterAmount = jitter;
-            wall2Mat.Brightness = 1.2f;
-            wall2Mat.AffineAmount = affine;
-
-            // Load all models from models/lounge with colliders
-            // Position them in the scene - you can adjust these positions as needed
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { ceilingMat }, "models/lounge/Ceiling2");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { doorMat }, "models/lounge/Door");
-            CreateStaticMesh(new Vector3(0, 0, 0), QuaternionExtensions.CreateFromYawPitchRollDegrees(180,0,0), new[] { doorMat }, "models/lounge/Door");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { floorMat }, "models/lounge/Lounge_floor");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall1Mat }, "models/lounge/Lounge_wall");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_L");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { wall2Mat }, "models/lounge/Wall_R");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { windowMat }, "models/lounge/Window");
-
-            // Create furniture materials
-            var barMat = new UnlitMaterial("textures/Lounge/Bar");
-            barMat.VertexJitterAmount = jitter;
-            barMat.Brightness = 1.2f;
-            barMat.AffineAmount = affine;
-
-            var chairMat = new UnlitMaterial("textures/Lounge/chair");
-            chairMat.VertexJitterAmount = jitter;
-            chairMat.Brightness = 1.2f;
-            chairMat.AffineAmount = affine;
-
-            var tableMat = new UnlitMaterial("textures/Lounge/table");
-            tableMat.VertexJitterAmount = jitter;
-            tableMat.Brightness = 1.2f;
-            tableMat.AffineAmount = affine;
-
-            var boothMat = new UnlitMaterial("textures/Lounge/booth");
-            boothMat.VertexJitterAmount = jitter;
-            boothMat.Brightness = 1.2f;
-            boothMat.AffineAmount = affine;
-
-            // Add lounge furniture
-            var posScale = 10f;
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar");
-            CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_2");
-            CreateStaticMesh(new Vector3(-1.70852f, 0, -3.29662f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
-            CreateStaticMesh(new Vector3(-1.70852f, 0, -2) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
-
-            CreateStaticMesh(new Vector3(-2.91486f, 0, 2.17103f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
-            CreateStaticMesh(new Vector3(-2.91486f, 0, 3.41485f) * posScale,
-                Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_chair");
-            CreateStaticMesh(new Vector3(-1.28593f, 0, 3.11644f) * posScale,
-                Quaternion.Identity, new[] { tableMat }, "models/lounge/furnitures/lounge_table");
-            CreateStaticMesh(new Vector3(2.05432f, 0, 3.11644f) * posScale,
-                Quaternion.Identity, new[] { tableMat }, "models/lounge/furnitures/lounge_table");
-
-            CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
-            CreateStaticMesh(new Vector3(0.137007f, 0, 2.8772f) * posScale,
-                Quaternion.Identity, new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
-            CreateStaticMesh(new Vector3(3.18364f, 0, 2.8772f) * posScale,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(180, 0, 0), new[] { boothMat }, "models/lounge/furnitures/lounge_booth");
-
-            CreateStaticMesh(new Vector3(-3.82676f, 0, 2.89935f ) * posScale,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(90,0,0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
-            CreateStaticMesh(new Vector3(3.68024f, 0, 2.89935f) * posScale,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(90, 0, 0), new[] { barMat }, "models/lounge/furnitures/lounge_shelf");
+            // Load all lounge geometry and furniture via mesh loader
+            meshLoader.LoadAllLoungeGeometry();
+            meshLoader.LoadFurniture();
 
             // Create point light at center of scene, 20 units from ground
             centerLight = new PointLight("CenterLight")
@@ -541,72 +445,6 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("========================================\n");
         }
 
-        private void CreateStaticMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
-        {
-            // Create corridor entity with material channels
-            var loadedMats = new Dictionary<int, Material>();
-            for(int i = 0; i < mats.Length; i++)
-            {
-                loadedMats.Add(i, mats[i]);
-            }
-            var entity = new MultiMaterialRenderingEntity(mesh, loadedMats);
-
-            entity.Position = Vector3.Zero + offset;
-            entity.Scale = Vector3.One * 0.2f * LevelScale;
-            entity.Rotation = rotation;
-            entity.IsVisible = true;
-
-            // Add to rendering entities
-            AddRenderingEntity(entity);
-
-            // Create physics mesh for the model
-            CreatePhysicsMesh(mesh, offset, rotation,
-                QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
-        }
-
-        private void CreatePhysicsMesh(string mesh, Vector3 offset, Quaternion rotation,
-            Quaternion rotationOffset, Vector3 physicsMeshOffset)
-        {
-            try
-            {
-                // Load the same model used for rendering
-                var model = Globals.screenManager.Content.Load<Model>(mesh);
-
-                // Use consistent scaling approach: visual scale * physics scale factor
-                var visualScale = Vector3.One * 0.2f * LevelScale; // Same scale as rendering entity
-                var physicsScale = visualScale * 100; // Apply our learned scaling factor
-
-                // Extract triangles and wireframe vertices for rendering
-                var (triangles, wireframeVertices) = BepuMeshExtractor.ExtractTrianglesFromModel(model, physicsScale, physicsSystem);
-                var bepuMesh = new Mesh(triangles, Vector3.One.ToVector3N(), physicsSystem.BufferPool);
-
-                // Add the mesh shape to the simulation's shape collection
-                var shapeIndex = physicsSystem.Simulation.Shapes.Add(bepuMesh);
-                // Rotate the rotation by this
-                var rotation2 = rotation * rotationOffset;
-
-                // Create static body with the mesh shape
-                var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
-                    offset.ToVector3N(),
-                    rotation2.ToQuaternionN(),
-                    shapeIndex));
-
-                // Keep references for cleanup and wireframe rendering
-                loungeBepuMeshes.Add(bepuMesh);
-                meshTriangleVertices.Add(wireframeVertices);
-                staticMeshTransforms.Add((offset, rotation2));
-
-                Console.WriteLine($"Created lounge physics mesh at position: {offset} with physics scale: {physicsScale}");
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Failed to create lounge physics mesh: {ex.Message}");
-                Console.ForegroundColor = ConsoleColor.Gray;
-                // Continue without physics mesh for this model
-            }
-        }
-
         void CreateCharacter(Vector3 position, Quaternion rotation)
         {
             characterActive = true;
@@ -628,6 +466,7 @@ namespace anakinsoft.game.scenes
         {
             // Update load timer first
             timeSinceLoad += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            uiManager.UpdateLoadTimer(gameTime);
 
             // During load delay, don't update base (which updates physics)
             // This prevents character from falling through floor while level loads
@@ -727,25 +566,8 @@ namespace anakinsoft.game.scenes
             if (ShowPhysicsWireframe)
             {
                 // Draw static mesh wireframes
-                debugVisualizer.DrawStaticMeshWireframes(meshTriangleVertices, staticMeshTransforms, camera);
-
-                // Draw alien character wireframe and bounding box in purple
-                if (alienCharacter != null && alienCharacter.IsVisible)
-                {
-                    debugVisualizer.DrawCharacterWireframe(alienCharacter, camera, Color.Purple);
-                }
-
-                // Draw bartender character wireframe
-                if (bartender.Model != null && bartender.Model.IsVisible)
-                {
-                    debugVisualizer.DrawCharacterWireframe(bartender.Model, camera, Color.Purple);
-                }
-
-                // Draw pathologist character wireframe (only if spawned)
-                if (pathologist.IsSpawned && pathologist.Model != null && pathologist.Model.IsVisible)
-                {
-                    debugVisualizer.DrawCharacterWireframe(pathologist.Model, camera, Color.Purple);
-                }
+                var (_, meshVerts, meshTransforms) = meshLoader.GetPhysicsMeshData();
+                debugVisualizer.DrawStaticMeshWireframes(meshVerts, meshTransforms, camera);
 
                 // Draw bartender collider box
                 debugVisualizer.DrawCharacterCollider(bartender, camera, interactionSystem);
@@ -760,6 +582,12 @@ namespace anakinsoft.game.scenes
                 if (bartender.Interaction != null)
                 {
                     debugVisualizer.DrawInteractionDebugVisualization(bartender.Interaction, evidenceTable, camera);
+                }
+
+                // Draw pathologist interaction camera positions (only if spawned)
+                if (pathologist.IsSpawned && pathologist.Interaction != null)
+                {
+                    debugVisualizer.DrawInteractionDebugVisualization(pathologist.Interaction, evidenceTable, camera);
                 }
             }
         }
@@ -803,8 +631,8 @@ namespace anakinsoft.game.scenes
         {
             if (disposing)
             {
-                // BepuPhysics meshes are cleaned up by the physics system
-                loungeBepuMeshes.Clear();
+                // Mesh loader handles cleanup
+                meshLoader.Clear();
             }
             base.Dispose(disposing);
         }
