@@ -165,14 +165,22 @@ namespace anakinsoft.game.scenes
             dialogueSystem.OnDialogueEnd += () =>
             {
                 Console.WriteLine("Dialogue ended, returning camera to player");
+
+                // Clear active dialogue character to hide portrait
+                loungeScene.SetActiveDialogueCharacter(null);
+
                 cameraTransitionSystem.TransitionBackToPlayer(1.0f);
             };
 
             // Set up character selection menu events
-            characterSelectionMenu.OnCharacterSelected += (character) =>
+            characterSelectionMenu.OnCharactersSelected += (characters) =>
             {
-                Console.WriteLine($"Character selected for interrogation: {character.Name}");
-                // TODO: Start interrogation dialogue for selected character
+                Console.WriteLine($"{characters.Count} character(s) selected for interrogation:");
+                foreach (var character in characters)
+                {
+                    Console.WriteLine($"  - {character.Name}");
+                }
+                // TODO: Start interrogation dialogue for selected characters
             };
 
             characterSelectionMenu.OnMenuClosed += () =>
@@ -202,7 +210,18 @@ namespace anakinsoft.game.scenes
                 file.OnFileOpened += (crimeFile) =>
                 {
                     Console.WriteLine("Opening crime scene file");
-                    transcriptReviewUI.Open(crimeFile);
+
+                    // If player can select suspects, show character selection menu
+                    if (gameProgress.CanSelectSuspects)
+                    {
+                        Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
+                        characterSelectionMenu.Show();
+                    }
+                    else
+                    {
+                        // Otherwise show transcript review
+                        transcriptReviewUI.Open(crimeFile);
+                    }
                 };
             }
         }
@@ -319,6 +338,13 @@ namespace anakinsoft.game.scenes
 
                     // Notify state machine
                     pathologistStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
+
+                    // Handle completion actions
+                    if (yamlDialogue.on_complete == "show_character_selection")
+                    {
+                        Console.WriteLine("[TheLoungeScreen] Opening character selection menu - collect the crime scene file first!");
+                        gameProgress.CanSelectSuspects = true;
+                    }
                 };
             }
 
@@ -535,6 +561,8 @@ namespace anakinsoft.game.scenes
             var bartender = loungeScene.GetBartender();
             if (bartender?.DialogueSequence != null)
             {
+                // Set active dialogue character to show portrait during conversation
+                loungeScene.SetActiveDialogueCharacter("NPC_Bartender");
                 dialogueSystem.StartDialogue(bartender.DialogueSequence);
             }
         }
@@ -547,6 +575,8 @@ namespace anakinsoft.game.scenes
             var pathologist = loungeScene.GetPathologist();
             if (pathologist?.DialogueSequence != null)
             {
+                // Set active dialogue character to show portrait during conversation
+                loungeScene.SetActiveDialogueCharacter("DrHarmon");
                 dialogueSystem.StartDialogue(pathologist.DialogueSequence);
             }
         }

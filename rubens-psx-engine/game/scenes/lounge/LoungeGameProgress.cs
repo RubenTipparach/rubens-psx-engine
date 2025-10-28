@@ -12,6 +12,7 @@ namespace rubens_psx_engine
         public bool HasTalkedToBartender { get; set; } = false;
         public bool PathologistSpawned { get; set; } = false;
         public bool HasTalkedToPathologist { get; set; } = false;
+        public bool CanSelectSuspects { get; set; } = false;
         public bool CanInterrogate { get; set; } = false;
 
         // Interrogation tracking

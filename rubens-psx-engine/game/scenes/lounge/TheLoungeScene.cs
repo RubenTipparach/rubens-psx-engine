@@ -37,7 +37,7 @@ namespace anakinsoft.game.scenes
     {
         // Debug settings
         // TODO: Move to LoungeSceneMeshLoader or debug helper class
-        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -342,8 +342,8 @@ namespace anakinsoft.game.scenes
 
             // Define table area near pathologist's location
             // Table center positioned on the left side of the lounge
-            Vector3 tableCenter = new Vector3(-9.5f, 12f, 28f); // Same general area as pathologist
-            Vector3 tableSize = new Vector3(20f, 2f, 15f); // 20 units wide, 15 units deep
+            Vector3 tableCenter = new Vector3(-4f, 14f, -25f); // Same general area as bar table 2
+            Vector3 tableSize = new Vector3(12f, 2f, 20f); // 20 units wide, 15 units deep
 
             // Create 3x3 grid (9 slots for evidence items)
             // This gives us organized positions for:

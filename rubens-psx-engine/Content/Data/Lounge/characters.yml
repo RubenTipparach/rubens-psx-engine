@@ -149,7 +149,7 @@ pathologist:
           text: "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs."
 
         - speaker: "Dr. Harmon Kerrigan"
-          text: "That's all I have for now, Detective. The rest is up to you. Good luck."
+          text: "That's all I have for now, Detective. Before you being the interrogations, please bring me the criminal files from the bar."
 
       on_complete: "show_character_selection"
 
