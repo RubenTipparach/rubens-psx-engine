@@ -46,6 +46,21 @@ namespace anakinsoft.game.scenes.lounge.evidence
         }
 
         /// <summary>
+        /// Return this item to the world (uncollect it)
+        /// </summary>
+        public void ReturnToWorld()
+        {
+            if (!IsCollected)
+            {
+                Console.WriteLine($"InteractableItem: {Name} was not collected, cannot return");
+                return;
+            }
+
+            IsCollected = false;
+            Console.WriteLine($"InteractableItem: Returned {Name} to world");
+        }
+
+        /// <summary>
         /// Handle interaction - collect the item
         /// </summary>
         protected override void OnInteractAction()

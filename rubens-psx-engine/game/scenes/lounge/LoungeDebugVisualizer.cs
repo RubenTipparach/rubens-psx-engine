@@ -189,7 +189,7 @@ namespace anakinsoft.game.scenes
             basicEffect.Dispose();
         }
 
-        public void DrawCrimeSceneFileBox(CrimeSceneFile file, Camera camera)
+        public void DrawSuspectsFileBox(SuspectsFile file, Camera camera)
         {
             if (file == null) return;
 

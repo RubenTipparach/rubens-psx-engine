@@ -181,8 +181,8 @@ namespace anakinsoft.system
                         return character;
                     }
                 }
-                // If it's a CrimeSceneFile, check its static handle
-                else if (interactable is CrimeSceneFile file)
+                // If it's a SuspectsFile, check its static handle
+                else if (interactable is SuspectsFile file)
                 {
                     var fileHandle = file.GetStaticHandle();
                     if (fileHandle.HasValue && fileHandle.Value.Value == handle.Value)

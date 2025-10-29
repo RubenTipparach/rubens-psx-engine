@@ -31,9 +31,8 @@ namespace anakinsoft.game.scenes.lounge.characters
             }
         }
 
-        public override void OnDialogueComplete(string sequenceName)
+        protected override void OnDialogueCompleteInternal(string sequenceName)
         {
-            MarkDialogueSeen(sequenceName);
 
             if (sequenceName == "TehvoraInterrogation")
             {

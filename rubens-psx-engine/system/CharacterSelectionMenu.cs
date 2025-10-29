@@ -374,7 +374,7 @@ namespace anakinsoft.system
             // Draw warning message if active
             if (!string.IsNullOrEmpty(warningMessage) && warningTimer > 0f)
             {
-                string warning = $"⚠ {warningMessage}";
+                string warning = $"WARNING: {warningMessage}";
                 var warningSize = font.MeasureString(warning) * 0.7f;
                 Vector2 warningPos = new Vector2(menuX + (menuWidth - warningSize.X) / 2, counterPos.Y + counterSize.Y + 10);
 

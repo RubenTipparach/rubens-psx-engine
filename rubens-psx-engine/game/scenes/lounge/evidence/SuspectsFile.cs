@@ -8,9 +8,9 @@ using System.Collections.Generic;
 namespace anakinsoft.game.scenes.lounge.evidence
 {
     /// <summary>
-    /// Crime scene file that allows reviewing interview transcripts
+    /// Suspects file that allows reviewing interview transcripts
     /// </summary>
-    public class CrimeSceneFile : InteractableObject
+    public class SuspectsFile : InteractableObject
     {
         public string Name { get; private set; }
         public List<SuspectTranscript> Transcripts { get; private set; }
@@ -19,9 +19,9 @@ namespace anakinsoft.game.scenes.lounge.evidence
         // Physics handle for raycast detection
         private StaticHandle? staticHandle;
 
-        public event Action<CrimeSceneFile> OnFileOpened;
+        public event Action<SuspectsFile> OnFileOpened;
 
-        public CrimeSceneFile(
+        public SuspectsFile(
             string name,
             Vector3 position,
             Vector3 size)
@@ -30,7 +30,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
             this.position = position;
             Transcripts = new List<SuspectTranscript>();
             interactionDistance = 100f;
-            interactionPrompt = "[E] Review Crime Scene File";
+            interactionPrompt = "[E] Review Suspects File";
 
             // Create bounding box for hover highlight
             Vector3 halfSize = size / 2f;

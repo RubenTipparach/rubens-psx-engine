@@ -3,23 +3,30 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using anakinsoft.game.scenes.lounge.evidence;
-using anakinsoft.utilities;
+using System.Linq;
+using anakinsoft.game.scenes.lounge.characters;
 using rubens_psx_engine;
 
 namespace anakinsoft.system
 {
     /// <summary>
-    /// UI system for reviewing suspect interview transcripts
+    /// UI system for reviewing character interview transcripts
+    /// Two modes: Character selection and Transcript viewing
     /// </summary>
     public class TranscriptReviewUI
     {
         private bool isActive;
-        private CrimeSceneFile crimeSceneFile;
+        private Dictionary<string, CharacterStateMachine> characterStateMachines;
+        private List<string> characterNames; // Ordered list of character names
         private int selectedIndex;
         private int scrollOffset;
         private const int MaxVisibleLines = 15;
         private KeyboardState previousKeyboard;
+
+        // Two-mode system
+        private bool isViewingTranscript; // false = selection mode, true = viewing mode
+        private string viewingCharacterName;
+        private int subjectScrollOffset;
 
         public bool IsActive => isActive;
 
@@ -28,18 +35,28 @@ namespace anakinsoft.system
             isActive = false;
             selectedIndex = 0;
             scrollOffset = 0;
+            isViewingTranscript = false;
+            subjectScrollOffset = 0;
         }
 
         /// <summary>
-        /// Open the transcript review UI
+        /// Open the transcript review UI with character state machines
         /// </summary>
-        public void Open(CrimeSceneFile file)
+        public void Open(Dictionary<string, CharacterStateMachine> stateMachines)
         {
-            crimeSceneFile = file;
+            characterStateMachines = stateMachines;
+            characterNames = stateMachines.Keys.ToList();
             isActive = true;
             selectedIndex = 0;
             scrollOffset = 0;
-            Console.WriteLine("Opened transcript review UI");
+            isViewingTranscript = false;
+            viewingCharacterName = null;
+            subjectScrollOffset = 0;
+
+            // IMPORTANT: Initialize previousKeyboard to current state to prevent immediate E press
+            previousKeyboard = Keyboard.GetState();
+
+            Console.WriteLine($"[TranscriptReviewUI] Opened with {characterNames.Count} characters");
         }
 
         /// <summary>
@@ -48,8 +65,9 @@ namespace anakinsoft.system
         public void Close()
         {
             isActive = false;
-            crimeSceneFile = null;
-            Console.WriteLine("Closed transcript review UI");
+            characterStateMachines = null;
+            characterNames = null;
+            Console.WriteLine("[TranscriptReviewUI] Closed");
         }
 
         /// <summary>
@@ -57,11 +75,25 @@ namespace anakinsoft.system
         /// </summary>
         public void Update(GameTime gameTime)
         {
-            if (!isActive || crimeSceneFile == null)
+            if (!isActive || characterStateMachines == null)
                 return;
 
             var keyboard = Keyboard.GetState();
 
+            if (isViewingTranscript)
+            {
+                UpdateViewingMode(keyboard);
+            }
+            else
+            {
+                UpdateSelectionMode(keyboard);
+            }
+
+            previousKeyboard = keyboard;
+        }
+
+        private void UpdateSelectionMode(KeyboardState keyboard)
+        {
             // Navigation
             if (keyboard.IsKeyDown(Keys.Up) && !previousKeyboard.IsKeyDown(Keys.Up))
             {
@@ -72,19 +104,68 @@ namespace anakinsoft.system
 
             if (keyboard.IsKeyDown(Keys.Down) && !previousKeyboard.IsKeyDown(Keys.Down))
             {
-                selectedIndex = Math.Min(crimeSceneFile.Transcripts.Count - 1, selectedIndex + 1);
+                selectedIndex = Math.Min(characterNames.Count - 1, selectedIndex + 1);
                 if (selectedIndex >= scrollOffset + MaxVisibleLines)
                     scrollOffset = selectedIndex - MaxVisibleLines + 1;
             }
 
-            // Close with Escape or E
-            if ((keyboard.IsKeyDown(Keys.Escape) || keyboard.IsKeyDown(Keys.E)) &&
-                (!previousKeyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.E)))
+            // Press E to view transcript (only if character has been interviewed)
+            if (keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E))
+            {
+                if (selectedIndex >= 0 && selectedIndex < characterNames.Count)
+                {
+                    string characterName = characterNames[selectedIndex];
+                    var stateMachine = characterStateMachines[characterName];
+
+                    if (stateMachine.HasBeenInterviewed())
+                    {
+                        // Enter viewing mode
+                        isViewingTranscript = true;
+                        viewingCharacterName = characterName;
+                        subjectScrollOffset = 0;
+                        Console.WriteLine($"[TranscriptReviewUI] Viewing transcript for {characterName}");
+                    }
+                }
+            }
+
+            // Press Tab to close
+            if (keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab))
             {
                 Close();
             }
+        }
 
-            previousKeyboard = keyboard;
+        private void UpdateViewingMode(KeyboardState keyboard)
+        {
+            var stateMachine = characterStateMachines[viewingCharacterName];
+            var subjects = stateMachine.GetTranscriptSubjects();
+
+            // Scroll through transcript content
+            if (keyboard.IsKeyDown(Keys.Up) && !previousKeyboard.IsKeyDown(Keys.Up))
+            {
+                subjectScrollOffset = Math.Max(0, subjectScrollOffset - 1);
+            }
+
+            if (keyboard.IsKeyDown(Keys.Down) && !previousKeyboard.IsKeyDown(Keys.Down))
+            {
+                // Calculate max scroll based on content
+                int totalLines = 0;
+                foreach (var subject in subjects)
+                {
+                    totalLines += 2; // Subject header + spacing
+                    totalLines += stateMachine.GetSubjectLines(subject).Count;
+                }
+                subjectScrollOffset = Math.Min(Math.Max(0, totalLines - MaxVisibleLines), subjectScrollOffset + 1);
+            }
+
+            // Press Tab to go back to character selection
+            if (keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab))
+            {
+                isViewingTranscript = false;
+                viewingCharacterName = null;
+                subjectScrollOffset = 0;
+                Console.WriteLine("[TranscriptReviewUI] Returned to character selection");
+            }
         }
 
         /// <summary>
@@ -92,17 +173,104 @@ namespace anakinsoft.system
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, SpriteFont font)
         {
-            if (!isActive || crimeSceneFile == null || font == null)
+            if (!isActive || characterStateMachines == null || font == null)
                 return;
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
             int screenWidth = viewport.Width;
             int screenHeight = viewport.Height;
 
-            // Background overlay
+            // Black semi-transparent background overlay for better text readability
             var backgroundTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            backgroundTexture.SetData(new[] { new Color(0, 0, 0, 200) });
+            backgroundTexture.SetData(new[] { new Color(0, 0, 0, 220) }); // Darker for better readability
             spriteBatch.Draw(backgroundTexture, new Rectangle(0, 0, screenWidth, screenHeight), Color.White);
+
+            if (isViewingTranscript)
+            {
+                DrawViewingMode(spriteBatch, font, screenWidth, screenHeight);
+            }
+            else
+            {
+                DrawSelectionMode(spriteBatch, font, screenWidth, screenHeight);
+            }
+
+            backgroundTexture.Dispose();
+        }
+
+        private void DrawSelectionMode(SpriteBatch spriteBatch, SpriteFont font, int screenWidth, int screenHeight)
+        {
+            // Main panel
+            int panelWidth = (int)(screenWidth * 0.7f);
+            int panelHeight = (int)(screenHeight * 0.7f);
+            int panelX = (screenWidth - panelWidth) / 2;
+            int panelY = (screenHeight - panelHeight) / 2;
+
+            var panelTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+            panelTexture.SetData(new[] { new Color(20, 20, 30, 255) });
+            spriteBatch.Draw(panelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.White);
+
+            // Border
+            DrawBorder(spriteBatch, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.Yellow, 2);
+
+            // Title
+            string title = "=== INTERVIEW TRANSCRIPTS ===";
+            Vector2 titleSize = font.MeasureString(title);
+            Vector2 titlePos = new Vector2((screenWidth - titleSize.X) / 2, panelY + 20);
+            spriteBatch.DrawString(font, title, titlePos + new Vector2(2, 2), Color.Black);
+            spriteBatch.DrawString(font, title, titlePos, Color.Yellow);
+
+            // Instructions
+            string instructions = "[Up/Down] Navigate | [E] View Transcript | [Tab] Close";
+            Vector2 instructionsSize = font.MeasureString(instructions);
+            Vector2 instructionsPos = new Vector2((screenWidth - instructionsSize.X) / 2, panelY + 50);
+            spriteBatch.DrawString(font, instructions, instructionsPos + new Vector2(1, 1), Color.Black);
+            spriteBatch.DrawString(font, instructions, instructionsPos, Color.Gray);
+
+            // Character list
+            int yOffset = panelY + 90;
+            int lineHeight = 25;
+
+            for (int i = scrollOffset; i < Math.Min(characterNames.Count, scrollOffset + MaxVisibleLines); i++)
+            {
+                string characterName = characterNames[i];
+                var stateMachine = characterStateMachines[characterName];
+                bool isSelected = (i == selectedIndex);
+                bool hasBeenInterviewed = stateMachine.HasBeenInterviewed();
+
+                // Highlight selected item
+                if (isSelected)
+                {
+                    var highlightTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+                    highlightTexture.SetData(new[] { new Color(100, 100, 50, 100) });
+                    spriteBatch.Draw(highlightTexture, new Rectangle(panelX + 20, yOffset - 5, panelWidth - 40, lineHeight), Color.White);
+                    highlightTexture.Dispose();
+                }
+
+                // Character name
+                Color nameColor = hasBeenInterviewed ? Color.White : Color.Gray;
+                if (isSelected) nameColor = Color.Yellow;
+
+                Vector2 namePos = new Vector2(panelX + 30, yOffset);
+                spriteBatch.DrawString(font, characterName, namePos + new Vector2(1, 1), Color.Black);
+                spriteBatch.DrawString(font, characterName, namePos, nameColor);
+
+                // Status indicator
+                string status = hasBeenInterviewed ? "[INTERVIEWED]" : "[NOT INTERVIEWED]";
+                Color statusColor = hasBeenInterviewed ? Color.Green : Color.Red;
+                Vector2 statusPos = new Vector2(panelX + panelWidth - 200, yOffset);
+                spriteBatch.DrawString(font, status, statusPos + new Vector2(1, 1), Color.Black);
+                spriteBatch.DrawString(font, status, statusPos, statusColor);
+
+                yOffset += lineHeight;
+            }
+
+            panelTexture.Dispose();
+        }
+
+        private void DrawViewingMode(SpriteBatch spriteBatch, SpriteFont font, int screenWidth, int screenHeight)
+        {
+            var stateMachine = characterStateMachines[viewingCharacterName];
+            var subjects = stateMachine.GetTranscriptSubjects();
 
             // Main panel
             int panelWidth = (int)(screenWidth * 0.8f);
@@ -115,109 +283,118 @@ namespace anakinsoft.system
             spriteBatch.Draw(panelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.White);
 
             // Border
-            var borderTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            borderTexture.SetData(new[] { Color.Yellow });
-            int borderThickness = 2;
-            spriteBatch.Draw(borderTexture, new Rectangle(panelX, panelY, panelWidth, borderThickness), Color.White); // Top
-            spriteBatch.Draw(borderTexture, new Rectangle(panelX, panelY + panelHeight - borderThickness, panelWidth, borderThickness), Color.White); // Bottom
-            spriteBatch.Draw(borderTexture, new Rectangle(panelX, panelY, borderThickness, panelHeight), Color.White); // Left
-            spriteBatch.Draw(borderTexture, new Rectangle(panelX + panelWidth - borderThickness, panelY, borderThickness, panelHeight), Color.White); // Right
+            DrawBorder(spriteBatch, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.Yellow, 2);
 
             // Title
-            string title = "=== CRIME SCENE FILE - SUSPECT TRANSCRIPTS ===";
+            string title = $"=== {viewingCharacterName} - TRANSCRIPT ===";
             Vector2 titleSize = font.MeasureString(title);
             Vector2 titlePos = new Vector2((screenWidth - titleSize.X) / 2, panelY + 20);
             spriteBatch.DrawString(font, title, titlePos + new Vector2(2, 2), Color.Black);
-            spriteBatch.DrawString(font, title, titlePos, Color.Yellow);
+            spriteBatch.DrawString(font, title, titlePos, Color.Cyan);
 
             // Instructions
-            string instructions = "[Up/Down] Navigate | [E/Escape] Close";
+            string instructions = "[Up/Down] Scroll | [Tab] Back to List";
             Vector2 instructionsSize = font.MeasureString(instructions);
             Vector2 instructionsPos = new Vector2((screenWidth - instructionsSize.X) / 2, panelY + 50);
             spriteBatch.DrawString(font, instructions, instructionsPos + new Vector2(1, 1), Color.Black);
             spriteBatch.DrawString(font, instructions, instructionsPos, Color.Gray);
 
-            // Transcripts list
+            // Transcript content
             int yOffset = panelY + 90;
-            int lineHeight = 25;
-            int contentStartY = yOffset;
+            float textScale = 0.5f; // 50% font size
+            int baseLineHeight = (int)(font.LineSpacing * textScale);
+            int lineSpacing = baseLineHeight + 8; // Add spacing between lines
+            int currentLine = 0;
 
-            for (int i = scrollOffset; i < Math.Min(crimeSceneFile.Transcripts.Count, scrollOffset + MaxVisibleLines); i++)
+            foreach (var subject in subjects)
             {
-                var transcript = crimeSceneFile.Transcripts[i];
-                bool isSelected = (i == selectedIndex);
-
-                // Highlight selected item
-                if (isSelected)
+                // Subject header
+                if (currentLine >= subjectScrollOffset)
                 {
-                    var highlightTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-                    highlightTexture.SetData(new[] { new Color(100, 100, 50, 100) });
-                    spriteBatch.Draw(highlightTexture, new Rectangle(panelX + 20, yOffset - 5, panelWidth - 40, lineHeight), Color.White);
+                    string subjectHeader = $"--- {subject} ---";
+                    Vector2 subjectPos = new Vector2(panelX + 30, yOffset);
+                    spriteBatch.DrawString(font, subjectHeader, subjectPos + new Vector2(1, 1), Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                    spriteBatch.DrawString(font, subjectHeader, subjectPos, Color.Yellow, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                    yOffset += lineSpacing + 5; // Extra spacing after subject header
+
+                    if (yOffset > panelY + panelHeight - 30)
+                        break;
+                }
+                currentLine++;
+
+                // Character's lines for this subject
+                var lines = stateMachine.GetSubjectLines(subject);
+                foreach (var line in lines)
+                {
+                    if (currentLine >= subjectScrollOffset)
+                    {
+                        // Proper word wrapping for long lines
+                        List<string> wrappedLines = WrapText(font, line, panelWidth - 100, textScale);
+
+                        foreach (var wrappedLine in wrappedLines)
+                        {
+                            Vector2 linePos = new Vector2(panelX + 50, yOffset);
+                            spriteBatch.DrawString(font, wrappedLine, linePos + new Vector2(1, 1), Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                            spriteBatch.DrawString(font, wrappedLine, linePos, Color.White, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                            yOffset += lineSpacing;
+
+                            if (yOffset > panelY + panelHeight - 30)
+                                break;
+                        }
+
+                        if (yOffset > panelY + panelHeight - 30)
+                            break;
+                    }
+                    currentLine++;
                 }
 
-                // Suspect name
-                string suspectName = $"{transcript.SuspectName}";
-                Color nameColor = transcript.WasQuestioned ? Color.White : Color.Gray;
-                if (isSelected) nameColor = Color.Yellow;
+                // Spacing between subjects
+                yOffset += lineSpacing;
+                currentLine++;
 
-                Vector2 namePos = new Vector2(panelX + 30, yOffset);
-                spriteBatch.DrawString(font, suspectName, namePos + new Vector2(1, 1), Color.Black);
-                spriteBatch.DrawString(font, suspectName, namePos, nameColor);
-
-                // Status indicator
-                string status = transcript.WasQuestioned ? "[INTERVIEWED]" : "[NOT INTERVIEWED]";
-                Color statusColor = transcript.WasQuestioned ? Color.Green : Color.Red;
-                Vector2 statusPos = new Vector2(panelX + panelWidth - 200, yOffset);
-                spriteBatch.DrawString(font, status, statusPos + new Vector2(1, 1), Color.Black);
-                spriteBatch.DrawString(font, status, statusPos, statusColor);
-
-                yOffset += lineHeight;
+                if (yOffset > panelY + panelHeight - 30)
+                    break;
             }
 
-            // Selected transcript content
-            if (selectedIndex >= 0 && selectedIndex < crimeSceneFile.Transcripts.Count)
-            {
-                var selectedTranscript = crimeSceneFile.Transcripts[selectedIndex];
-
-                // Divider line
-                int dividerY = contentStartY + (MaxVisibleLines * lineHeight) + 10;
-                spriteBatch.Draw(borderTexture, new Rectangle(panelX + 20, dividerY, panelWidth - 40, 2), Color.Yellow);
-
-                // Transcript content
-                string contentTitle = $"--- {selectedTranscript.SuspectName} ---";
-                Vector2 contentTitlePos = new Vector2(panelX + 30, dividerY + 15);
-                spriteBatch.DrawString(font, contentTitle, contentTitlePos + new Vector2(1, 1), Color.Black);
-                spriteBatch.DrawString(font, contentTitle, contentTitlePos, Color.Cyan);
-
-                // Wrap and display transcript content
-                string content = selectedTranscript.Content;
-                Vector2 contentPos = new Vector2(panelX + 30, dividerY + 45);
-                DrawWrappedText(spriteBatch, font, content, contentPos, panelWidth - 60, Color.White);
-            }
-
-            backgroundTexture.Dispose();
             panelTexture.Dispose();
+        }
+
+        private void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
+        {
+            var borderTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+            borderTexture.SetData(new[] { Color.White });
+
+            // Top
+            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+            // Bottom
+            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
+            // Left
+            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+            // Right
+            spriteBatch.Draw(borderTexture, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
+
             borderTexture.Dispose();
         }
 
-        private void DrawWrappedText(SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, int maxWidth, Color color)
+        /// <summary>
+        /// Wrap text to fit within a specified width
+        /// </summary>
+        private List<string> WrapText(SpriteFont font, string text, int maxWidth, float scale)
         {
+            List<string> lines = new List<string>();
             string[] words = text.Split(' ');
             string currentLine = "";
-            Vector2 currentPos = position;
 
             foreach (string word in words)
             {
-                string testLine = currentLine + word + " ";
-                Vector2 testSize = font.MeasureString(testLine);
+                string testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                Vector2 testSize = font.MeasureString(testLine) * scale;
 
-                if (testSize.X > maxWidth && currentLine != "")
+                if (testSize.X > maxWidth && !string.IsNullOrEmpty(currentLine))
                 {
-                    // Draw current line
-                    spriteBatch.DrawString(font, currentLine, currentPos + new Vector2(1, 1), Color.Black);
-                    spriteBatch.DrawString(font, currentLine, currentPos, color);
-                    currentPos.Y += font.LineSpacing;
-                    currentLine = word + " ";
+                    // Current line is full, add it and start new line
+                    lines.Add(currentLine);
+                    currentLine = word;
                 }
                 else
                 {
@@ -225,12 +402,19 @@ namespace anakinsoft.system
                 }
             }
 
-            // Draw remaining text
-            if (currentLine != "")
+            // Add remaining text
+            if (!string.IsNullOrEmpty(currentLine))
             {
-                spriteBatch.DrawString(font, currentLine, currentPos + new Vector2(1, 1), Color.Black);
-                spriteBatch.DrawString(font, currentLine, currentPos, color);
+                lines.Add(currentLine);
             }
+
+            // If no lines were created (empty text), return empty list
+            if (lines.Count == 0)
+            {
+                lines.Add("");
+            }
+
+            return lines;
         }
     }
 }

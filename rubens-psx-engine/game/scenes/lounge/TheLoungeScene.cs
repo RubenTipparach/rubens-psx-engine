@@ -79,11 +79,16 @@ namespace anakinsoft.game.scenes
         // Evidence vial item
         InteractableItem evidenceVial;
 
+        // Additional evidence items
+        InteractableItem securityLog;
+        InteractableItem datapad;
+        InteractableItem keycard;
+
         // Evidence table system
         EvidenceTable evidenceTable;
 
-        // Crime scene file
-        CrimeSceneFile crimeSceneFile;
+        // Suspects file
+        SuspectsFile crimeSceneFile;
         RenderingEntity crimeSceneFileVisual; // Cube placeholder for the file
 
         // Autopsy report
@@ -162,11 +167,14 @@ namespace anakinsoft.game.scenes
             // Create evidence vial item
             InitializeEvidenceVial();
 
-            // Create crime scene file on table
-            InitializeCrimeSceneFile();
+            // Create suspects file on table
+            InitializeSuspectsFile();
 
             // Create autopsy report on table
             InitializeAutopsyReport();
+
+            // Create additional evidence items
+            InitializeAdditionalEvidenceItems();
 
             // Pathologist will be spawned after bartender dialogue
             // Don't initialize pathologist here - will be called from TheLoungeScreen after bartender dialogue
@@ -415,7 +423,7 @@ namespace anakinsoft.game.scenes
 
             // Create 3x3 grid (9 slots for evidence items)
             // This gives us organized positions for:
-            // - Crime scene file (center)
+            // - Suspects file (center)
             // - Evidence items (surrounding slots)
             // - Future collectibles
             evidenceTable = new EvidenceTable(tableCenter, tableSize, 3, 3);
@@ -461,22 +469,22 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("========================================\n");
         }
 
-        private void InitializeCrimeSceneFile()
+        private void InitializeSuspectsFile()
         {
             Console.WriteLine("\n========================================");
-            Console.WriteLine("CREATING CRIME SCENE FILE");
+            Console.WriteLine("CREATING SUSPECTS FILE");
             Console.WriteLine("========================================");
 
-            // Place crime scene file in center slot of evidence table (slot [1,1])
+            // Place suspects file in center slot of evidence table (slot [1,1])
             // Grid layout (3x3):
             // [0,0] [0,1] [0,2]
-            // [1,0] [1,1] [1,2]  <- Center slot [1,1] for crime scene file
+            // [1,0] [1,1] [1,2]  <- Center slot [1,1] for suspects file
             // [2,0] [2,1] [2,2]
             Vector3 filePosition = evidenceTable.GetSlotPosition(1, 1); // Center of 3x3 grid
 
-            // Create crime scene file interactable
+            // Create suspects file interactable
             Vector3 fileSize = new Vector3(8f, 1f, 8f) * LevelScale; // Match visual size
-            crimeSceneFile = new CrimeSceneFile(
+            crimeSceneFile = new SuspectsFile(
                 "Suspects File",
                 filePosition,
                 fileSize
@@ -486,7 +494,7 @@ namespace anakinsoft.game.scenes
             crimeSceneFile.CanInteract = false;
 
             // Register file with evidence table
-            evidenceTable.PlaceItem("crime_scene_file", 1, 1, crimeSceneFile);
+            evidenceTable.PlaceItem("suspects_file", 1, 1, crimeSceneFile);
 
             // Initialize with all suspect entries (empty transcripts until interviewed)
             crimeSceneFile.AddTranscript("Bartender Zix", "Not yet interviewed.", false);
@@ -517,7 +525,7 @@ namespace anakinsoft.game.scenes
                 )
             );
 
-            // Store the static handle in the crime scene file for interaction detection
+            // Store the static handle in the suspects file for interaction detection
             crimeSceneFile.SetStaticHandle(fileStaticHandle);
 
             // Create visual placeholder (cube) - 90% smaller for a small file/tablet appearance
@@ -530,8 +538,8 @@ namespace anakinsoft.game.scenes
 
             AddRenderingEntity(crimeSceneFileVisual);
 
-            Console.WriteLine($"Crime scene file created at position: {filePosition}");
-            Console.WriteLine($"Crime scene file physics collider created with handle: {fileStaticHandle.Value}");
+            Console.WriteLine($"Suspects file created at position: {filePosition}");
+            Console.WriteLine($"Suspects file physics collider created with handle: {fileStaticHandle.Value}");
             Console.WriteLine("========================================\n");
         }
 
@@ -544,7 +552,7 @@ namespace anakinsoft.game.scenes
             // Place autopsy report in slot [1,0] (left of center)
             // Grid layout (3x3):
             // [0,0] [0,1] [0,2]
-            // [1,0] [1,1] [1,2]  <- Slot [1,0] for autopsy report, [1,1] for crime scene file
+            // [1,0] [1,1] [1,2]  <- Slot [1,0] for autopsy report, [1,1] for suspects file
             // [2,0] [2,1] [2,2]
             Vector3 reportPosition = evidenceTable.GetSlotPosition(1, 0);
 
@@ -595,8 +603,79 @@ namespace anakinsoft.game.scenes
 
             AddRenderingEntity(autopsyReportVisual);
 
+            // Link visual to autopsy report for showing/hiding
+            autopsyReport.SetVisual(autopsyReportVisual);
+
             Console.WriteLine($"Autopsy report created at position: {reportPosition}");
             Console.WriteLine($"Autopsy report physics collider created with handle: {reportStaticHandle.Value}");
+            Console.WriteLine("========================================\n");
+        }
+
+        private void InitializeAdditionalEvidenceItems()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("CREATING ADDITIONAL EVIDENCE ITEMS");
+            Console.WriteLine("========================================");
+
+            // Grid layout (3x3):
+            // [0,0] [0,1] [0,2]
+            // [1,0] [1,1] [1,2]  <- [1,0] autopsy report, [1,1] suspects file
+            // [2,0] [2,1] [2,2]
+
+            // Security Log - slot [0,0] (top-left)
+            Vector3 securityLogPos = evidenceTable.GetSlotPosition(0, 0);
+            var securityLogItem = new InventoryItem(
+                id: "security_log",
+                name: "Security Log",
+                description: "Station security logs from the night of the murder. Shows unusual access patterns."
+            );
+            securityLog = new InteractableItem(
+                "Security Log",
+                securityLogPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                securityLogItem
+            );
+            interactionSystem.RegisterInteractable(securityLog);
+            evidenceTable.PlaceItem("security_log", 0, 0, securityLog);
+            Console.WriteLine($"Security Log created at position: {securityLogPos}");
+
+            // Datapad - slot [1,2] (center-right)
+            Vector3 datapadPos = evidenceTable.GetSlotPosition(1, 2);
+            var datapadItem = new InventoryItem(
+                id: "datapad",
+                name: "Encrypted Datapad",
+                description: "A personal datapad found near the body. Contains encrypted messages."
+            );
+            datapad = new InteractableItem(
+                "Encrypted Datapad",
+                datapadPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                datapadItem
+            );
+            interactionSystem.RegisterInteractable(datapad);
+            evidenceTable.PlaceItem("datapad", 1, 2, datapad);
+            Console.WriteLine($"Encrypted Datapad created at position: {datapadPos}");
+
+            // Keycard - slot [2,1] (bottom-center)
+            Vector3 keycardPos = evidenceTable.GetSlotPosition(2, 1);
+            var keycardItem = new InventoryItem(
+                id: "keycard",
+                name: "Ambassador's Keycard",
+                description: "The ambassador's personal keycard. Shows recent usage at medical bay."
+            );
+            keycard = new InteractableItem(
+                "Ambassador's Keycard",
+                keycardPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                keycardItem
+            );
+            interactionSystem.RegisterInteractable(keycard);
+            evidenceTable.PlaceItem("keycard", 2, 1, keycard);
+            Console.WriteLine($"Ambassador's Keycard created at position: {keycardPos}");
+
             Console.WriteLine("========================================\n");
         }
 
@@ -717,10 +796,10 @@ namespace anakinsoft.game.scenes
             // Draw all entities using the base scene drawing
             base.Draw(gameTime, camera);
 
-            // Draw crime scene file bounding box when targeted (always visible for gameplay)
+            // Draw suspects file bounding box when targeted (always visible for gameplay)
             if (crimeSceneFile != null)
             {
-                debugVisualizer.DrawCrimeSceneFileBox(crimeSceneFile, camera);
+                debugVisualizer.DrawSuspectsFileBox(crimeSceneFile, camera);
             }
 
             // Draw autopsy report bounding box when targeted (always visible for gameplay, unless collected)
@@ -801,7 +880,10 @@ namespace anakinsoft.game.scenes
         public InteractableCharacter GetBartender() => bartender.Interaction;
         public InteractableCharacter GetPathologist() => pathologist.Interaction;
         public InteractableItem GetEvidenceVial() => evidenceVial;
-        public CrimeSceneFile GetCrimeSceneFile() => crimeSceneFile;
+        public InteractableItem GetSecurityLog() => securityLog;
+        public InteractableItem GetDatapad() => datapad;
+        public InteractableItem GetKeycard() => keycard;
+        public SuspectsFile GetSuspectsFile() => crimeSceneFile;
         public AutopsyReport GetAutopsyReport() => autopsyReport;
         public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;

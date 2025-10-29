@@ -16,12 +16,18 @@ namespace anakinsoft.game.scenes.lounge.characters
         protected Dictionary<string, bool> flags;  // Track game state flags
         protected List<string> dialogueHistory;   // Track what's been said
 
+        // Transcript tracking: Each subject (sequence name) maps to list of character's lines
+        protected Dictionary<string, List<string>> transcriptSubjects;
+        protected List<string> subjectOrder; // Track order subjects were discussed
+
         public CharacterStateMachine(CharacterConfig characterConfig)
         {
             config = characterConfig;
             currentState = "initial";
             flags = new Dictionary<string, bool>();
             dialogueHistory = new List<string>();
+            transcriptSubjects = new Dictionary<string, List<string>>();
+            subjectOrder = new List<string>();
         }
 
         /// <summary>
@@ -40,9 +46,30 @@ namespace anakinsoft.game.scenes.lounge.characters
         public abstract CharacterDialogueSequence GetCurrentDialogue();
 
         /// <summary>
-        /// Handle dialogue completion and state transitions
+        /// Handle dialogue completion and state transitions (sealed - calls OnDialogueCompleteInternal)
+        /// Automatically records transcript and calls derived class implementation
         /// </summary>
-        public abstract void OnDialogueComplete(string sequenceName);
+        public void OnDialogueComplete(string sequenceName)
+        {
+            // Mark as seen in history
+            MarkDialogueSeen(sequenceName);
+
+            // Automatically record transcript subject
+            var dialogue = GetDialogueSequence(sequenceName);
+            if (dialogue != null)
+            {
+                RecordTranscriptSubject(dialogue);
+            }
+
+            // Call derived class implementation for state transitions
+            OnDialogueCompleteInternal(sequenceName);
+        }
+
+        /// <summary>
+        /// Internal method for derived classes to handle dialogue completion logic
+        /// (state transitions, flags, etc.)
+        /// </summary>
+        protected abstract void OnDialogueCompleteInternal(string sequenceName);
 
         /// <summary>
         /// Handle player actions/responses
@@ -126,6 +153,63 @@ namespace anakinsoft.game.scenes.lounge.characters
             }
 
             return sequence;
+        }
+
+        /// <summary>
+        /// Record a dialogue sequence as a transcript subject
+        /// Extracts only this character's lines and stores them under the sequence name
+        /// </summary>
+        protected void RecordTranscriptSubject(CharacterDialogueSequence yamlDialogue)
+        {
+            if (yamlDialogue == null) return;
+
+            string subject = yamlDialogue.sequence_name;
+
+            // Skip if we've already recorded this subject
+            if (transcriptSubjects.ContainsKey(subject))
+                return;
+
+            // Extract only this character's lines
+            List<string> characterLines = new List<string>();
+            foreach (var line in yamlDialogue.lines)
+            {
+                if (line.speaker == config.name)
+                {
+                    characterLines.Add(line.text);
+                }
+            }
+
+            // Record subject
+            transcriptSubjects[subject] = characterLines;
+            subjectOrder.Add(subject);
+
+            Console.WriteLine($"[{config.name}] Recorded transcript subject: {subject} ({characterLines.Count} lines)");
+        }
+
+        /// <summary>
+        /// Get all transcript subjects in the order they were discussed
+        /// </summary>
+        public List<string> GetTranscriptSubjects()
+        {
+            return new List<string>(subjectOrder);
+        }
+
+        /// <summary>
+        /// Get lines for a specific subject
+        /// </summary>
+        public List<string> GetSubjectLines(string subject)
+        {
+            if (transcriptSubjects.ContainsKey(subject))
+                return new List<string>(transcriptSubjects[subject]);
+            return new List<string>();
+        }
+
+        /// <summary>
+        /// Check if character has been interviewed (has any transcript subjects)
+        /// </summary>
+        public bool HasBeenInterviewed()
+        {
+            return subjectOrder.Count > 0;
         }
     }
 }

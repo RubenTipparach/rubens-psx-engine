@@ -30,7 +30,7 @@ namespace anakinsoft.game.scenes.lounge.characters
                     return GetDialogueSequence("WaitingForReport");
 
                 case "report_received":
-                    // Report received, present evidence and enable crime scene file
+                    // Report received, present evidence and enable suspects file
                     return GetDialogueSequence("PathologistEvidence");
 
                 case "done":
@@ -46,10 +46,8 @@ namespace anakinsoft.game.scenes.lounge.characters
         /// <summary>
         /// Handle dialogue completion and state transitions
         /// </summary>
-        public override void OnDialogueComplete(string sequenceName)
+        protected override void OnDialogueCompleteInternal(string sequenceName)
         {
-            MarkDialogueSeen(sequenceName);
-
             switch (sequenceName)
             {
                 case "PathologistReport":

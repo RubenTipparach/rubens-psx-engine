@@ -42,9 +42,8 @@ namespace anakinsoft.game.scenes.lounge.characters
         /// <summary>
         /// Handle dialogue completion and state transitions
         /// </summary>
-        public override void OnDialogueComplete(string sequenceName)
+        protected override void OnDialogueCompleteInternal(string sequenceName)
         {
-            MarkDialogueSeen(sequenceName);
 
             switch (sequenceName)
             {

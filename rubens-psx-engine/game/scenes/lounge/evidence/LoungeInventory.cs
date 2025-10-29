@@ -25,18 +25,24 @@ namespace anakinsoft.game.scenes.lounge.evidence
     public class LoungeInventory
     {
         private InventoryItem currentItem = null;
+        private InteractableItem currentItemSource = null; // Track which interactable this item came from
 
         public bool HasItem => currentItem != null;
         public InventoryItem CurrentItem => currentItem;
+        public InteractableItem CurrentItemSource => currentItemSource;
+
+        public event Action<InteractableItem> OnItemSwappedOut; // Fires when item is returned to world
 
         /// <summary>
-        /// Pick up an item (drops current item if holding one)
+        /// Pick up an item (returns current item to world if holding one)
         /// </summary>
-        public void PickUpItem(InventoryItem item)
+        public void PickUpItem(InventoryItem item, InteractableItem source)
         {
-            if (currentItem != null)
+            // If already holding an item, return it to the world
+            if (currentItem != null && currentItemSource != null)
             {
-                Console.WriteLine($"Inventory: Dropped {currentItem.Name}, picked up {item.Name}");
+                Console.WriteLine($"Inventory: Returning {currentItem.Name} to world, picking up {item.Name}");
+                OnItemSwappedOut?.Invoke(currentItemSource);
             }
             else
             {
@@ -44,6 +50,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
             }
 
             currentItem = item;
+            currentItemSource = source;
         }
 
         /// <summary>
@@ -55,6 +62,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
             {
                 Console.WriteLine($"Inventory: Dropped {currentItem.Name}");
                 currentItem = null;
+                currentItemSource = null;
             }
         }
 
@@ -72,6 +80,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
         public void Clear()
         {
             currentItem = null;
+            currentItemSource = null;
         }
 
         /// <summary>

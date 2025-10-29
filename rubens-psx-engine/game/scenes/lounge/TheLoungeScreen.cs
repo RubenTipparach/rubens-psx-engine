@@ -85,6 +85,21 @@ namespace anakinsoft.game.scenes
             dialogueChoiceSystem = new DialogueChoiceSystem();
             transcriptReviewUI = new TranscriptReviewUI();
 
+            // Wire up inventory swapping event
+            inventory.OnItemSwappedOut += (interactableItem) =>
+            {
+                if (interactableItem != null)
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Returning item to world: {interactableItem.Name}");
+                    interactableItem.ReturnToWorld();
+                }
+                else
+                {
+                    // Item was autopsy report or other special item (no source to return to)
+                    Console.WriteLine($"[TheLoungeScreen] Item swapped out but no source to return to");
+                }
+            };
+
             // Initialize interrogation management
             interrogationManager = new InterrogationRoundManager();
             fadeTransition = new ScreenFadeTransition(gd);
@@ -95,14 +110,14 @@ namespace anakinsoft.game.scenes
             // Set up dialogue and camera transition event handlers
             SetupDialogueAndInteractionSystems();
 
-            // Set up evidence vial item collection
-            SetupEvidenceVial();
+            // Set up evidence item collection
+            SetupEvidenceItems();
 
             // Set up autopsy report collection
             SetupAutopsyReport();
 
-            // Set up crime scene file interaction
-            SetupCrimeSceneFile();
+            // Set up suspects file interaction
+            SetupSuspectsFile();
 
             // Set up interrogation system
             SetupInterrogationSystem();
@@ -235,15 +250,23 @@ namespace anakinsoft.game.scenes
             };
         }
 
-        private void SetupEvidenceVial()
+        private void SetupEvidenceItems()
         {
-            var vial = loungeScene.GetEvidenceVial();
-            if (vial != null)
+            // Wire up all evidence items to inventory system
+            SetupEvidenceItem(loungeScene.GetEvidenceVial());
+            SetupEvidenceItem(loungeScene.GetSecurityLog());
+            SetupEvidenceItem(loungeScene.GetDatapad());
+            SetupEvidenceItem(loungeScene.GetKeycard());
+        }
+
+        private void SetupEvidenceItem(InteractableItem item)
+        {
+            if (item != null)
             {
-                vial.OnItemCollected += (item) =>
+                item.OnItemCollected += (collectedItem) =>
                 {
-                    Console.WriteLine($"Collected item: {item.Item.Name}");
-                    inventory.PickUpItem(item.Item);
+                    Console.WriteLine($"Collected item: {collectedItem.Item.Name}");
+                    inventory.PickUpItem(collectedItem.Item, collectedItem);
                 };
             }
         }
@@ -257,9 +280,13 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"Collected {report.ReportTitle}");
 
-                    // NOTE: Do NOT hide the autopsy report visual
-                    // It stays on the table during interrogations so players can review the pathologist's transcript
-                    // loungeScene.HideAutopsyReportVisual();
+                    // Add to inventory
+                    var reportItem = new InventoryItem(
+                        id: "autopsy_report",
+                        name: "Autopsy Report",
+                        description: "Dr. Harmon Kerrigan's preliminary autopsy findings."
+                    );
+                    inventory.PickUpItem(reportItem, null); // null source since it can't be swapped back
 
                     // Update pathologist state machine
                     pathologistStateMachine.OnAutopsyReportDelivered();
@@ -267,17 +294,42 @@ namespace anakinsoft.game.scenes
                     // Trigger dialogue with pathologist
                     Console.WriteLine("[TheLoungeScreen] Autopsy report collected - talk to pathologist to continue");
                 };
+
+                // Handle transcript viewing after round 1
+                autopsyReport.OnTranscriptViewed += (report) =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Viewing autopsy report transcript");
+
+                    // Gather all character state machines
+                    var stateMachines = new Dictionary<string, CharacterStateMachine>();
+
+                    // Add bartender and pathologist
+                    if (bartenderStateMachine != null)
+                        stateMachines["Bartender Zix"] = bartenderStateMachine;
+                    if (pathologistStateMachine != null)
+                        stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
+
+                    // Add interrogation characters if they exist
+                    if (interrogationChar1StateMachine != null)
+                        stateMachines[interrogationChar1StateMachine.CharacterName] = interrogationChar1StateMachine;
+                    if (interrogationChar2StateMachine != null)
+                        stateMachines[interrogationChar2StateMachine.CharacterName] = interrogationChar2StateMachine;
+
+                    // Open transcript UI with state machines
+                    transcriptReviewUI.Open(stateMachines);
+                    Console.WriteLine($"[TheLoungeScreen] Opened transcript review UI with {stateMachines.Count} characters");
+                };
             }
         }
 
-        private void SetupCrimeSceneFile()
+        private void SetupSuspectsFile()
         {
-            var file = loungeScene.GetCrimeSceneFile();
+            var file = loungeScene.GetSuspectsFile();
             if (file != null)
             {
-                file.OnFileOpened += (crimeFile) =>
+                file.OnFileOpened += (suspectsFile) =>
                 {
-                    Console.WriteLine("Opening crime scene file");
+                    Console.WriteLine("Opening suspects file");
 
                     // If player can select suspects, show character selection menu
                     if (gameProgress.CanSelectSuspects)
@@ -287,8 +339,22 @@ namespace anakinsoft.game.scenes
                     }
                     else
                     {
-                        // Otherwise show transcript review
-                        transcriptReviewUI.Open(crimeFile);
+                        // Otherwise show transcript review with state machines
+                        var stateMachines = new Dictionary<string, CharacterStateMachine>();
+
+                        // Add bartender and pathologist
+                        if (bartenderStateMachine != null)
+                            stateMachines["Bartender Zix"] = bartenderStateMachine;
+                        if (pathologistStateMachine != null)
+                            stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
+
+                        // Add interrogation characters if they exist
+                        if (interrogationChar1StateMachine != null)
+                            stateMachines[interrogationChar1StateMachine.CharacterName] = interrogationChar1StateMachine;
+                        if (interrogationChar2StateMachine != null)
+                            stateMachines[interrogationChar2StateMachine.CharacterName] = interrogationChar2StateMachine;
+
+                        transcriptReviewUI.Open(stateMachines);
                     }
                 };
             }
@@ -394,6 +460,21 @@ namespace anakinsoft.game.scenes
 
                 // Mark interrogation in progress
                 characterSelectionMenu.SetInterrogationInProgress(true);
+
+                // On first round, convert autopsy report to transcript mode and clear inventory
+                if (interrogationManager.CurrentRound == 1)
+                {
+                    var autopsyReport = loungeScene.GetAutopsyReport();
+                    if (autopsyReport != null)
+                    {
+                        autopsyReport.ConvertToTranscriptMode();
+                        Console.WriteLine("[TheLoungeScreen] Autopsy report converted to transcript mode");
+                    }
+
+                    // Clear inventory (autopsy report was delivered to pathologist)
+                    inventory.Clear();
+                    Console.WriteLine("[TheLoungeScreen] Inventory cleared for interrogation");
+                }
 
                 // TODO: Display time message to player
             };
@@ -679,12 +760,12 @@ namespace anakinsoft.game.scenes
                     {
                         Console.WriteLine("[TheLoungeScreen] Pathologist asks you to get autopsy report - enabling it now");
 
-                        // Disable crime scene file
-                        var file = loungeScene.GetCrimeSceneFile();
+                        // Disable suspects file
+                        var file = loungeScene.GetSuspectsFile();
                         if (file != null)
                         {
                             file.CanInteract = false;
-                            Console.WriteLine("[TheLoungeScreen] Crime scene file is disabled");
+                            Console.WriteLine("[TheLoungeScreen] Suspects file is disabled");
                         }
 
                         // Enable the autopsy report for interaction
@@ -697,15 +778,15 @@ namespace anakinsoft.game.scenes
                     }
                     else if (yamlDialogue.on_complete == "show_character_selection")
                     {
-                        Console.WriteLine("[TheLoungeScreen] Pathologist evidence presented - enabling crime scene file");
+                        Console.WriteLine("[TheLoungeScreen] Pathologist evidence presented - enabling suspects file");
                         gameProgress.CanSelectSuspects = true;
 
-                        // Enable the crime scene file for interaction
-                        var file = loungeScene.GetCrimeSceneFile();
+                        // Enable the suspects file for interaction
+                        var file = loungeScene.GetSuspectsFile();
                         if (file != null)
                         {
                             file.CanInteract = true;
-                            Console.WriteLine("[TheLoungeScreen] Crime scene file is now interactable");
+                            Console.WriteLine("[TheLoungeScreen] Suspects file is now interactable");
                         }
 
                         // Disable the autopsy report (already delivered)
@@ -964,19 +1045,29 @@ namespace anakinsoft.game.scenes
                 dialogueChoiceSystem.Draw(spriteBatch, font);
             }
 
-            // Draw inventory at bottom of screen
+            // Draw inventory at center-left of screen
             if (inventory.HasItem && font != null && !transcriptReviewUI.IsActive)
             {
                 var viewport = Globals.screenManager.GraphicsDevice.Viewport;
                 string inventoryText = inventory.GetDisplayText();
                 Vector2 textSize = font.MeasureString(inventoryText);
+
+                // Position at center-left with some padding
                 Vector2 position = new Vector2(
-                    (viewport.Width - textSize.X) / 2,
-                    viewport.Height - textSize.Y - 20
+                    30, // Left padding
+                    (viewport.Height - textSize.Y) / 2 // Vertically centered
                 );
 
-                // Draw shadow
-                spriteBatch.DrawString(font, inventoryText, position + new Vector2(2, 2), Color.Black);
+                // Draw background box (darker for better readability)
+                Rectangle bgRect = new Rectangle(
+                    (int)position.X - 10,
+                    (int)position.Y - 5,
+                    (int)textSize.X + 20,
+                    (int)textSize.Y + 10
+                );
+                DrawFilledRectangle(spriteBatch, bgRect, Color.Black * 0.9f);
+                DrawRectangleBorder(spriteBatch, bgRect, Color.Yellow, 2);
+
                 // Draw text
                 spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
             }
@@ -1021,6 +1112,37 @@ namespace anakinsoft.game.scenes
         {
             // PhysicsScreen base class will automatically dispose physics resources
             base.KillScreen();
+        }
+
+        /// <summary>
+        /// Helper method to draw a filled rectangle
+        /// </summary>
+        private void DrawFilledRectangle(Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch, Rectangle rect, Color color)
+        {
+            var texture = new Microsoft.Xna.Framework.Graphics.Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+            texture.SetData(new[] { Color.White });
+            spriteBatch.Draw(texture, rect, color);
+            texture.Dispose();
+        }
+
+        /// <summary>
+        /// Helper method to draw a rectangle border
+        /// </summary>
+        private void DrawRectangleBorder(Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
+        {
+            var texture = new Microsoft.Xna.Framework.Graphics.Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+            texture.SetData(new[] { Color.White });
+
+            // Top
+            spriteBatch.Draw(texture, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+            // Bottom
+            spriteBatch.Draw(texture, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
+            // Left
+            spriteBatch.Draw(texture, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+            // Right
+            spriteBatch.Draw(texture, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
+
+            texture.Dispose();
         }
     }
 }
