@@ -166,6 +166,30 @@ pathologist:
         - speaker: "Dr. Harmon Kerrigan"
           text: "That's all I have for now, Detective. You may start by reviewing the suspects file."
 
+  # Optional dialogue branches for future implementation:
+  # These can be used for evidence presentation, small talk, or branching dialogue choices
+  #
+  # - sequence_name: "PathologistVialResponse"
+  #   lines:
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "Perfect! This is exactly the kind of evidence you'll need to gather."
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "Now, let me brief you on what we found at the crime scene..."
+  #
+  # - sequence_name: "PathologistNoEvidence"
+  #   lines:
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "Keeping your cards close to your chest? I respect that."
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "But you'll need to start gathering and presenting evidence if you want to solve this case."
+  #
+  # - sequence_name: "PathologistSmallTalk"
+  #   lines:
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "Detective, we don't have time for pleasantries."
+  #     - speaker: "Dr. Harmon Kerrigan"
+  #       text: "The Telirians will be here in hours, and we need answers."
+
 # SUSPECTS - Available for interrogation
 
 commander_von:

@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.system;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
 using System;
@@ -50,6 +51,14 @@ namespace anakinsoft.game.scenes
         BartenderStateMachine bartenderStateMachine;
         PathologistStateMachine pathologistStateMachine;
 
+        // Suspect state machines (created during interrogation)
+        CharacterStateMachine interrogationChar1StateMachine;
+        CharacterStateMachine interrogationChar2StateMachine;
+
+        // Interrogation round management
+        InterrogationRoundManager interrogationManager;
+        ScreenFadeTransition fadeTransition;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -76,6 +85,10 @@ namespace anakinsoft.game.scenes
             dialogueChoiceSystem = new DialogueChoiceSystem();
             transcriptReviewUI = new TranscriptReviewUI();
 
+            // Initialize interrogation management
+            interrogationManager = new InterrogationRoundManager();
+            fadeTransition = new ScreenFadeTransition(gd);
+
             // Load character data from YAML and initialize state machines
             LoadCharacterDataAndStateMachines();
 
@@ -90,6 +103,9 @@ namespace anakinsoft.game.scenes
 
             // Set up crime scene file interaction
             SetupCrimeSceneFile();
+
+            // Set up interrogation system
+            SetupInterrogationSystem();
 
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
@@ -177,6 +193,8 @@ namespace anakinsoft.game.scenes
             };
 
             // Set up character selection menu events
+            List<SelectableCharacter> pendingInterrogationCharacters = null;
+
             characterSelectionMenu.OnCharactersSelected += (characters) =>
             {
                 Console.WriteLine($"{characters.Count} character(s) selected for interrogation:");
@@ -184,7 +202,23 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"  - {character.Name}");
                 }
-                // TODO: Start interrogation dialogue for selected characters
+
+                // Store selected characters for the round
+                pendingInterrogationCharacters = characters;
+
+                // Start fade out, then begin interrogation round
+                fadeTransition.FadeOut(1.0f);
+            };
+
+            // Update fade out handler to use pending characters
+            fadeTransition.OnFadeOutComplete += () =>
+            {
+                if (pendingInterrogationCharacters != null && pendingInterrogationCharacters.Count > 0)
+                {
+                    Console.WriteLine("[TheLoungeScreen] Fade out complete - starting interrogation round");
+                    interrogationManager.StartRound(pendingInterrogationCharacters);
+                    pendingInterrogationCharacters = null;
+                }
             };
 
             characterSelectionMenu.OnMenuClosed += () =>
@@ -249,6 +283,267 @@ namespace anakinsoft.game.scenes
                     }
                 };
             }
+        }
+
+        private void SetupInterrogationDialogue()
+        {
+            var char1 = loungeScene.GetInterrogationCharacter1();
+            var char2 = loungeScene.GetInterrogationCharacter2();
+
+            if (char1 != null && char1.Interaction != null)
+            {
+                // Get dialogue from state machine
+                var dialogue1 = GetInterrogationDialogue(interrogationChar1StateMachine, char1.Name);
+                if (dialogue1 != null)
+                {
+                    // Set dialogue on the character
+                    char1.Interaction.SetDialogue(dialogue1);
+                    Console.WriteLine($"[TheLoungeScreen] Set dialogue for {char1.Name}: {dialogue1.SequenceName}");
+                }
+
+                char1.Interaction.OnDialogueTriggered += (sequence) =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Starting interrogation with {char1.Name}");
+
+                    // Get fresh dialogue from state machine in case state changed
+                    var currentDialogue = GetInterrogationDialogue(interrogationChar1StateMachine, char1.Name);
+                    if (currentDialogue != null)
+                    {
+                        // Update character's dialogue
+                        char1.Interaction.SetDialogue(currentDialogue);
+
+                        // Add dismiss action at end of dialogue
+                        var originalOnComplete = currentDialogue.OnSequenceComplete;
+                        currentDialogue.OnSequenceComplete = () =>
+                        {
+                            // Call original completion (state machine update)
+                            originalOnComplete?.Invoke();
+
+                            Console.WriteLine($"[TheLoungeScreen] Dismissing {char1.Name}");
+                            interrogationManager.DismissCharacter(char1.Name);
+                        };
+
+                        cameraTransitionSystem.TransitionToInteraction(char1.Interaction.CameraInteractionPosition,
+                            char1.Interaction.CameraInteractionLookAt, 1.0f);
+                        dialogueSystem.StartDialogue(currentDialogue);
+                    }
+                };
+            }
+
+            if (char2 != null && char2.Interaction != null)
+            {
+                // Get dialogue from state machine
+                var dialogue2 = GetInterrogationDialogue(interrogationChar2StateMachine, char2.Name);
+                if (dialogue2 != null)
+                {
+                    // Set dialogue on the character
+                    char2.Interaction.SetDialogue(dialogue2);
+                    Console.WriteLine($"[TheLoungeScreen] Set dialogue for {char2.Name}: {dialogue2.SequenceName}");
+                }
+
+                char2.Interaction.OnDialogueTriggered += (sequence) =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Starting interrogation with {char2.Name}");
+
+                    // Get fresh dialogue from state machine in case state changed
+                    var currentDialogue = GetInterrogationDialogue(interrogationChar2StateMachine, char2.Name);
+                    if (currentDialogue != null)
+                    {
+                        // Update character's dialogue
+                        char2.Interaction.SetDialogue(currentDialogue);
+
+                        // Add dismiss action at end of dialogue
+                        var originalOnComplete = currentDialogue.OnSequenceComplete;
+                        currentDialogue.OnSequenceComplete = () =>
+                        {
+                            // Call original completion (state machine update)
+                            originalOnComplete?.Invoke();
+
+                            Console.WriteLine($"[TheLoungeScreen] Dismissing {char2.Name}");
+                            interrogationManager.DismissCharacter(char2.Name);
+                        };
+
+                        cameraTransitionSystem.TransitionToInteraction(char2.Interaction.CameraInteractionPosition,
+                            char2.Interaction.CameraInteractionLookAt, 1.0f);
+                        dialogueSystem.StartDialogue(currentDialogue);
+                    }
+                };
+            }
+        }
+
+        private void SetupInterrogationSystem()
+        {
+            fadeTransition.OnFadeInComplete += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Fade in complete - interrogation round active");
+            };
+
+            // Wire up interrogation round events
+            interrogationManager.OnRoundStarted += (hoursRemaining) =>
+            {
+                Console.WriteLine($"[TheLoungeScreen] Round started - {hoursRemaining} hours remaining");
+
+                // TODO: Display time message to player
+            };
+
+            interrogationManager.OnRoundEnded += (hoursRemaining) =>
+            {
+                Console.WriteLine($"[TheLoungeScreen] Round ended - {hoursRemaining} hours remaining");
+
+                // Despawn interrogation characters
+                loungeScene.DespawnInterrogationCharacters();
+
+                // If more hours remain, allow selecting more characters
+                if (hoursRemaining > 0)
+                {
+                    Console.WriteLine("[TheLoungeScreen] Opening character selection for next round");
+                    characterSelectionMenu.Show();
+                }
+            };
+
+            interrogationManager.OnAllRoundsComplete += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] All interrogation rounds complete - time to deduce the killer");
+                // TODO: Transition to deduction phase
+            };
+
+            interrogationManager.OnCharactersSpawned += (characters) =>
+            {
+                Console.WriteLine($"[TheLoungeScreen] Spawning {characters.Count} characters for interrogation");
+
+                // Create state machines for interrogation characters
+                CreateInterrogationStateMachines(characters);
+
+                // Spawn characters at interrogation positions (pass round number)
+                loungeScene.SpawnInterrogationCharacters(characters, interrogationManager.CurrentRound);
+
+                // Wire up dialogue completion to dismiss characters
+                SetupInterrogationDialogue();
+
+                // Fade back in after spawning
+                fadeTransition.FadeIn(1.0f);
+            };
+        }
+
+        /// <summary>
+        /// Create state machines for interrogation characters based on their character keys
+        /// </summary>
+        private void CreateInterrogationStateMachines(List<SelectableCharacter> characters)
+        {
+            if (characters == null || characters.Count == 0)
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No characters provided for state machine creation");
+                return;
+            }
+
+            // Create state machine for character 1
+            if (characters.Count > 0)
+            {
+                var char1Key = GetCharacterKey(characters[0].Name);
+                var char1Config = charactersData?.GetCharacter(char1Key);
+
+                if (char1Config != null)
+                {
+                    interrogationChar1StateMachine = CreateStateMachineForCharacter(char1Key, char1Config);
+                    Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[0].Name} (key: {char1Key})");
+                }
+                else
+                {
+                    Console.WriteLine($"[TheLoungeScreen] WARNING: Could not find config for character: {char1Key}");
+                }
+            }
+
+            // Create state machine for character 2
+            if (characters.Count > 1)
+            {
+                var char2Key = GetCharacterKey(characters[1].Name);
+                var char2Config = charactersData?.GetCharacter(char2Key);
+
+                if (char2Config != null)
+                {
+                    interrogationChar2StateMachine = CreateStateMachineForCharacter(char2Key, char2Config);
+                    Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[1].Name} (key: {char2Key})");
+                }
+                else
+                {
+                    Console.WriteLine($"[TheLoungeScreen] WARNING: Could not find config for character: {char2Key}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create the appropriate state machine for a character based on their key
+        /// </summary>
+        private CharacterStateMachine CreateStateMachineForCharacter(string characterKey, CharacterConfig config)
+        {
+            return characterKey switch
+            {
+                "commander_von" => new CommanderVonStateMachine(config),
+                "dr_thorne" => new DrThorneStateMachine(config),
+                "lt_webb" => new LtWebbStateMachine(config),
+                "ensign_tork" => new EnsignTorkStateMachine(config),
+                "maven_kilroth" => new MavenKilrothStateMachine(config),
+                "chief_solis" => new ChiefSolisStateMachine(config),
+                "tvora" => new TehvoraStateMachine(config),
+                "lucky_chen" => new LuckyChenStateMachine(config),
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// Convert character display name to character key for data lookup
+        /// </summary>
+        private string GetCharacterKey(string displayName)
+        {
+            // Map display names to character keys
+            return displayName switch
+            {
+                "Commander Sylar Von" => "commander_von",
+                "Dr. Thorne" => "dr_thorne",
+                "Lt. Marcus Webb" => "lt_webb",
+                "Ensign Tork" => "ensign_tork",
+                "Maven Kilroth" => "maven_kilroth",
+                "Chief Kala Solis" => "chief_solis",
+                "Tehvora" => "tvora",
+                "Lucky Chen" => "lucky_chen",
+                _ => displayName.ToLower().Replace(" ", "_").Replace(".", "")
+            };
+        }
+
+        /// <summary>
+        /// Get dialogue from state machine for interrogation character
+        /// </summary>
+        private DialogueSequence GetInterrogationDialogue(CharacterStateMachine stateMachine, string characterName)
+        {
+            if (stateMachine == null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: State machine not initialized for {characterName}");
+                return null;
+            }
+
+            // Get current dialogue from state machine
+            var yamlDialogue = stateMachine.GetCurrentDialogue();
+            if (yamlDialogue == null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] No dialogue available from {characterName} state machine");
+                return null;
+            }
+
+            // Convert YAML dialogue to DialogueSequence
+            var sequence = new DialogueSequence(yamlDialogue.sequence_name);
+            foreach (var line in yamlDialogue.lines)
+            {
+                sequence.AddLine(line.speaker, line.text);
+            }
+
+            // Wire up completion callback to state machine
+            sequence.OnSequenceComplete = () =>
+            {
+                Console.WriteLine($"[TheLoungeScreen] {characterName} dialogue '{yamlDialogue.sequence_name}' complete");
+                stateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
+            };
+
+            return sequence;
         }
 
         private void SetupPathologistDialogue()
@@ -412,146 +707,6 @@ namespace anakinsoft.game.scenes
             return sequence;
         }
 
-        /// <summary>
-        /// Show dialogue choice to present item or not
-        /// </summary>
-        private void ShowItemConfirmation()
-        {
-            var choices = new List<DialogueOption>
-            {
-                new DialogueOption($"Show {inventory.CurrentItem.Name}", () => PresentEvidenceToPathologist()),
-                new DialogueOption("Don't show anything", () => PathologistNoEvidence()),
-                new DialogueOption("Say something else", () => PathologistSmallTalk())
-            };
-
-            dialogueChoiceSystem.ShowChoices("What do you want to do?", choices);
-        }
-
-        /// <summary>
-        /// Player presents the vial to pathologist
-        /// </summary>
-        private void PresentEvidenceToPathologist()
-        {
-            var sequence = new DialogueSequence("PathologistVialResponse");
-
-            sequence.AddLine("Dr. Harmon Kerrigan", "Perfect! This is exactly the kind of evidence you'll need to gather.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Now, let me brief you on what we found at the crime scene...");
-
-            // Opening statement (from evidence.md - Dr. Harmon Kerrigan sample dialogue)
-            sequence.AddLine("Dr. Harmon Kerrigan", "Breturium shards? In an injection? That's not murder, Detective, that's a statement.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Whoever did this wanted it personal, painful, and invisible to scanners.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it.");
-
-            // Time of death
-            sequence.AddLine("Dr. Harmon Kerrigan", "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled.");
-
-            // Injection details
-            sequence.AddLine("Dr. Harmon Kerrigan", "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge.");
-
-            // Sedative findings
-            sequence.AddLine("Dr. Harmon Kerrigan", "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill.");
-
-            // The crime scene
-            sequence.AddLine("Dr. Harmon Kerrigan", "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative.");
-
-            // Security findings
-            sequence.AddLine("Dr. Harmon Kerrigan", "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes.");
-
-            // Conclusion and what to do next
-            sequence.AddLine("Dr. Harmon Kerrigan", "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "That's all I have for now, Detective. The rest is up to you. Good luck.");
-
-            // Set up callback for when dialogue ends - show character selection menu
-            sequence.OnSequenceComplete = () =>
-            {
-                Console.WriteLine("Pathologist dialogue complete - showing character selection");
-                gameProgress.HasTalkedToPathologist = true;
-                gameProgress.CanInterrogate = true;
-                characterSelectionMenu.Show();
-                gameProgress.LogProgress();
-            };
-
-            dialogueSystem.StartDialogue(sequence);
-        }
-
-        /// <summary>
-        /// Player chooses not to show evidence
-        /// </summary>
-        private void PathologistNoEvidence()
-        {
-            var sequence = new DialogueSequence("PathologistNoEvidence");
-
-            sequence.AddLine("Dr. Harmon Kerrigan", "Keeping your cards close to your chest? I respect that.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "But you'll need to start gathering and presenting evidence if you want to solve this case.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Now, let me tell you what we found...");
-
-            // Continue with same evidence briefing
-            AddEvidenceBriefingLines(sequence);
-
-            dialogueSystem.StartDialogue(sequence);
-        }
-
-        /// <summary>
-        /// Player chooses small talk option
-        /// </summary>
-        private void PathologistSmallTalk()
-        {
-            var sequence = new DialogueSequence("PathologistSmallTalk");
-
-            sequence.AddLine("Dr. Harmon Kerrigan", "Detective, we don't have time for pleasantries.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "The Telirians will be here in hours, and we need answers.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Let me brief you on what we know...");
-
-            // Continue with same evidence briefing
-            AddEvidenceBriefingLines(sequence);
-
-            dialogueSystem.StartDialogue(sequence);
-        }
-
-        /// <summary>
-        /// Add all the evidence briefing lines (reusable across branches)
-        /// </summary>
-        private void AddEvidenceBriefingLines(DialogueSequence sequence)
-        {
-            // Opening statement
-            sequence.AddLine("Dr. Harmon Kerrigan", "Breturium shards? In an injection? That's not murder, Detective, that's a statement.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Whoever did this wanted it personal, painful, and invisible to scanners.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "They also had to know Telirian physiology. Breturium reacts with their copper-based blood in a way that... let's say 'cascading organ failure' doesn't quite cover it.");
-
-            // Time of death
-            sequence.AddLine("Dr. Harmon Kerrigan", "Time of death: approximately 0300 hours. He was found collapsed near his bed, diplomatic robes disheveled.");
-
-            // Injection details
-            sequence.AddLine("Dr. Harmon Kerrigan", "The injection site shows faint scorch marks on his neck. Right-handed attacker, close personal range. This required medical knowledge.");
-
-            // Sedative findings
-            sequence.AddLine("Dr. Harmon Kerrigan", "Trace amounts of sedative in his system. Not lethal, but enough to make him drowsy. Someone prepared him for the kill.");
-
-            // The crime scene
-            sequence.AddLine("Dr. Harmon Kerrigan", "His personal PADD shows a meeting at 2100 hours with someone marked as 'T.B.' in his calendar.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "There was a half-empty glass of Telirian ceremonial wine on the nightstand. The wine contained the sedative.");
-
-            // Security findings
-            sequence.AddLine("Dr. Harmon Kerrigan", "His diplomatic lockbox was open. It requires both biometric scan and a 6-digit code. Someone with intimate knowledge opened it.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "Door logs show 4 different access codes used that night: his own, one override code, and two diplomatic access codes.");
-
-            // Conclusion
-            sequence.AddLine("Dr. Harmon Kerrigan", "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs.");
-            sequence.AddLine("Dr. Harmon Kerrigan", "That's all I have for now, Detective. The rest is up to you. Good luck.");
-
-            // Mark progression
-            sequence.OnSequenceComplete = () =>
-            {
-                Console.WriteLine("Pathologist dialogue complete - showing character selection");
-                gameProgress.HasTalkedToPathologist = true;
-                gameProgress.CanInterrogate = true;
-                characterSelectionMenu.Show();
-                gameProgress.LogProgress();
-            };
-        }
-
         private void OnBartenderDialogueTriggered(DialogueSequence sequence)
         {
             Console.WriteLine($"Bartender dialogue triggered");
@@ -682,6 +837,9 @@ namespace anakinsoft.game.scenes
             {
                 UpdateCameraMountedToCharacter();
             }
+
+            // Update fade transition
+            fadeTransition.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -820,6 +978,10 @@ namespace anakinsoft.game.scenes
             {
                 transcriptReviewUI.Draw(spriteBatch, font);
             }
+
+            // Draw fade transition (always last, on top of everything)
+            var viewportBounds = Globals.screenManager.GraphicsDevice.Viewport;
+            fadeTransition.Draw(spriteBatch, new Rectangle(0, 0, viewportBounds.Width, viewportBounds.Height));
         }
 
         public override void Draw3D(GameTime gameTime)

@@ -38,7 +38,7 @@ namespace anakinsoft.game.scenes
     {
         // Debug settings
         // TODO: Move to LoungeSceneMeshLoader or debug helper class
-        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -89,6 +89,10 @@ namespace anakinsoft.game.scenes
         // Autopsy report
         AutopsyReport autopsyReport;
         RenderingEntity autopsyReportVisual; // Cube placeholder for the report
+
+        // Interrogation characters (spawned during rounds)
+        LoungeCharacterData interrogationCharacter1;
+        LoungeCharacterData interrogationCharacter2;
 
         public TheLoungeScene() : base()
         {
@@ -242,79 +246,28 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("========================================");
 
             // Position pathologist at table (left side of lounge)
-            // Using the booth table position from the scene
-            Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f); 
-
-            // Camera interaction position - looking at the pathologist from across the table
+            Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f);
             Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-16, 15, 0);
-            Vector3 cameraLookAt = new Vector3(10, 0, 0); // Look at head level
+            Vector3 cameraLookAt = new Vector3(10, 0, 0);
 
-            // Create pathologist interactable
-            pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
-                cameraInteractionPosition, cameraLookAt);
-
-            // Register with interaction system
-            interactionSystem.RegisterInteractable(pathologist.Interaction);
-
-            // Create physics collider for pathologist (sitting, so shorter)
-            CreatePathologistCollider(pathologistPosition);
-
-            Console.WriteLine($"Pathologist created at position: {pathologistPosition}");
-            Console.WriteLine($"Interaction camera position: {cameraInteractionPosition}");
-
-            // Create pathologist model using alien-2 (sitting character)
-            var pathologistMaterial = new UnlitSkinnedMaterial("textures/prototype/grass", "shaders/surface/SkinnedVertexLit", useDefault: false);
-            pathologistMaterial.AmbientColor = new Vector3(0.1f, 0.1f, 0.2f);
-            pathologistMaterial.EmissiveColor = new Vector3(0.1f, 0.1f, 0.2f);
-            pathologistMaterial.LightDirection = Vector3.Normalize(new Vector3(0.3f, -1, -0.5f));
-            pathologistMaterial.LightColor = new Vector3(1.0f, 0.95f, 0.9f);
-            pathologistMaterial.LightIntensity = 0.9f;
-
-            pathologist.Model = new SkinnedRenderingEntity("models/characters/alien-2", pathologistMaterial);
-            pathologist.Model.Position = pathologistPosition;
-            pathologist.Model.Scale = Vector3.One * 0.25f * LevelScale; // Slightly larger for sitting pose
-            pathologist.Model.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(-90, 0, 0); // Face towards camera
-            pathologist.Model.IsVisible = true;
-
-            // Play idle animation
-            if (pathologist.Model is SkinnedRenderingEntity skinnedPathologist)
+            var config = new CharacterSpawnConfig
             {
-                var skinData = skinnedPathologist.GetSkinningData();
-                if (skinData != null && skinData.AnimationClips.Count > 0)
-                {
-                    var firstClipName = skinData.AnimationClips.Keys.First();
-                    skinnedPathologist.PlayAnimation(firstClipName, loop: true);
-                }
-            }
+                Name = "Dr. Harmon Kerrigan",
+                Position = pathologistPosition,
+                CameraPosition = cameraInteractionPosition,
+                CameraLookAt = cameraLookAt,
+                ModelPath = "models/characters/alien-2",
+                TexturePath = "textures/prototype/grass",
+                Scale = 0.25f,
+                RotationYaw = -90f,
+                ColliderWidth = 15f * LevelScale,
+                ColliderHeight = 30f * LevelScale,
+                ColliderDepth = 15f * LevelScale
+            };
 
-            AddRenderingEntity(pathologist.Model);
+            pathologist = SpawnCharacter(config);
 
             Console.WriteLine("========================================\n");
-        }
-
-        private void CreatePathologistCollider(Vector3 position)
-        {
-            // Create a box collider for the pathologist (sitting, so shorter)
-            pathologist.ColliderWidth = 15f * LevelScale;
-            pathologist.ColliderHeight = 30f * LevelScale; // Sitting height
-            pathologist.ColliderDepth = 15f * LevelScale;
-
-            var boxShape = new Box(pathologist.ColliderWidth, pathologist.ColliderHeight, pathologist.ColliderDepth);
-            var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
-
-            // Move the collider up so the bottom touches the floor
-            pathologist.ColliderCenter = position + new Vector3(0, pathologist.ColliderHeight / 2f, 0);
-
-            // Create static body at adjusted position
-            var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
-                pathologist.ColliderCenter.ToVector3N(),
-                Quaternion.Identity.ToQuaternionN(),
-                shapeIndex));
-
-            // Store the static handle in the pathologist for interaction detection
-            pathologist.Interaction.SetStaticHandle(staticHandle);
-
-            Console.WriteLine($"Created pathologist physics collider at {pathologist.ColliderCenter} (size: {pathologist.ColliderWidth}x{pathologist.ColliderHeight}x{pathologist.ColliderDepth})");
         }
 
         private void CreateBartenderCollider(Vector3 position)
@@ -340,6 +293,109 @@ namespace anakinsoft.game.scenes
             bartender.Interaction.SetStaticHandle(staticHandle);
 
             Console.WriteLine($"Created bartender physics collider at {bartender.ColliderCenter} (size: {bartender.ColliderWidth}x{bartender.ColliderHeight}x{bartender.ColliderDepth})");
+        }
+
+        /// <summary>
+        /// Generic character spawning method - creates interaction, collider, and visual model
+        /// </summary>
+        private LoungeCharacterData SpawnCharacter(CharacterSpawnConfig config)
+        {
+            var character = new LoungeCharacterData(config.Name);
+
+            // Create interaction
+            character.Interaction = new InteractableCharacter(
+                config.Name,
+                config.Position,
+                config.CameraPosition,
+                config.CameraLookAt
+            );
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(character.Interaction);
+
+            // Create physics collider
+            character.ColliderWidth = config.ColliderWidth;
+            character.ColliderHeight = config.ColliderHeight;
+            character.ColliderDepth = config.ColliderDepth;
+
+            var boxShape = new Box(character.ColliderWidth, character.ColliderHeight, character.ColliderDepth);
+            var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
+
+            // Move the collider up so the bottom touches the floor
+            character.ColliderCenter = config.Position + new Vector3(0, character.ColliderHeight / 2f, 0);
+
+            var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
+                character.ColliderCenter.ToVector3N(),
+                Quaternion.Identity.ToQuaternionN(),
+                shapeIndex));
+
+            character.Interaction.SetStaticHandle(staticHandle);
+
+            // Create visual model
+            Console.WriteLine($"[SpawnCharacter] Creating model: {config.ModelPath}, texture: {config.TexturePath}, scale: {config.Scale}");
+
+            var material = new UnlitSkinnedMaterial(config.TexturePath, "shaders/surface/SkinnedVertexLit", useDefault: false);
+            material.AmbientColor = config.AmbientColor;
+            material.EmissiveColor = config.EmissiveColor;
+            material.LightDirection = Vector3.Normalize(config.LightDirection);
+            material.LightColor = config.LightColor;
+            material.LightIntensity = config.LightIntensity;
+
+            character.Model = new SkinnedRenderingEntity(config.ModelPath, material);
+            character.Model.Position = config.Position;
+            character.Model.Scale = Vector3.One * config.Scale * LevelScale;
+            character.Model.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(
+                config.RotationYaw,
+                config.RotationPitch,
+                config.RotationRoll
+            );
+            character.Model.IsVisible = true;
+
+            Console.WriteLine($"[SpawnCharacter] Model created at {character.Model.Position}, scale: {character.Model.Scale}, visible: {character.Model.IsVisible}");
+
+            // Play idle animation
+            if (character.Model is SkinnedRenderingEntity skinnedChar)
+            {
+                var skinData = skinnedChar.GetSkinningData();
+                if (skinData != null && skinData.AnimationClips.Count > 0)
+                {
+                    var firstClipName = skinData.AnimationClips.Keys.First();
+                    skinnedChar.PlayAnimation(firstClipName, loop: true);
+                }
+            }
+
+            AddRenderingEntity(character.Model);
+
+            Console.WriteLine($"[SpawnCharacter] Created {config.Name} at {config.Position} (collider: {character.ColliderWidth}x{character.ColliderHeight}x{character.ColliderDepth})");
+
+            return character;
+        }
+
+        /// <summary>
+        /// Despawn a character - removes interaction, physics, and visual model
+        /// </summary>
+        private void DespawnCharacter(LoungeCharacterData character)
+        {
+            if (character == null) return;
+
+            if (character.Interaction != null)
+            {
+                interactionSystem.UnregisterInteractable(character.Interaction);
+
+                var handle = character.Interaction.GetStaticHandle();
+                if (handle.HasValue)
+                {
+                    physicsSystem.Simulation.Statics.Remove(handle.Value);
+                }
+            }
+
+            if (character.Model != null)
+            {
+                RemoveRenderingEntity(character.Model);
+                character.Model = null;
+            }
+
+            Console.WriteLine($"[DespawnCharacter] Despawned {character.Name}");
         }
 
         private void InitializeEvidenceTable()
@@ -743,6 +799,86 @@ namespace anakinsoft.game.scenes
         {
             uiManager.ClearActiveDialogueCharacter();
         }
+
+        /// <summary>
+        /// Spawn two characters for interrogation at designated positions
+        /// </summary>
+        public void SpawnInterrogationCharacters(List<SelectableCharacter> characters, int roundNumber)
+        {
+            if (characters == null || characters.Count < 2)
+            {
+                Console.WriteLine("[TheLoungeScene] ERROR: Need 2 characters for interrogation");
+                return;
+            }
+
+            // Get pathologist position as reference before potentially despawning
+            var pathologistPos = pathologist.Interaction.Position;
+
+            // On first round, completely despawn pathologist (no longer needed)
+            if (roundNumber == 1 && pathologist.IsSpawned)
+            {
+                Console.WriteLine("[TheLoungeScene] First interrogation round - despawning pathologist permanently");
+                DespawnCharacter(pathologist);
+                // Keep position reference for interrogation spawn locations
+                pathologist = new LoungeCharacterData("Dr. Harmon Kerrigan");
+                pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPos, Vector3.Zero, Vector3.Zero);
+            }
+
+            // Position 1: Where pathologist is
+            Vector3 interrogationPos1 = pathologistPos;
+            Vector3 interrogationPos2 = pathologistPos + new Vector3(10f, 0, 0);
+
+            // Camera positions
+            Vector3 cameraPos1 = interrogationPos1 + new Vector3(0, 40f * LevelScale, 50f * LevelScale);
+            Vector3 cameraPos2 = interrogationPos2 + new Vector3(0, 40f * LevelScale, 50f * LevelScale);
+            Vector3 cameraLookAt = new Vector3(0, 0, -10);
+
+            // Spawn character 1 using generic spawner
+            var config1 = new CharacterSpawnConfig
+            {
+                Name = characters[0].Name,
+                Position = interrogationPos1,
+                CameraPosition = cameraPos1,
+                CameraLookAt = cameraLookAt,
+                ColliderWidth = 15f * LevelScale,
+                ColliderHeight = 30f * LevelScale,
+                ColliderDepth = 15f * LevelScale
+            };
+            interrogationCharacter1 = SpawnCharacter(config1);
+
+            // Spawn character 2 using generic spawner
+            var config2 = new CharacterSpawnConfig
+            {
+                Name = characters[1].Name,
+                Position = interrogationPos2,
+                CameraPosition = cameraPos2,
+                CameraLookAt = cameraLookAt,
+                ColliderWidth = 15f * LevelScale,
+                ColliderHeight = 30f * LevelScale,
+                ColliderDepth = 15f * LevelScale
+            };
+            interrogationCharacter2 = SpawnCharacter(config2);
+
+            Console.WriteLine($"[TheLoungeScene] Spawned {characters[0].Name} and {characters[1].Name} for interrogation");
+        }
+
+        /// <summary>
+        /// Despawn interrogation characters
+        /// </summary>
+        public void DespawnInterrogationCharacters()
+        {
+            // Despawn using generic despawner
+            DespawnCharacter(interrogationCharacter1);
+            interrogationCharacter1 = null;
+
+            DespawnCharacter(interrogationCharacter2);
+            interrogationCharacter2 = null;
+
+            Console.WriteLine("[TheLoungeScene] Despawned interrogation characters");
+        }
+
+        public LoungeCharacterData GetInterrogationCharacter1() => interrogationCharacter1;
+        public LoungeCharacterData GetInterrogationCharacter2() => interrogationCharacter2;
 
         protected override void Dispose(bool disposing)
         {
