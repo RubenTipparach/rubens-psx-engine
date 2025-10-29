@@ -225,6 +225,14 @@ namespace anakinsoft.game.scenes
             {
                 Console.WriteLine("Character selection menu closed");
             };
+
+            // Handle view transcript requests
+            characterSelectionMenu.OnViewTranscript += (character) =>
+            {
+                Console.WriteLine($"[TheLoungeScreen] View transcript for {character.Name}");
+                // TODO: Show transcript review UI for this character
+                // transcriptReviewUI.ShowTranscript(character.Name);
+            };
         }
 
         private void SetupEvidenceVial()
@@ -249,8 +257,9 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"Collected {report.ReportTitle}");
 
-                    // Hide the visual representation
-                    loungeScene.HideAutopsyReportVisual();
+                    // NOTE: Do NOT hide the autopsy report visual
+                    // It stays on the table during interrogations so players can review the pathologist's transcript
+                    // loungeScene.HideAutopsyReportVisual();
 
                     // Update pathologist state machine
                     pathologistStateMachine.OnAutopsyReportDelivered();
@@ -383,6 +392,9 @@ namespace anakinsoft.game.scenes
             {
                 Console.WriteLine($"[TheLoungeScreen] Round started - {hoursRemaining} hours remaining");
 
+                // Mark interrogation in progress
+                characterSelectionMenu.SetInterrogationInProgress(true);
+
                 // TODO: Display time message to player
             };
 
@@ -392,6 +404,9 @@ namespace anakinsoft.game.scenes
 
                 // Despawn interrogation characters
                 loungeScene.DespawnInterrogationCharacters();
+
+                // Mark interrogation no longer in progress
+                characterSelectionMenu.SetInterrogationInProgress(false);
 
                 // If more hours remain, allow selecting more characters
                 if (hoursRemaining > 0)

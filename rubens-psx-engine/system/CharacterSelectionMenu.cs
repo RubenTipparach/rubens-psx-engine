@@ -32,14 +32,19 @@ namespace anakinsoft.system
     public class CharacterSelectionMenu
     {
         private List<SelectableCharacter> characters;
-        private int selectedIndex = 0;
+        private int selectedIndex = -1; // Start with no selection
         private List<int> selectedIndices = new List<int>(); // Track up to 2 selections
         private bool isActive = false;
         private KeyboardState previousKeyboard;
         private MouseState previousMouse;
+        private bool isInterrogationInProgress = false;
+        private string warningMessage = "";
+        private float warningTimer = 0f;
+        private const float WarningDuration = 3f;
 
         // Track cell rectangles for mouse interaction
         private Dictionary<int, Rectangle> cellRectangles = new Dictionary<int, Rectangle>();
+        private Dictionary<int, Rectangle> transcriptButtonRectangles = new Dictionary<int, Rectangle>();
 
         // Grid display settings
         private const int GridColumns = 4;
@@ -58,6 +63,7 @@ namespace anakinsoft.system
         // Events
         public event Action<List<SelectableCharacter>> OnCharactersSelected;
         public event Action OnMenuClosed;
+        public event Action<SelectableCharacter> OnViewTranscript;
 
         public bool IsActive => isActive;
         public SelectableCharacter SelectedCharacter =>
@@ -91,9 +97,29 @@ namespace anakinsoft.system
         public void Show()
         {
             isActive = true;
-            selectedIndex = 0;
+            selectedIndex = -1; // No initial selection
             selectedIndices.Clear();
+            warningMessage = "";
+            warningTimer = 0f;
             Console.WriteLine("CharacterSelectionMenu: Opened - Select up to 2 characters");
+        }
+
+        /// <summary>
+        /// Sets whether an interrogation is currently in progress
+        /// </summary>
+        public void SetInterrogationInProgress(bool inProgress)
+        {
+            isInterrogationInProgress = inProgress;
+        }
+
+        /// <summary>
+        /// Shows a warning message to the player
+        /// </summary>
+        private void ShowWarning(string message)
+        {
+            warningMessage = message;
+            warningTimer = WarningDuration;
+            Console.WriteLine($"CharacterSelectionMenu: WARNING - {message}");
         }
 
         /// <summary>
@@ -114,6 +140,16 @@ namespace anakinsoft.system
         {
             if (!isActive)
                 return;
+
+            // Update warning timer
+            if (warningTimer > 0f)
+            {
+                warningTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (warningTimer <= 0f)
+                {
+                    warningMessage = "";
+                }
+            }
 
             var keyboard = Keyboard.GetState();
             var mouse = Mouse.GetState();
@@ -136,22 +172,47 @@ namespace anakinsoft.system
                 selectedIndex = hoveredIndex;
             }
 
-            // Mouse click to toggle selection
+            // Mouse click to toggle selection or view transcript
             if (mouse.LeftButton == ButtonState.Released && previousMouse.LeftButton == ButtonState.Pressed)
             {
-                if (hoveredIndex != -1)
+                // Check if clicking on transcript button first
+                bool clickedTranscript = false;
+                foreach (var kvp in transcriptButtonRectangles)
                 {
-                    if (selectedIndices.Contains(hoveredIndex))
+                    if (kvp.Value.Contains(mousePosition) && characters[kvp.Key].IsInterrogated)
+                    {
+                        OnViewTranscript?.Invoke(characters[kvp.Key]);
+                        clickedTranscript = true;
+                        Console.WriteLine($"CharacterSelectionMenu: View transcript for {characters[kvp.Key]?.Name}");
+                        break;
+                    }
+                }
+
+                // Handle character selection if not clicking transcript button
+                if (!clickedTranscript && hoveredIndex != -1)
+                {
+                    var character = characters[hoveredIndex];
+
+                    // Check if already interrogated
+                    if (character.IsInterrogated)
+                    {
+                        ShowWarning("Cannot select - Character already interrogated");
+                    }
+                    else if (selectedIndices.Contains(hoveredIndex))
                     {
                         // Deselect
                         selectedIndices.Remove(hoveredIndex);
-                        Console.WriteLine($"CharacterSelectionMenu: Deselected {characters[hoveredIndex]?.Name}");
+                        Console.WriteLine($"CharacterSelectionMenu: Deselected {character.Name}");
                     }
                     else if (selectedIndices.Count < 2)
                     {
                         // Select (max 2)
                         selectedIndices.Add(hoveredIndex);
-                        Console.WriteLine($"CharacterSelectionMenu: Selected {characters[hoveredIndex]?.Name} ({selectedIndices.Count}/2)");
+                        Console.WriteLine($"CharacterSelectionMenu: Selected {character.Name} ({selectedIndices.Count}/2)");
+                    }
+                    else
+                    {
+                        ShowWarning("Maximum 2 characters can be selected");
                     }
                 }
             }
@@ -192,34 +253,72 @@ namespace anakinsoft.system
             if ((keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)) ||
                 (keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space)))
             {
-                if (selectedIndices.Contains(selectedIndex))
+                if (selectedIndex >= 0 && selectedIndex < characters.Count)
                 {
-                    // Deselect
-                    selectedIndices.Remove(selectedIndex);
-                    Console.WriteLine($"CharacterSelectionMenu: Deselected {SelectedCharacter?.Name}");
-                }
-                else if (selectedIndices.Count < 2)
-                {
-                    // Select (max 2)
-                    selectedIndices.Add(selectedIndex);
-                    Console.WriteLine($"CharacterSelectionMenu: Selected {SelectedCharacter?.Name} ({selectedIndices.Count}/2)");
+                    var character = characters[selectedIndex];
+
+                    // Check if already interrogated
+                    if (character.IsInterrogated)
+                    {
+                        ShowWarning("Cannot select - Character already interrogated");
+                    }
+                    else if (selectedIndices.Contains(selectedIndex))
+                    {
+                        // Deselect
+                        selectedIndices.Remove(selectedIndex);
+                        Console.WriteLine($"CharacterSelectionMenu: Deselected {character.Name}");
+                    }
+                    else if (selectedIndices.Count < 2)
+                    {
+                        // Select (max 2)
+                        selectedIndices.Add(selectedIndex);
+                        Console.WriteLine($"CharacterSelectionMenu: Selected {character.Name} ({selectedIndices.Count}/2)");
+                    }
+                    else
+                    {
+                        ShowWarning("Maximum 2 characters can be selected");
+                    }
                 }
             }
 
             // Confirm selection with Enter
             if (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter))
             {
-                if (selectedIndices.Count > 0)
+                // Validate selection before confirming
+                if (isInterrogationInProgress)
                 {
-                    var selected = new List<SelectableCharacter>();
+                    ShowWarning("Cannot confirm - Interrogation in progress");
+                }
+                else if (selectedIndices.Count != 2)
+                {
+                    ShowWarning("Must select exactly 2 characters");
+                }
+                else
+                {
+                    // Check if any selected character is already interrogated
+                    bool alreadyInterrogated = false;
                     foreach (var index in selectedIndices)
                     {
-                        characters[index].IsInterrogated = true;
-                        selected.Add(characters[index]);
+                        if (characters[index].IsInterrogated)
+                        {
+                            ShowWarning("Cannot confirm - Selected character already interrogated");
+                            alreadyInterrogated = true;
+                            break;
+                        }
                     }
-                    Console.WriteLine($"CharacterSelectionMenu: Confirmed {selected.Count} character(s) for interrogation");
-                    OnCharactersSelected?.Invoke(selected);
-                    Hide();
+
+                    if (!alreadyInterrogated)
+                    {
+                        var selected = new List<SelectableCharacter>();
+                        foreach (var index in selectedIndices)
+                        {
+                            characters[index].IsInterrogated = true;
+                            selected.Add(characters[index]);
+                        }
+                        Console.WriteLine($"CharacterSelectionMenu: Confirmed {selected.Count} character(s) for interrogation");
+                        OnCharactersSelected?.Invoke(selected);
+                        Hide();
+                    }
                 }
             }
 
@@ -272,9 +371,23 @@ namespace anakinsoft.system
             Vector2 counterPos = new Vector2(menuX + (menuWidth - counterSize.X) / 2, titlePos.Y + titleSize.Y + 5);
             spriteBatch.DrawString(font, counter, counterPos, Color.White, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
 
+            // Draw warning message if active
+            if (!string.IsNullOrEmpty(warningMessage) && warningTimer > 0f)
+            {
+                string warning = $"⚠ {warningMessage}";
+                var warningSize = font.MeasureString(warning) * 0.7f;
+                Vector2 warningPos = new Vector2(menuX + (menuWidth - warningSize.X) / 2, counterPos.Y + counterSize.Y + 10);
+
+                // Flash warning
+                float alpha = (float)Math.Sin(warningTimer * 10f) * 0.3f + 0.7f;
+                Color warningColor = Color.Red * alpha;
+                spriteBatch.DrawString(font, warning, warningPos, warningColor, 0f, Vector2.Zero, 0.7f, SpriteEffects.None, 0f);
+            }
+
             // Draw character grid
-            float startY = menuY + BoxPadding + titleSize.Y + counterSize.Y + 20;
+            float startY = menuY + BoxPadding + titleSize.Y + counterSize.Y + 40;
             cellRectangles.Clear(); // Clear old rectangles
+            transcriptButtonRectangles.Clear(); // Clear old transcript button rectangles
 
             for (int i = 0; i < characters.Count; i++)
             {
@@ -328,16 +441,41 @@ namespace anakinsoft.system
                 Vector2 rolePos = new Vector2(cellX + (CellWidth - roleSize.X) / 2, namePos.Y + nameSize.Y + 2);
                 spriteBatch.DrawString(font, character.Role, rolePos, RoleColor, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
-                // Draw interrogated overlay (centered in cell)
+                // Draw interrogated overlay and transcript button (centered in cell)
                 if (character.IsInterrogated)
                 {
                     DrawFilledRectangle(spriteBatch,
                         new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight),
                         Color.Black * 0.6f);
+
                     string status = "DONE";
                     Vector2 statusSize = font.MeasureString(status) * 0.6f;
-                    Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2);
+                    Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2 - 10);
                     spriteBatch.DrawString(font, status, statusPos, InterrogatedColor, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+
+                    // Draw transcript button below status
+                    string transcriptText = "[View]";
+                    float transcriptScale = 0.45f;
+                    Vector2 transcriptSize = font.MeasureString(transcriptText) * transcriptScale;
+                    Vector2 transcriptPos = new Vector2(
+                        cellX + portraitOffsetX + (PortraitWidth - transcriptSize.X) / 2,
+                        statusPos.Y + statusSize.Y + 5
+                    );
+
+                    Rectangle transcriptButton = new Rectangle(
+                        (int)(transcriptPos.X - 4),
+                        (int)(transcriptPos.Y - 2),
+                        (int)(transcriptSize.X + 8),
+                        (int)(transcriptSize.Y + 4)
+                    );
+                    transcriptButtonRectangles[i] = transcriptButton;
+
+                    // Highlight transcript button on hover
+                    bool isTranscriptHovered = transcriptButton.Contains(new Point(Mouse.GetState().X, Mouse.GetState().Y));
+                    Color transcriptColor = isTranscriptHovered ? SelectedColor : Color.LightGray;
+
+                    DrawRectangleBorder(spriteBatch, transcriptButton, transcriptColor, 1);
+                    spriteBatch.DrawString(font, transcriptText, transcriptPos, transcriptColor, 0f, Vector2.Zero, transcriptScale, SpriteEffects.None, 0f);
                 }
             }
 
