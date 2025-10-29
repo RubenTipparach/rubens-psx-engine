@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge.ui;
 
 namespace anakinsoft.game.scenes.lounge.characters
 {

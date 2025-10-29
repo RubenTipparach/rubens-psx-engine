@@ -7,7 +7,7 @@ using System.Linq;
 using anakinsoft.game.scenes.lounge.characters;
 using rubens_psx_engine;
 
-namespace anakinsoft.system
+namespace anakinsoft.game.scenes.lounge.ui
 {
     /// <summary>
     /// UI system for reviewing character interview transcripts
@@ -206,8 +206,8 @@ namespace anakinsoft.system
         private void DrawSelectionMode(SpriteBatch spriteBatch, SpriteFont font, int screenWidth, int screenHeight)
         {
             // Main panel
-            int panelWidth = (int)(screenWidth * 0.7f);
-            int panelHeight = (int)(screenHeight * 0.7f);
+            int panelWidth = (int)(screenWidth * 0.85f);
+            int panelHeight = (int)(screenHeight * 0.85f);
             int panelX = (screenWidth - panelWidth) / 2;
             int panelY = (screenHeight - panelHeight) / 2;
 
@@ -244,7 +244,9 @@ namespace anakinsoft.system
                 // Highlight selected item
                 if (isSelected)
                 {
-                    spriteBatch.Draw(pixelTexture, new Rectangle(panelX + 20, yOffset - 5, panelWidth - 40, lineHeight), new Color(100, 100, 50, 100));
+                    spriteBatch.Draw(pixelTexture, new Rectangle(panelX + 20,
+                        yOffset -2, panelWidth - 40, lineHeight + 10),
+                        new Color(100, 100, 50, 100));
                 }
 
                 // Character name
@@ -258,7 +260,8 @@ namespace anakinsoft.system
                 // Status indicator
                 string status = hasBeenInterviewed ? "[INTERVIEWED]" : "[NOT INTERVIEWED]";
                 Color statusColor = hasBeenInterviewed ? Color.Green : Color.Red;
-                Vector2 statusPos = new Vector2(panelX + panelWidth - 200, yOffset);
+                Vector2 statusSize = font.MeasureString(status);
+                Vector2 statusPos = new Vector2(panelX + panelWidth - statusSize.X - 50, yOffset);
                 spriteBatch.DrawString(font, status, statusPos + new Vector2(1, 1), Color.Black);
                 spriteBatch.DrawString(font, status, statusPos, statusColor);
 

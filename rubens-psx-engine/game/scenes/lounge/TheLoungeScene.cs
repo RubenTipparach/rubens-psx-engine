@@ -1,6 +1,7 @@
 using anakinsoft.entities;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
+using anakinsoft.game.scenes.lounge.ui;
 using anakinsoft.system;
 using anakinsoft.system.character;
 using anakinsoft.system.physics;

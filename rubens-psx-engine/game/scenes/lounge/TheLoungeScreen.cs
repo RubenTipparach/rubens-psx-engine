@@ -9,6 +9,7 @@ using anakinsoft.system;
 using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
+using anakinsoft.game.scenes.lounge.ui;
 using System;
 using System.Collections.Generic;
 using System.IO;

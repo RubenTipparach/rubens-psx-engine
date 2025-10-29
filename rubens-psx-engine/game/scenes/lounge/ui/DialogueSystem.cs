@@ -5,7 +5,7 @@ using rubens_psx_engine;
 using System;
 using System.Collections.Generic;
 
-namespace anakinsoft.system
+namespace anakinsoft.game.scenes.lounge.ui
 {
     /// <summary>
     /// Represents a single dialogue line with speaker info

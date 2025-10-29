@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge.ui;
 
 namespace anakinsoft.game.scenes.lounge
 {
