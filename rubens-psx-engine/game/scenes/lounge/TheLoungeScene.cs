@@ -246,7 +246,7 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("========================================");
 
             // Position pathologist at table (left side of lounge)
-            Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f);
+            Vector3 pathologistPosition = new Vector3(-9f, 0, 28f);
             Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-16, 15, 0);
             Vector3 cameraLookAt = new Vector3(10, 0, 0);
 
@@ -322,7 +322,7 @@ namespace anakinsoft.game.scenes
             var shapeIndex = physicsSystem.Simulation.Shapes.Add(boxShape);
 
             // Move the collider up so the bottom touches the floor
-            character.ColliderCenter = config.Position + new Vector3(0, character.ColliderHeight / 2f, 0);
+            character.ColliderCenter = config.Position + new Vector3(5, character.ColliderHeight / 2f, 0);
 
             var staticHandle = physicsSystem.Simulation.Statics.Add(new StaticDescription(
                 character.ColliderCenter.ToVector3N(),
@@ -366,7 +366,11 @@ namespace anakinsoft.game.scenes
 
             AddRenderingEntity(character.Model);
 
-            Console.WriteLine($"[SpawnCharacter] Created {config.Name} at {config.Position} (collider: {character.ColliderWidth}x{character.ColliderHeight}x{character.ColliderDepth})");
+            Console.WriteLine($"[SpawnCharacter] SUCCESS: {config.Name} spawned");
+            Console.WriteLine($"  Position: {character.Model.Position}");
+            Console.WriteLine($"  Scale: {character.Model.Scale}");
+            Console.WriteLine($"  Visible: {character.Model.IsVisible}");
+            Console.WriteLine($"  Collider: {character.ColliderWidth}x{character.ColliderHeight}x{character.ColliderDepth}");
 
             return character;
         }
@@ -741,6 +745,18 @@ namespace anakinsoft.game.scenes
                     debugVisualizer.DrawCharacterCollider(pathologist, camera, interactionSystem);
                 }
 
+                // Draw interrogation character 1 collider box (if spawned)
+                if (interrogationCharacter1 != null && interrogationCharacter1.IsSpawned)
+                {
+                    debugVisualizer.DrawCharacterCollider(interrogationCharacter1, camera, interactionSystem);
+                }
+
+                // Draw interrogation character 2 collider box (if spawned)
+                if (interrogationCharacter2 != null && interrogationCharacter2.IsSpawned)
+                {
+                    debugVisualizer.DrawCharacterCollider(interrogationCharacter2, camera, interactionSystem);
+                }
+
                 // Draw interaction camera positions
                 if (bartender.Interaction != null)
                 {
@@ -751,6 +767,17 @@ namespace anakinsoft.game.scenes
                 if (pathologist.IsSpawned && pathologist.Interaction != null)
                 {
                     debugVisualizer.DrawInteractionDebugVisualization(pathologist.Interaction, evidenceTable, camera);
+                }
+
+                // Draw interrogation characters interaction camera positions (if spawned)
+                if (interrogationCharacter1 != null && interrogationCharacter1.IsSpawned && interrogationCharacter1.Interaction != null)
+                {
+                    debugVisualizer.DrawInteractionDebugVisualization(interrogationCharacter1.Interaction, evidenceTable, camera);
+                }
+
+                if (interrogationCharacter2 != null && interrogationCharacter2.IsSpawned && interrogationCharacter2.Interaction != null)
+                {
+                    debugVisualizer.DrawInteractionDebugVisualization(interrogationCharacter2.Interaction, evidenceTable, camera);
                 }
             }
         }
@@ -812,26 +839,31 @@ namespace anakinsoft.game.scenes
             }
 
             // Get pathologist position as reference before potentially despawning
-            var pathologistPos = pathologist.Interaction.Position;
+            Vector3 pathologistPos = pathologist.Interaction?.Position ?? Vector3.Zero;
 
             // On first round, completely despawn pathologist (no longer needed)
             if (roundNumber == 1 && pathologist.IsSpawned)
             {
-                Console.WriteLine("[TheLoungeScene] First interrogation round - despawning pathologist permanently");
+                Console.WriteLine($"[TheLoungeScene] First interrogation round - despawning pathologist at {pathologistPos}");
                 DespawnCharacter(pathologist);
                 // Keep position reference for interrogation spawn locations
                 pathologist = new LoungeCharacterData("Dr. Harmon Kerrigan");
                 pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPos, Vector3.Zero, Vector3.Zero);
             }
 
-            // Position 1: Where pathologist is
-            Vector3 interrogationPos1 = pathologistPos;
-            Vector3 interrogationPos2 = pathologistPos + new Vector3(10f, 0, 0);
+            // Position 1: Near where pathologist was (offset slightly)
+            Vector3 interrogationPos1 = pathologistPos + new Vector3(2f, 0, 0);
+            Vector3 interrogationPos2 = pathologistPos + new Vector3(34f, 0, 0);
+
+            Console.WriteLine($"[SpawnInterrogationCharacters] Pathologist was at: {pathologistPos}");
+            Console.WriteLine($"[SpawnInterrogationCharacters] Char1 at: {interrogationPos1}, Char2 at: {interrogationPos2}");
 
             // Camera positions
-            Vector3 cameraPos1 = interrogationPos1 + new Vector3(0, 40f * LevelScale, 50f * LevelScale);
-            Vector3 cameraPos2 = interrogationPos2 + new Vector3(0, 40f * LevelScale, 50f * LevelScale);
-            Vector3 cameraLookAt = new Vector3(0, 0, -10);
+            // Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-16, 15, 0);
+            // Vector3 cameraLookAt = new Vector3(10, 0, 0);
+            Vector3 cameraPos1 = interrogationPos1 + new Vector3(-16, 15, 0);
+            Vector3 cameraPos2 = interrogationPos2 + new Vector3(-16, 15, 0);
+            Vector3 cameraLookAt = new Vector3(10, 0, 0);
 
             // Spawn character 1 using generic spawner
             var config1 = new CharacterSpawnConfig

@@ -57,18 +57,13 @@ namespace rubens_psx_engine.entities
 
         private void SetupSkinnedModelEffects()
         {
-            if (model == null || material == null) return;
-
-            foreach (ModelMesh mesh in model.Meshes)
-            {
-                foreach (ModelMeshPart part in mesh.MeshParts)
-                {
-                    if (material.Effect != null)
-                    {
-                        part.Effect = material.Effect;
-                    }
-                }
-            }
+            // NOTE: We don't modify the model's mesh parts here anymore because:
+            // 1. Models are cached/shared between multiple entities via Content.Load
+            // 2. Modifying part.Effect would affect ALL entities using this model
+            // 3. The Draw() method already applies the material per-entity via material.Apply()
+            //
+            // This allows multiple characters to share the same cached model without
+            // interfering with each other's rendering effects.
         }
 
         /// <summary>
@@ -149,6 +144,16 @@ namespace rubens_psx_engine.entities
             foreach (ModelMesh mesh in model.Meshes)
             {
                 Matrix meshWorld = transforms[mesh.ParentBone.Index] * world;
+
+                // If we have a material, apply it to each mesh part's effect
+                // This must be done per-draw because multiple entities share the same cached model
+                if (material != null && material.Effect != null)
+                {
+                    foreach (ModelMeshPart part in mesh.MeshParts)
+                    {
+                        part.Effect = material.Effect;
+                    }
+                }
 
                 foreach (Effect meshEffect in mesh.Effects)
                 {
