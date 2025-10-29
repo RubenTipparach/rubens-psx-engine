@@ -1,5 +1,6 @@
 using anakinsoft.entities;
 using anakinsoft.game.scenes.lounge.characters;
+using anakinsoft.game.scenes.lounge.evidence;
 using anakinsoft.system;
 using anakinsoft.system.character;
 using anakinsoft.system.physics;
@@ -85,6 +86,10 @@ namespace anakinsoft.game.scenes
         CrimeSceneFile crimeSceneFile;
         RenderingEntity crimeSceneFileVisual; // Cube placeholder for the file
 
+        // Autopsy report
+        AutopsyReport autopsyReport;
+        RenderingEntity autopsyReportVisual; // Cube placeholder for the report
+
         public TheLoungeScene() : base()
         {
             // Initialize character system and physics
@@ -155,6 +160,9 @@ namespace anakinsoft.game.scenes
 
             // Create crime scene file on table
             InitializeCrimeSceneFile();
+
+            // Create autopsy report on table
+            InitializeAutopsyReport();
 
             // Pathologist will be spawned after bartender dialogue
             // Don't initialize pathologist here - will be called from TheLoungeScreen after bartender dialogue
@@ -238,8 +246,8 @@ namespace anakinsoft.game.scenes
             Vector3 pathologistPosition = new Vector3(-9.5f, 0, 28f); 
 
             // Camera interaction position - looking at the pathologist from across the table
-            Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-10, 15, 0);
-            Vector3 cameraLookAt = new Vector3(2, 0, 0); // Look at head level
+            Vector3 cameraInteractionPosition = pathologistPosition + new Vector3(-16, 15, 0);
+            Vector3 cameraLookAt = new Vector3(10, 0, 0); // Look at head level
 
             // Create pathologist interactable
             pathologist.Interaction = new InteractableCharacter("Dr. Harmon Kerrigan", pathologistPosition,
@@ -407,10 +415,15 @@ namespace anakinsoft.game.scenes
             Vector3 filePosition = evidenceTable.GetSlotPosition(1, 1); // Center of 3x3 grid
 
             // Create crime scene file interactable
+            Vector3 fileSize = new Vector3(8f, 1f, 8f) * LevelScale; // Match visual size
             crimeSceneFile = new CrimeSceneFile(
                 "Suspects File",
-                filePosition
+                filePosition,
+                fileSize
             );
+
+            // Disable file initially - will be enabled after talking to pathologist
+            crimeSceneFile.CanInteract = false;
 
             // Register file with evidence table
             evidenceTable.PlaceItem("crime_scene_file", 1, 1, crimeSceneFile);
@@ -429,6 +442,24 @@ namespace anakinsoft.game.scenes
             // Register with interaction system
             interactionSystem.RegisterInteractable(crimeSceneFile);
 
+            // Create physics collider for the file (so it can be detected by raycasting)
+            var fileColliderSize = fileSize * 1.2f; // Slightly larger for easier interaction
+            var fileShape = new Box(
+                fileColliderSize.X,
+                fileColliderSize.Y,
+                fileColliderSize.Z
+            );
+            var fileStaticHandle = physicsSystem.Simulation.Statics.Add(
+                new StaticDescription(
+                    filePosition.ToVector3N(),
+                    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0).ToQuaternionN(),
+                    physicsSystem.Simulation.Shapes.Add(fileShape)
+                )
+            );
+
+            // Store the static handle in the crime scene file for interaction detection
+            crimeSceneFile.SetStaticHandle(fileStaticHandle);
+
             // Create visual placeholder (cube) - 90% smaller for a small file/tablet appearance
             var fileMaterial = new UnlitMaterial("textures/prototype/concrete");
             crimeSceneFileVisual = new RenderingEntity("models/cube", "textures/prototype/concrete");
@@ -440,6 +471,72 @@ namespace anakinsoft.game.scenes
             AddRenderingEntity(crimeSceneFileVisual);
 
             Console.WriteLine($"Crime scene file created at position: {filePosition}");
+            Console.WriteLine($"Crime scene file physics collider created with handle: {fileStaticHandle.Value}");
+            Console.WriteLine("========================================\n");
+        }
+
+        private void InitializeAutopsyReport()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("CREATING AUTOPSY REPORT");
+            Console.WriteLine("========================================");
+
+            // Place autopsy report in slot [1,0] (left of center)
+            // Grid layout (3x3):
+            // [0,0] [0,1] [0,2]
+            // [1,0] [1,1] [1,2]  <- Slot [1,0] for autopsy report, [1,1] for crime scene file
+            // [2,0] [2,1] [2,2]
+            Vector3 reportPosition = evidenceTable.GetSlotPosition(1, 0);
+
+            // Create autopsy report interactable
+            Vector3 reportSize = new Vector3(10f, 1f, 10f) * LevelScale;
+            autopsyReport = new AutopsyReport(
+                "Autopsy Report",
+                reportPosition,
+                reportSize
+            );
+
+            // Disable report initially - will be enabled after talking to pathologist
+            autopsyReport.CanInteract = false;
+
+            // Register report with evidence table
+            evidenceTable.PlaceItem("autopsy_report", 1, 0, autopsyReport);
+
+            // Set initial content
+            autopsyReport.ReportContent = "Dr. Harmon Kerrigan's preliminary autopsy findings...";
+
+            // Register with interaction system
+            interactionSystem.RegisterInteractable(autopsyReport);
+
+            // Create physics collider for the report (so it can be detected by raycasting)
+            var reportColliderSize = reportSize * 1.2f;
+            var reportShape = new Box(
+                reportColliderSize.X,
+                reportColliderSize.Y,
+                reportColliderSize.Z
+            );
+            var reportStaticHandle = physicsSystem.Simulation.Statics.Add(
+                new StaticDescription(
+                    reportPosition.ToVector3N(),
+                    QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0).ToQuaternionN(),
+                    physicsSystem.Simulation.Shapes.Add(reportShape)
+                )
+            );
+
+            // Store the static handle in the autopsy report for interaction detection
+            autopsyReport.SetStaticHandle(reportStaticHandle);
+
+            // Create visual placeholder (cube)
+            autopsyReportVisual = new RenderingEntity("models/cube", "textures/prototype/concrete");
+            autopsyReportVisual.Position = reportPosition;
+            autopsyReportVisual.Scale = new Vector3(0.3f, 0.05f, 0.2f) * LevelScale;
+            autopsyReportVisual.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0);
+            autopsyReportVisual.IsVisible = true;
+
+            AddRenderingEntity(autopsyReportVisual);
+
+            Console.WriteLine($"Autopsy report created at position: {reportPosition}");
+            Console.WriteLine($"Autopsy report physics collider created with handle: {reportStaticHandle.Value}");
             Console.WriteLine("========================================\n");
         }
 
@@ -560,6 +657,18 @@ namespace anakinsoft.game.scenes
             // Draw all entities using the base scene drawing
             base.Draw(gameTime, camera);
 
+            // Draw crime scene file bounding box when targeted (always visible for gameplay)
+            if (crimeSceneFile != null)
+            {
+                debugVisualizer.DrawCrimeSceneFileBox(crimeSceneFile, camera);
+            }
+
+            // Draw autopsy report bounding box when targeted (always visible for gameplay)
+            if (autopsyReport != null)
+            {
+                debugVisualizer.DrawAutopsyReportBox(autopsyReport, camera);
+            }
+
             // Draw wireframe visualization of static mesh collision geometry if debug mode enabled
             if (ShowPhysicsWireframe)
             {
@@ -610,6 +719,7 @@ namespace anakinsoft.game.scenes
         public InteractableCharacter GetPathologist() => pathologist.Interaction;
         public InteractableItem GetEvidenceVial() => evidenceVial;
         public CrimeSceneFile GetCrimeSceneFile() => crimeSceneFile;
+        public AutopsyReport GetAutopsyReport() => autopsyReport;
         public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => uiManager.ShowIntroText;

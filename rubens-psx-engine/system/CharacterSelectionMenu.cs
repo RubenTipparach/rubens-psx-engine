@@ -40,7 +40,9 @@ namespace anakinsoft.system
         // Grid display settings
         private const int GridColumns = 4;
         private const float BoxPadding = 30f;
-        private const float PortraitSize = 128f;
+        private const float PortraitWidth = 64f;
+        private const float PortraitHeight = 96f;
+        private const float CellWidth = 180f;  // 40% wider than portrait (64 * 1.4 ≈ 90) for name space
         private const float ItemSpacing = 20f;
         private readonly Color BackgroundColor = Color.Black * 0.90f;
         private readonly Color SelectedColor = Color.Yellow;
@@ -74,7 +76,7 @@ namespace anakinsoft.system
                 new SelectableCharacter("Ensign Tork", "EnsignTork", "Junior Engineer"),
                 new SelectableCharacter("Maven Kilroth", "MavenKilroth", "Smuggler"),
                 new SelectableCharacter("Chief Kala Solis", "ChiefSolis", "Security Chief"),
-                new SelectableCharacter("Tehvora", "Tehvora", "Diplomatic Attaché"),
+                new SelectableCharacter("Tehvora", "Tehvora", "Diplomatic Attache"),
                 new SelectableCharacter("Lucky Chen", "LuckyChen", "Quartermaster"),
             };
         }
@@ -200,8 +202,8 @@ namespace anakinsoft.system
 
             // Calculate grid dimensions
             int rows = (int)Math.Ceiling((float)characters.Count / GridColumns);
-            float cellWidth = PortraitSize + ItemSpacing;
-            float cellHeight = PortraitSize + 60 + ItemSpacing; // Portrait + name/role space
+            float cellWidth = CellWidth + ItemSpacing;
+            float cellHeight = PortraitHeight + 60 + ItemSpacing; // Portrait + name/role space
             float menuWidth = (cellWidth * GridColumns) + BoxPadding * 2;
             float menuHeight = (cellHeight * rows) + BoxPadding * 3 + 80; // Extra space for title and hints
 
@@ -241,43 +243,46 @@ namespace anakinsoft.system
                 bool isHovered = i == selectedIndex;
                 bool isConfirmed = selectedIndices.Contains(i);
 
-                // Draw selection highlight
+                // Center portrait within the wider cell
+                float portraitOffsetX = (CellWidth - PortraitWidth) / 2;
+
+                // Draw selection highlight (wider to encompass entire cell)
                 Color borderColor = isConfirmed ? ConfirmedColor : (isHovered ? SelectedColor : Color.Transparent);
                 if (borderColor != Color.Transparent)
                 {
                     DrawRectangleBorder(spriteBatch,
-                        new Rectangle((int)cellX - 4, (int)cellY - 4, (int)PortraitSize + 8, (int)PortraitSize + 68),
+                        new Rectangle((int)cellX - 4, (int)cellY - 4, (int)CellWidth + 8, (int)PortraitHeight + 68),
                         borderColor, 3);
                 }
 
-                // Draw portrait
+                // Draw portrait (centered in cell)
                 if (portraits != null && portraits.ContainsKey(character.PortraitKey))
                 {
                     var portrait = portraits[character.PortraitKey];
-                    Rectangle portraitRect = new Rectangle((int)cellX, (int)cellY, (int)PortraitSize, (int)PortraitSize);
+                    Rectangle portraitRect = new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight);
                     spriteBatch.Draw(portrait, portraitRect, Color.White);
                 }
 
-                // Draw character name (scaled and centered)
+                // Draw character name (scaled and centered within cell width)
                 float textScale = 0.5f;
                 Vector2 nameSize = font.MeasureString(character.Name) * textScale;
-                Vector2 namePos = new Vector2(cellX + (PortraitSize - nameSize.X) / 2, cellY + PortraitSize + 5);
+                Vector2 namePos = new Vector2(cellX + (CellWidth - nameSize.X) / 2, cellY + PortraitHeight + 5);
                 spriteBatch.DrawString(font, character.Name, namePos, NormalColor, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
-                // Draw character role (scaled and centered)
+                // Draw character role (scaled and centered within cell width)
                 Vector2 roleSize = font.MeasureString(character.Role) * textScale;
-                Vector2 rolePos = new Vector2(cellX + (PortraitSize - roleSize.X) / 2, namePos.Y + nameSize.Y + 2);
+                Vector2 rolePos = new Vector2(cellX + (CellWidth - roleSize.X) / 2, namePos.Y + nameSize.Y + 2);
                 spriteBatch.DrawString(font, character.Role, rolePos, RoleColor, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
-                // Draw interrogated overlay
+                // Draw interrogated overlay (centered in cell)
                 if (character.IsInterrogated)
                 {
                     DrawFilledRectangle(spriteBatch,
-                        new Rectangle((int)cellX, (int)cellY, (int)PortraitSize, (int)PortraitSize),
+                        new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight),
                         Color.Black * 0.6f);
                     string status = "DONE";
                     Vector2 statusSize = font.MeasureString(status) * 0.6f;
-                    Vector2 statusPos = new Vector2(cellX + (PortraitSize - statusSize.X) / 2, cellY + (PortraitSize - statusSize.Y) / 2);
+                    Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2);
                     spriteBatch.DrawString(font, status, statusPos, InterrogatedColor, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
                 }
             }

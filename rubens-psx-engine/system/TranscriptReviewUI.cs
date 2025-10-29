@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using anakinsoft.game.scenes.lounge.evidence;
+using anakinsoft.utilities;
 using rubens_psx_engine;
 
 namespace anakinsoft.system

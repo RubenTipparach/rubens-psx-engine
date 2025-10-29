@@ -31,7 +31,7 @@ namespace anakinsoft.entities
 
             // Set default interaction properties
             interactionDistance = 150f; // Can interact from a distance
-            interactionPrompt = $"Press E to talk to {characterName}";
+            interactionPrompt = $"[E/F] Talk to {characterName}";
             interactionDescription = "";
         }
 

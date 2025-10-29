@@ -1,6 +1,6 @@
 using System;
 
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes.lounge.evidence
 {
     /// <summary>
     /// Represents an item that can be collected

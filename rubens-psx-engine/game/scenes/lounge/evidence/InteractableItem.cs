@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using anakinsoft.entities;
 using System;
 
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes.lounge.evidence
 {
     /// <summary>
     /// Represents an item that can be picked up in the world
@@ -63,7 +63,7 @@ namespace rubens_psx_engine
                 if (IsCollected)
                     return "";  // Don't show prompt if already collected
 
-                return $"[E] Pick up {Name}";
+                return $"[E/F] Pick up {Name}";
             }
         }
     }

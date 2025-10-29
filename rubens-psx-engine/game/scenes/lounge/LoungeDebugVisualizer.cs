@@ -5,6 +5,7 @@ using rubens_psx_engine.entities;
 using anakinsoft.system;
 using anakinsoft.entities;
 using anakinsoft.game.scenes.lounge.characters;
+using anakinsoft.game.scenes.lounge.evidence;
 using System;
 using System.Collections.Generic;
 
@@ -184,6 +185,46 @@ namespace anakinsoft.game.scenes
                     Console.WriteLine($"Error drawing interaction debug: {ex.Message}");
                 }
             }
+
+            basicEffect.Dispose();
+        }
+
+        public void DrawCrimeSceneFileBox(CrimeSceneFile file, Camera camera)
+        {
+            if (file == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Draw bounding box - yellow when targeted, white otherwise
+            Color boxColor = file.IsTargeted ? Color.Yellow : Color.White;
+            DrawBoundingBox(file.BoundingBox, basicEffect, graphicsDevice, boxColor);
+
+            basicEffect.Dispose();
+        }
+
+        public void DrawAutopsyReportBox(AutopsyReport report, Camera camera)
+        {
+            if (report == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Draw bounding box - yellow when targeted, white otherwise
+            Color boxColor = report.IsTargeted ? Color.Yellow : Color.White;
+            DrawBoundingBox(report.BoundingBox, basicEffect, graphicsDevice, boxColor);
 
             basicEffect.Dispose();
         }

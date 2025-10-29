@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace rubens_psx_engine
+namespace anakinsoft.game.scenes.lounge.evidence
 {
     /// <summary>
     /// Manages a grid-based evidence table for organizing items

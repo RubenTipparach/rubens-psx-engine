@@ -7,6 +7,7 @@ using System.Linq;
 using anakinsoft.entities;
 using anakinsoft.system.physics;
 using anakinsoft.utilities;
+using anakinsoft.game.scenes.lounge.evidence;
 using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.Trees;
@@ -82,8 +83,9 @@ namespace anakinsoft.system
             // Perform raycast to find targeted interactable
             PerformInteractionRaycast(camera);
 
-            // Handle interaction input
-            if (keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E))
+            // Handle interaction input (E or F key)
+            if ((keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)) ||
+                (keyboard.IsKeyDown(Keys.F) && !previousKeyboard.IsKeyDown(Keys.F)))
             {
                 if (currentTarget != null && currentTarget.CanInteract)
                 {
@@ -179,6 +181,24 @@ namespace anakinsoft.system
                         return character;
                     }
                 }
+                // If it's a CrimeSceneFile, check its static handle
+                else if (interactable is CrimeSceneFile file)
+                {
+                    var fileHandle = file.GetStaticHandle();
+                    if (fileHandle.HasValue && fileHandle.Value.Value == handle.Value)
+                    {
+                        return file;
+                    }
+                }
+                // If it's an AutopsyReport, check its static handle
+                else if (interactable is AutopsyReport report)
+                {
+                    var reportHandle = report.GetStaticHandle();
+                    if (reportHandle.HasValue && reportHandle.Value.Value == handle.Value)
+                    {
+                        return report;
+                    }
+                }
                 // Can be extended for other interactable types that have physics handles
             }
 
@@ -190,7 +210,7 @@ namespace anakinsoft.system
         /// </summary>
         public void DrawUI(SpriteBatch spriteBatch, SpriteFont uiFont)
         {
-            if (!uiEnabled || currentTarget == null || !currentTarget.CanInteract)
+            if (!uiEnabled || currentTarget == null)
                 return;
 
             font = uiFont;

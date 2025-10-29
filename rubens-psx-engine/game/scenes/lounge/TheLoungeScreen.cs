@@ -6,6 +6,7 @@ using rubens_psx_engine;
 using rubens_psx_engine.system;
 using anakinsoft.system;
 using anakinsoft.game.scenes.lounge.characters;
+using anakinsoft.game.scenes.lounge.evidence;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -342,8 +343,24 @@ namespace anakinsoft.game.scenes
                     // Handle completion actions
                     if (yamlDialogue.on_complete == "show_character_selection")
                     {
-                        Console.WriteLine("[TheLoungeScreen] Opening character selection menu - collect the crime scene file first!");
+                        Console.WriteLine("[TheLoungeScreen] Pathologist asks you to grab the crime scene file - enabling it now");
                         gameProgress.CanSelectSuspects = true;
+
+                        // Enable the crime scene file for interaction
+                        var file = loungeScene.GetCrimeSceneFile();
+                        if (file != null)
+                        {
+                            file.CanInteract = true;
+                            Console.WriteLine("[TheLoungeScreen] Crime scene file is now interactable");
+                        }
+
+                        // Enable the autopsy report for interaction
+                        var autopsyReport = loungeScene.GetAutopsyReport();
+                        if (autopsyReport != null)
+                        {
+                            autopsyReport.CanInteract = true;
+                            Console.WriteLine("[TheLoungeScreen] Autopsy report is now interactable");
+                        }
                     }
                 };
             }
@@ -651,9 +668,20 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            // Only update FPS camera when not showing intro, not in dialogue, and not transitioning
+            // Show mouse cursor when character selection menu or transcript review is active
+            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive)
+            {
+                Globals.screenManager.IsMouseVisible = true;
+            }
+            else
+            {
+                Globals.screenManager.IsMouseVisible = false;
+            }
+
+            // Only update FPS camera when not showing intro, not in dialogue, not in menus, and not transitioning
             if (!loungeScene.IsShowingIntroText() && !dialogueSystem.IsActive &&
-                !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning)
+                !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning &&
+                !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive)
             {
                 fpsCamera.Update(gameTime);
             }
