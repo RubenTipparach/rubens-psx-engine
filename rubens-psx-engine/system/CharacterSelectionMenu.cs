@@ -36,6 +36,10 @@ namespace anakinsoft.system
         private List<int> selectedIndices = new List<int>(); // Track up to 2 selections
         private bool isActive = false;
         private KeyboardState previousKeyboard;
+        private MouseState previousMouse;
+
+        // Track cell rectangles for mouse interaction
+        private Dictionary<int, Rectangle> cellRectangles = new Dictionary<int, Rectangle>();
 
         // Grid display settings
         private const int GridColumns = 4;
@@ -112,6 +116,45 @@ namespace anakinsoft.system
                 return;
 
             var keyboard = Keyboard.GetState();
+            var mouse = Mouse.GetState();
+
+            // Mouse hover detection
+            Point mousePosition = new Point(mouse.X, mouse.Y);
+            int hoveredIndex = -1;
+            foreach (var kvp in cellRectangles)
+            {
+                if (kvp.Value.Contains(mousePosition))
+                {
+                    hoveredIndex = kvp.Key;
+                    break;
+                }
+            }
+
+            // Update selected index based on mouse hover
+            if (hoveredIndex != -1)
+            {
+                selectedIndex = hoveredIndex;
+            }
+
+            // Mouse click to toggle selection
+            if (mouse.LeftButton == ButtonState.Released && previousMouse.LeftButton == ButtonState.Pressed)
+            {
+                if (hoveredIndex != -1)
+                {
+                    if (selectedIndices.Contains(hoveredIndex))
+                    {
+                        // Deselect
+                        selectedIndices.Remove(hoveredIndex);
+                        Console.WriteLine($"CharacterSelectionMenu: Deselected {characters[hoveredIndex]?.Name}");
+                    }
+                    else if (selectedIndices.Count < 2)
+                    {
+                        // Select (max 2)
+                        selectedIndices.Add(hoveredIndex);
+                        Console.WriteLine($"CharacterSelectionMenu: Selected {characters[hoveredIndex]?.Name} ({selectedIndices.Count}/2)");
+                    }
+                }
+            }
 
             // Grid navigation - Up
             if (keyboard.IsKeyDown(Keys.Up) && !previousKeyboard.IsKeyDown(Keys.Up))
@@ -180,14 +223,14 @@ namespace anakinsoft.system
                 }
             }
 
-            // Close menu with Escape or Tab
-            if ((keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape)) ||
-                (keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab)))
+            // Close menu with Tab (Escape reserved for pause menu)
+            if (keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab))
             {
                 Hide();
             }
 
             previousKeyboard = keyboard;
+            previousMouse = mouse;
         }
 
         /// <summary>
@@ -231,6 +274,8 @@ namespace anakinsoft.system
 
             // Draw character grid
             float startY = menuY + BoxPadding + titleSize.Y + counterSize.Y + 20;
+            cellRectangles.Clear(); // Clear old rectangles
+
             for (int i = 0; i < characters.Count; i++)
             {
                 var character = characters[i];
@@ -239,6 +284,15 @@ namespace anakinsoft.system
 
                 float cellX = menuX + BoxPadding + (col * cellWidth);
                 float cellY = startY + (row * cellHeight);
+
+                // Store cell rectangle for mouse interaction (includes portrait + text area)
+                Rectangle cellRect = new Rectangle(
+                    (int)(cellX - 4),
+                    (int)(cellY - 4),
+                    (int)(CellWidth + 8),
+                    (int)(PortraitHeight + 68)
+                );
+                cellRectangles[i] = cellRect;
 
                 bool isHovered = i == selectedIndex;
                 bool isConfirmed = selectedIndices.Contains(i);
@@ -288,7 +342,7 @@ namespace anakinsoft.system
             }
 
             // Draw controls hint at bottom
-            string hint = "[Arrows] Navigate  [E/Space] Toggle  [Enter] Confirm  [ESC] Cancel";
+            string hint = "[Mouse/Arrows] Navigate  [Click/E/Space] Toggle  [Enter] Confirm  [Tab] Cancel";
             var hintSize = font.MeasureString(hint) * 0.6f;
             Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding);
             spriteBatch.DrawString(font, hint, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
