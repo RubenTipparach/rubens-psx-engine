@@ -28,6 +28,9 @@ namespace anakinsoft.system
         private string viewingCharacterName;
         private int subjectScrollOffset;
 
+        // Cached pixel texture for drawing rectangles
+        private Texture2D pixelTexture;
+
         public bool IsActive => isActive;
 
         public TranscriptReviewUI()
@@ -180,10 +183,15 @@ namespace anakinsoft.system
             int screenWidth = viewport.Width;
             int screenHeight = viewport.Height;
 
+            // Initialize pixel texture if needed
+            if (pixelTexture == null)
+            {
+                pixelTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
+                pixelTexture.SetData(new[] { Color.White });
+            }
+
             // Black semi-transparent background overlay for better text readability
-            var backgroundTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            backgroundTexture.SetData(new[] { new Color(0, 0, 0, 220) }); // Darker for better readability
-            spriteBatch.Draw(backgroundTexture, new Rectangle(0, 0, screenWidth, screenHeight), Color.White);
+            spriteBatch.Draw(pixelTexture, new Rectangle(0, 0, screenWidth, screenHeight), Color.Black * 0.85f);
 
             if (isViewingTranscript)
             {
@@ -193,8 +201,6 @@ namespace anakinsoft.system
             {
                 DrawSelectionMode(spriteBatch, font, screenWidth, screenHeight);
             }
-
-            backgroundTexture.Dispose();
         }
 
         private void DrawSelectionMode(SpriteBatch spriteBatch, SpriteFont font, int screenWidth, int screenHeight)
@@ -205,9 +211,7 @@ namespace anakinsoft.system
             int panelX = (screenWidth - panelWidth) / 2;
             int panelY = (screenHeight - panelHeight) / 2;
 
-            var panelTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            panelTexture.SetData(new[] { new Color(20, 20, 30, 255) });
-            spriteBatch.Draw(panelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.White);
+            spriteBatch.Draw(pixelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), new Color(20, 20, 30, 255));
 
             // Border
             DrawBorder(spriteBatch, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.Yellow, 2);
@@ -240,10 +244,7 @@ namespace anakinsoft.system
                 // Highlight selected item
                 if (isSelected)
                 {
-                    var highlightTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-                    highlightTexture.SetData(new[] { new Color(100, 100, 50, 100) });
-                    spriteBatch.Draw(highlightTexture, new Rectangle(panelX + 20, yOffset - 5, panelWidth - 40, lineHeight), Color.White);
-                    highlightTexture.Dispose();
+                    spriteBatch.Draw(pixelTexture, new Rectangle(panelX + 20, yOffset - 5, panelWidth - 40, lineHeight), new Color(100, 100, 50, 100));
                 }
 
                 // Character name
@@ -263,8 +264,6 @@ namespace anakinsoft.system
 
                 yOffset += lineHeight;
             }
-
-            panelTexture.Dispose();
         }
 
         private void DrawViewingMode(SpriteBatch spriteBatch, SpriteFont font, int screenWidth, int screenHeight)
@@ -278,9 +277,7 @@ namespace anakinsoft.system
             int panelX = (screenWidth - panelWidth) / 2;
             int panelY = (screenHeight - panelHeight) / 2;
 
-            var panelTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            panelTexture.SetData(new[] { new Color(20, 20, 30, 255) });
-            spriteBatch.Draw(panelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.White);
+            spriteBatch.Draw(pixelTexture, new Rectangle(panelX, panelY, panelWidth, panelHeight), new Color(20, 20, 30, 255));
 
             // Border
             DrawBorder(spriteBatch, new Rectangle(panelX, panelY, panelWidth, panelHeight), Color.Yellow, 2);
@@ -355,25 +352,18 @@ namespace anakinsoft.system
                 if (yOffset > panelY + panelHeight - 30)
                     break;
             }
-
-            panelTexture.Dispose();
         }
 
         private void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
         {
-            var borderTexture = new Texture2D(Globals.screenManager.GraphicsDevice, 1, 1);
-            borderTexture.SetData(new[] { Color.White });
-
             // Top
-            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+            spriteBatch.Draw(pixelTexture, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
             // Bottom
-            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
+            spriteBatch.Draw(pixelTexture, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
             // Left
-            spriteBatch.Draw(borderTexture, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+            spriteBatch.Draw(pixelTexture, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
             // Right
-            spriteBatch.Draw(borderTexture, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
-
-            borderTexture.Dispose();
+            spriteBatch.Draw(pixelTexture, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
         }
 
         /// <summary>

@@ -31,7 +31,8 @@
       "Bash(tree:*)",
       "Bash(Select-String -Pattern \"error|Build succeeded|Build FAILED\")",
       "Bash(move:*)",
-      "Bash(Select-String -Pattern \"error CS\")"
+      "Bash(Select-String -Pattern \"error CS\")",
+      "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")"
     ],
     "deny": [],
     "ask": []

@@ -43,3 +43,4 @@ development:
   showStaticMeshDebug: false
   openLogsOnExit: false
   showErrorDialogs: true
+  skipToSuspectSelection: true

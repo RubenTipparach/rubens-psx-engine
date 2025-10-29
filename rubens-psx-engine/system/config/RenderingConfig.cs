@@ -165,6 +165,7 @@ namespace rubens_psx_engine.system.config
         public bool ShowStaticMeshDebug { get; set; } = false;
         public bool OpenLogsOnExit { get; set; } = false;
         public bool ShowErrorDialogs { get; set; } = true;
+        public bool SkipToSuspectSelection { get; set; } = false;
     }
 
     /// <summary>

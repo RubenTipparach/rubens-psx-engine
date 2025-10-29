@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.system;
+using rubens_psx_engine.system.config;
 using anakinsoft.system;
 using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
@@ -79,6 +80,18 @@ namespace anakinsoft.game.scenes
 
             // Initialize game progress tracker
             gameProgress = new LoungeGameProgress();
+
+            // Debug: Skip to suspect selection if enabled
+            var config = RenderingConfigManager.Config;
+            if (config?.Development?.SkipToSuspectSelection == true)
+            {
+                gameProgress.CanSelectSuspects = true;
+                gameProgress.HasSeenIntro = true;
+                gameProgress.HasTalkedToBartender = true;
+                gameProgress.PathologistSpawned = true;
+                gameProgress.HasTalkedToPathologist = true;
+                Console.WriteLine("[TheLoungeScreen] DEBUG: Skipping to suspect selection mode");
+            }
 
             // Initialize inventory and dialogue choices
             inventory = new LoungeInventory();
@@ -357,6 +370,14 @@ namespace anakinsoft.game.scenes
                         transcriptReviewUI.Open(stateMachines);
                     }
                 };
+
+                // Debug: Enable suspects file if skipping to suspect selection
+                var config = RenderingConfigManager.Config;
+                if (config?.Development?.SkipToSuspectSelection == true)
+                {
+                    file.CanInteract = true;
+                    Console.WriteLine("[TheLoungeScreen] DEBUG: Suspects file enabled for interaction");
+                }
             }
         }
 
