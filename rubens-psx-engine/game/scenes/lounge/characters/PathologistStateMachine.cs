@@ -22,16 +22,20 @@ namespace anakinsoft.game.scenes.lounge.characters
             switch (currentState)
             {
                 case "initial":
-                    // First interaction - present evidence about Breturium shards
+                    // First interaction - ask player to get autopsy report
+                    return GetDialogueSequence("PathologistReport");
+
+                case "waiting_for_report":
+                    // Waiting for player to bring the autopsy report
+                    return GetDialogueSequence("WaitingForReport");
+
+                case "report_received":
+                    // Report received, present evidence and enable crime scene file
                     return GetDialogueSequence("PathologistEvidence");
 
-                case "evidence_presented":
-                    // Evidence has been discussed, waiting for player investigation
-                    return null;
-
-                case "investigation_complete":
-                    // Player has completed investigation
-                    return null;
+                case "done":
+                    // Investigation phase - pathologist has nothing more to say
+                    return GetDialogueSequence("PathologistDone");
 
                 default:
                     Console.WriteLine($"[PathologistStateMachine] Unknown state: {currentState}");
@@ -48,10 +52,17 @@ namespace anakinsoft.game.scenes.lounge.characters
 
             switch (sequenceName)
             {
+                case "PathologistReport":
+                    // Asked player to get autopsy report - transition to waiting
+                    TransitionTo("waiting_for_report");
+                    SetFlag("asked_for_report", true);
+                    Console.WriteLine("[PathologistStateMachine] Asked player to get autopsy report");
+                    break;
+
                 case "PathologistEvidence":
-                    // Evidence presented - transition to investigation state
+                    // Evidence presented - transition to done state
+                    TransitionTo("done");
                     SetFlag("evidence_presented", true);
-                    //TransitionTo("evidence_presented");
                     Console.WriteLine("[PathologistStateMachine] Evidence presented, investigation can begin");
                     break;
 
@@ -119,6 +130,19 @@ namespace anakinsoft.game.scenes.lounge.characters
         public bool HasExaminedEvidence()
         {
             return GetFlag("evidence_examined");
+        }
+
+        /// <summary>
+        /// Called when player delivers the autopsy report
+        /// </summary>
+        public void OnAutopsyReportDelivered()
+        {
+            if (currentState == "waiting_for_report")
+            {
+                TransitionTo("report_received");
+                SetFlag("has_autopsy_report", true);
+                Console.WriteLine("[PathologistStateMachine] Autopsy report delivered");
+            }
         }
     }
 }

@@ -85,6 +85,9 @@ namespace anakinsoft.game.scenes
             // Set up evidence vial item collection
             SetupEvidenceVial();
 
+            // Set up autopsy report collection
+            SetupAutopsyReport();
+
             // Set up crime scene file interaction
             SetupCrimeSceneFile();
 
@@ -199,6 +202,27 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"Collected item: {item.Item.Name}");
                     inventory.PickUpItem(item.Item);
+                };
+            }
+        }
+
+        private void SetupAutopsyReport()
+        {
+            var autopsyReport = loungeScene.GetAutopsyReport();
+            if (autopsyReport != null)
+            {
+                autopsyReport.OnReportCollected += (report) =>
+                {
+                    Console.WriteLine($"Collected {report.ReportTitle}");
+
+                    // Hide the visual representation
+                    loungeScene.HideAutopsyReportVisual();
+
+                    // Update pathologist state machine
+                    pathologistStateMachine.OnAutopsyReportDelivered();
+
+                    // Trigger dialogue with pathologist
+                    Console.WriteLine("[TheLoungeScreen] Autopsy report collected - talk to pathologist to continue");
                 };
             }
         }
@@ -341,9 +365,29 @@ namespace anakinsoft.game.scenes
                     pathologistStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
 
                     // Handle completion actions
-                    if (yamlDialogue.on_complete == "show_character_selection")
+                    if (yamlDialogue.on_complete == "show_report")
                     {
-                        Console.WriteLine("[TheLoungeScreen] Pathologist asks you to grab the crime scene file - enabling it now");
+                        Console.WriteLine("[TheLoungeScreen] Pathologist asks you to get autopsy report - enabling it now");
+
+                        // Disable crime scene file
+                        var file = loungeScene.GetCrimeSceneFile();
+                        if (file != null)
+                        {
+                            file.CanInteract = false;
+                            Console.WriteLine("[TheLoungeScreen] Crime scene file is disabled");
+                        }
+
+                        // Enable the autopsy report for interaction
+                        var autopsyReport = loungeScene.GetAutopsyReport();
+                        if (autopsyReport != null)
+                        {
+                            autopsyReport.CanInteract = true;
+                            Console.WriteLine("[TheLoungeScreen] Autopsy report is now interactable");
+                        }
+                    }
+                    else if (yamlDialogue.on_complete == "show_character_selection")
+                    {
+                        Console.WriteLine("[TheLoungeScreen] Pathologist evidence presented - enabling crime scene file");
                         gameProgress.CanSelectSuspects = true;
 
                         // Enable the crime scene file for interaction
@@ -354,12 +398,12 @@ namespace anakinsoft.game.scenes
                             Console.WriteLine("[TheLoungeScreen] Crime scene file is now interactable");
                         }
 
-                        // Enable the autopsy report for interaction
+                        // Disable the autopsy report (already delivered)
                         var autopsyReport = loungeScene.GetAutopsyReport();
                         if (autopsyReport != null)
                         {
-                            autopsyReport.CanInteract = true;
-                            Console.WriteLine("[TheLoungeScreen] Autopsy report is now interactable");
+                            autopsyReport.CanInteract = false;
+                            Console.WriteLine("[TheLoungeScreen] Autopsy report is disabled");
                         }
                     }
                 };

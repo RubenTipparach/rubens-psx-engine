@@ -63,7 +63,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
                 if (IsCollected)
                     return "";  // Don't show prompt if already collected
 
-                return $"[E/F] Pick up {Name}";
+                return $"[E] Pick up {Name}";
             }
         }
     }

@@ -7,18 +7,19 @@ using System;
 namespace anakinsoft.game.scenes.lounge.evidence
 {
     /// <summary>
-    /// Autopsy report that shows forensic findings from the pathologist
+    /// Autopsy report that can be collected and delivered to the pathologist
     /// </summary>
     public class AutopsyReport : InteractableObject
     {
         public string ReportTitle { get; private set; }
         public string ReportContent { get; set; }
         public BoundingBox BoundingBox { get; private set; }
+        public bool IsCollected { get; private set; }
 
         // Physics handle for raycast detection
         private StaticHandle? staticHandle;
 
-        public event Action<AutopsyReport> OnReportOpened;
+        public event Action<AutopsyReport> OnReportCollected;
 
         public AutopsyReport(
             string title,
@@ -37,12 +38,16 @@ namespace anakinsoft.game.scenes.lounge.evidence
         }
 
         /// <summary>
-        /// Handle interaction - open the report
+        /// Handle interaction - collect the report
         /// </summary>
         protected override void OnInteractAction()
         {
-            Console.WriteLine($"Opening {ReportTitle}");
-            OnReportOpened?.Invoke(this);
+            if (!IsCollected)
+            {
+                IsCollected = true;
+                Console.WriteLine($"Collected {ReportTitle}");
+                OnReportCollected?.Invoke(this);
+            }
         }
 
         /// <summary>
@@ -52,11 +57,14 @@ namespace anakinsoft.game.scenes.lounge.evidence
         {
             get
             {
+                if (IsCollected)
+                    return ""; // Don't show prompt if already collected
+
                 // Show disabled message if not interactable
                 if (!CanInteract)
                     return "Autopsy Report - Talk to pathologist first";
 
-                return "[E/F] Review Autopsy Report";
+                return "[E] Pick up Autopsy Report";
             }
         }
 

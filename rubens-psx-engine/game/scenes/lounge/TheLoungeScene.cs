@@ -663,8 +663,8 @@ namespace anakinsoft.game.scenes
                 debugVisualizer.DrawCrimeSceneFileBox(crimeSceneFile, camera);
             }
 
-            // Draw autopsy report bounding box when targeted (always visible for gameplay)
-            if (autopsyReport != null)
+            // Draw autopsy report bounding box when targeted (always visible for gameplay, unless collected)
+            if (autopsyReport != null && !autopsyReport.IsCollected)
             {
                 debugVisualizer.DrawAutopsyReportBox(autopsyReport, camera);
             }
@@ -728,6 +728,15 @@ namespace anakinsoft.game.scenes
         public void SetActiveDialogueCharacter(string characterKey)
         {
             uiManager.SetActiveDialogueCharacter(characterKey);
+        }
+
+        public void HideAutopsyReportVisual()
+        {
+            if (autopsyReportVisual != null)
+            {
+                autopsyReportVisual.IsVisible = false;
+                Console.WriteLine("[TheLoungeScene] Autopsy report visual hidden");
+            }
         }
 
         public void ClearActiveDialogueCharacter()

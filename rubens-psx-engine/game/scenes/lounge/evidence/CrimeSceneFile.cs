@@ -87,15 +87,15 @@ namespace anakinsoft.game.scenes.lounge.evidence
             {
                 // Show disabled message if not interactable
                 if (!CanInteract)
-                    return "Crime Scene File - Talk to pathologist first";
+                    return "Suspects File - Talk to pathologist first";
 
                 int questionedCount = Transcripts.FindAll(t => t.WasQuestioned).Count;
                 int totalCount = Transcripts.Count;
 
                 if (questionedCount == 0)
-                    return "[E/F] Review Crime Scene File (No interviews yet)";
+                    return "[E] Review Suspects File (No interviews yet)";
 
-                return $"[E/F] Review Crime Scene File ({questionedCount}/{totalCount} interviewed)";
+                return $"[E] Review Suspects File ({questionedCount}/{totalCount} interviewed)";
             }
         }
 

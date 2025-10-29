@@ -113,6 +113,15 @@ pathologist:
 
   # Dialogue sequence - Evidence presentation
   dialogue:
+    - sequence_name: "PathologistReport"
+      lines:
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Before we begin, I left the autopsy report over there on the table. Can you bring that over here?"
+      on_complete: "show_report"
+    - sequence_name: "WaitingForReport"
+      lines:
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "Please bring me my report. It's on the table over there."
     - sequence_name: "PathologistEvidence"
       lines:
         - speaker: "Dr. Harmon Kerrigan"
@@ -149,9 +158,13 @@ pathologist:
           text: "Look for someone with medical training, access to breturium, diplomatic codes, and knowledge of Telirian customs."
 
         - speaker: "Dr. Harmon Kerrigan"
-          text: "That's all I have for now, Detective. Before you being the interrogations, please bring me the criminal files from the bar."
+          text: "That's all I have for now, Detective. You may start by reviewing the suspects file."
 
       on_complete: "show_character_selection"
+    - sequence_name: "PathologistDone"
+      lines:
+        - speaker: "Dr. Harmon Kerrigan"
+          text: "That's all I have for now, Detective. You may start by reviewing the suspects file."
 
 # SUSPECTS - Available for interrogation
 
