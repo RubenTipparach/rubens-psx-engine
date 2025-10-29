@@ -88,8 +88,8 @@ namespace anakinsoft.game.scenes
         EvidenceTable evidenceTable;
 
         // Suspects file
-        SuspectsFile crimeSceneFile;
-        RenderingEntity crimeSceneFileVisual; // Cube placeholder for the file
+        SuspectsFile suspectsFile;
+        RenderingEntity suspectsFileVisual; // Cube placeholder for the file
 
         // Autopsy report
         AutopsyReport autopsyReport;
@@ -484,31 +484,31 @@ namespace anakinsoft.game.scenes
 
             // Create suspects file interactable
             Vector3 fileSize = new Vector3(8f, 1f, 8f) * LevelScale; // Match visual size
-            crimeSceneFile = new SuspectsFile(
+            suspectsFile = new SuspectsFile(
                 "Suspects File",
                 filePosition,
                 fileSize
             );
 
             // Disable file initially - will be enabled after talking to pathologist
-            crimeSceneFile.CanInteract = false;
+            suspectsFile.CanInteract = false;
 
             // Register file with evidence table
-            evidenceTable.PlaceItem("suspects_file", 1, 1, crimeSceneFile);
+            evidenceTable.PlaceItem("suspects_file", 1, 1, suspectsFile);
 
             // Initialize with all suspect entries (empty transcripts until interviewed)
-            crimeSceneFile.AddTranscript("Bartender Zix", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Dr. Harmon Kerrigan", "Chief Medical Officer - performed the autopsy.", false);
-            crimeSceneFile.AddTranscript("Commander Sylar Von", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Lt. Marcus Webb", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Ensign Tork", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Chief Kala Solis", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Maven Kilroth", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Tehvora", "Not yet interviewed.", false);
-            crimeSceneFile.AddTranscript("Lucky Chen", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Bartender Zix", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Dr. Harmon Kerrigan", "Chief Medical Officer - performed the autopsy.", false);
+            suspectsFile.AddTranscript("Commander Sylar Von", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Lt. Marcus Webb", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Ensign Tork", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Chief Kala Solis", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Maven Kilroth", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Tehvora", "Not yet interviewed.", false);
+            suspectsFile.AddTranscript("Lucky Chen", "Not yet interviewed.", false);
 
             // Register with interaction system
-            interactionSystem.RegisterInteractable(crimeSceneFile);
+            interactionSystem.RegisterInteractable(suspectsFile);
 
             // Create physics collider for the file (so it can be detected by raycasting)
             var fileColliderSize = fileSize * 1.2f; // Slightly larger for easier interaction
@@ -526,17 +526,17 @@ namespace anakinsoft.game.scenes
             );
 
             // Store the static handle in the suspects file for interaction detection
-            crimeSceneFile.SetStaticHandle(fileStaticHandle);
+            suspectsFile.SetStaticHandle(fileStaticHandle);
 
             // Create visual placeholder (cube) - 90% smaller for a small file/tablet appearance
             var fileMaterial = new UnlitMaterial("textures/prototype/concrete");
-            crimeSceneFileVisual = new RenderingEntity("models/cube", "textures/prototype/concrete");
-            crimeSceneFileVisual.Position = filePosition;
-            crimeSceneFileVisual.Scale = new Vector3(0.3f, 0.05f, 0.2f) * LevelScale; // 90% smaller - small tablet/file size
-            crimeSceneFileVisual.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0);
-            crimeSceneFileVisual.IsVisible = true;
+            suspectsFileVisual = new RenderingEntity("models/cube", "textures/prototype/concrete");
+            suspectsFileVisual.Position = filePosition;
+            suspectsFileVisual.Scale = new Vector3(0.3f, 0.05f, 0.2f) * LevelScale; // 90% smaller - small tablet/file size
+            suspectsFileVisual.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0);
+            suspectsFileVisual.IsVisible = true;
 
-            AddRenderingEntity(crimeSceneFileVisual);
+            AddRenderingEntity(suspectsFileVisual);
 
             Console.WriteLine($"Suspects file created at position: {filePosition}");
             Console.WriteLine($"Suspects file physics collider created with handle: {fileStaticHandle.Value}");
@@ -797,9 +797,9 @@ namespace anakinsoft.game.scenes
             base.Draw(gameTime, camera);
 
             // Draw suspects file bounding box when targeted (always visible for gameplay)
-            if (crimeSceneFile != null)
+            if (suspectsFile != null)
             {
-                debugVisualizer.DrawSuspectsFileBox(crimeSceneFile, camera);
+                debugVisualizer.DrawSuspectsFileBox(suspectsFile, camera);
             }
 
             // Draw autopsy report bounding box when targeted (always visible for gameplay, unless collected)
@@ -883,7 +883,7 @@ namespace anakinsoft.game.scenes
         public InteractableItem GetSecurityLog() => securityLog;
         public InteractableItem GetDatapad() => datapad;
         public InteractableItem GetKeycard() => keycard;
-        public SuspectsFile GetSuspectsFile() => crimeSceneFile;
+        public SuspectsFile GetSuspectsFile() => suspectsFile;
         public AutopsyReport GetAutopsyReport() => autopsyReport;
         public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
