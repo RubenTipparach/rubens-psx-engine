@@ -249,9 +249,8 @@ namespace anakinsoft.system
                     selectedIndex = 0;
             }
 
-            // Toggle selection with E or Space
-            if ((keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)) ||
-                (keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space)))
+            // Toggle selection with Space
+            if (keyboard.IsKeyDown(Keys.Space) && !previousKeyboard.IsKeyDown(Keys.Space))
             {
                 if (selectedIndex >= 0 && selectedIndex < characters.Count)
                 {
@@ -480,7 +479,7 @@ namespace anakinsoft.system
             }
 
             // Draw controls hint at bottom
-            string hint = "[Mouse/Arrows] Navigate  [Click/E/Space] Toggle  [Enter] Confirm  [Tab] Cancel";
+            string hint = "[Mouse/Arrows] Navigate  [Click/Space] Toggle  [Enter] Confirm  [Tab] Cancel";
             var hintSize = font.MeasureString(hint) * 0.6f;
             Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding);
             spriteBatch.DrawString(font, hint, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
