@@ -27,7 +27,7 @@ namespace anakinsoft.system
         private KeyboardState previousKeyboard;
 
         // Raycast parameters
-        private float maxRayDistance = 20f;
+        private float maxRayDistance = 40f;
         private bool showDebugInfo = false;
 
         // UI components

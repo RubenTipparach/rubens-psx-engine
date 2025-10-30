@@ -252,7 +252,7 @@ commander_von:
           text: "The Ambassador was more than my assignment, Detective. He was the finest example of Telirian honor I've ever known."
 
         - speaker: "Commander Sylara Von"
-          text: "Whoever did this didn't just kill a diplomat—they murdered hope itself. I should have been there. I should have protected him."
+          text: "Whoever did this didn't just kill a diplomat - they murdered hope itself. I should have been there. I should have protected him."
 
         # TODO: Add full interrogation dialogue
 
@@ -314,10 +314,10 @@ dr_thorne:
     - sequence_name: "DrThorneInterrogation"
       lines:
         - speaker: "Dr. Lyssa Thorne"
-          text: "Oh, Detective, this is just—it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
+          text: "Oh, Detective, this is just - it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "He was so vital to my research on Telirian-human relations. I can't believe—I mean, who would—*nervous laugh*—this is just terrible for everyone involved."
+          text: "He was so vital to my research on Telirian-human relations. I can't believe - I mean, who would - *nervous laugh* - this is just terrible for everyone involved."
 
         - speaker: "Dr. Lyssa Thorne"
           text: "Do you need me to explain Telirian death rituals? I can explain those."
@@ -518,7 +518,7 @@ tvora:
   species: "Vulcan"
   gender: "Female"
   age: "120"
-  role: "Federation Diplomatic Attaché"
+  role: "Federation Diplomatic Attache"
   personality: "Logical, precise, subtly condescending"
   portrait: "textures/chars/Tehvora - Diplomatic Atache (Kullan)"
   model: "models/characters/alien-2"

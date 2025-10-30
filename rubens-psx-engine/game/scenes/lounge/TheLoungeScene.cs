@@ -38,8 +38,7 @@ namespace anakinsoft.game.scenes
     public class TheLoungeScene : Scene
     {
         // Debug settings
-        // TODO: Move to LoungeSceneMeshLoader or debug helper class
-        public bool ShowPhysicsWireframe = true; // Toggle to show/hide physics collision wireframes
+        public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
 
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
@@ -100,6 +99,9 @@ namespace anakinsoft.game.scenes
         LoungeCharacterData interrogationCharacter1;
         LoungeCharacterData interrogationCharacter2;
 
+        // Character Profile Manager
+        private CharacterProfileManager profileManager;
+
         public TheLoungeScene() : base()
         {
             // Initialize character system and physics
@@ -134,6 +136,9 @@ namespace anakinsoft.game.scenes
             {
                 boundingBoxRenderer.ShowBoundingBoxes = false;
             }
+
+            // Initialize Character Profile Manager
+            profileManager = new CharacterProfileManager();
 
             // Initialize UI Manager (loads portraits)
             uiManager.Initialize();
@@ -179,6 +184,33 @@ namespace anakinsoft.game.scenes
 
             // Pathologist will be spawned after bartender dialogue
             // Don't initialize pathologist here - will be called from TheLoungeScreen after bartender dialogue
+        }
+
+        /// <summary>
+        /// Load character profiles from YAML data
+        /// Called from TheLoungeScreen after character data is loaded
+        /// </summary>
+        public void LoadCharacterProfiles(anakinsoft.game.scenes.lounge.characters.LoungeCharactersData yamlData)
+        {
+            if (profileManager == null)
+            {
+                Console.WriteLine("[TheLoungeScene] ERROR: ProfileManager not initialized");
+                return;
+            }
+
+            try
+            {
+                profileManager.LoadFromYaml(yamlData);
+                profileManager.LoadPortraits();
+                Console.WriteLine($"[TheLoungeScene] Loaded {profileManager.ProfileCount} character profiles");
+
+                // Pass profile manager to UI manager for portrait integration
+                uiManager.SetProfileManager(profileManager);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TheLoungeScene] ERROR loading character profiles: {ex.Message}");
+            }
         }
 
         private void InitializeBartender()
@@ -890,6 +922,7 @@ namespace anakinsoft.game.scenes
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public bool IsShowingIntroText() => uiManager.ShowIntroText;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
+        public CharacterProfileManager GetProfileManager() => profileManager;
 
         public void SetActiveDialogueCharacter(string characterKey)
         {

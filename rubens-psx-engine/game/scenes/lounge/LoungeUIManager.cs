@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge.characters;
 using System;
 using System.Collections.Generic;
 
@@ -16,6 +17,7 @@ namespace anakinsoft.game.scenes
         // Character profiles (portraits)
         private Dictionary<string, Texture2D> characterPortraits;
         private Texture2D portraitFrame;
+        private CharacterProfileManager profileManager;
 
         // Intro text state
         private bool showIntroText = true;
@@ -49,6 +51,24 @@ namespace anakinsoft.game.scenes
         public void Initialize()
         {
             InitializeCharacterPortraits();
+        }
+
+        /// <summary>
+        /// Set the character profile manager for dynamic portrait loading
+        /// </summary>
+        public void SetProfileManager(CharacterProfileManager manager)
+        {
+            profileManager = manager;
+            if (profileManager != null)
+            {
+                // Merge profile manager portraits with existing portraits
+                var profilePortraits = profileManager.GetAllPortraits();
+                foreach (var kvp in profilePortraits)
+                {
+                    characterPortraits[kvp.Key] = kvp.Value;
+                }
+                Console.WriteLine($"[LoungeUIManager] Integrated {profilePortraits.Count} portraits from ProfileManager");
+            }
         }
 
         private void InitializeCharacterPortraits()

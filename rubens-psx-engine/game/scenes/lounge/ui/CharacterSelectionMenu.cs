@@ -2,8 +2,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
+using anakinsoft.game.scenes.lounge.characters;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace anakinsoft.game.scenes.lounge.ui
 {
@@ -89,6 +91,60 @@ namespace anakinsoft.game.scenes.lounge.ui
                 new SelectableCharacter("Tehvora", "Tehvora", "Diplomatic Attache"),
                 new SelectableCharacter("Lucky Chen", "LuckyChen", "Quartermaster"),
             };
+        }
+
+        /// <summary>
+        /// Load characters from CharacterProfileManager
+        /// Replaces hardcoded character list with data from profiles
+        /// </summary>
+        public void LoadFromProfiles(CharacterProfileManager profileManager)
+        {
+            if (profileManager == null)
+                return;
+
+            var interrogatableProfiles = profileManager.GetInterrogatableProfiles().ToList();
+            if (interrogatableProfiles.Count == 0)
+                return;
+
+            characters.Clear();
+            foreach (var profile in interrogatableProfiles)
+            {
+                // Skip bartender and pathologist (they're not suspects)
+                if (profile.Id == "bartender" || profile.Id == "pathologist")
+                    continue;
+
+                // Sanitize text to remove unsupported characters
+                string sanitizedName = SanitizeText(profile.Name);
+                string sanitizedRole = SanitizeText(profile.Role);
+
+                var character = new SelectableCharacter(
+                    sanitizedName,
+                    profile.PortraitKey,
+                    sanitizedRole
+                );
+                characters.Add(character);
+            }
+
+            Console.WriteLine($"[CharacterSelectionMenu] Loaded {characters.Count} characters from ProfileManager");
+        }
+
+        /// <summary>
+        /// Remove characters that might not be supported by the font
+        /// </summary>
+        private string SanitizeText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            // Remove or replace common problematic characters
+            return text
+                .Replace("\u2018", "'")  // Replace left single quote with straight apostrophe
+                .Replace("\u2019", "'")  // Replace right single quote with straight apostrophe
+                .Replace("\u201C", "\"") // Replace left double quote with straight quote
+                .Replace("\u201D", "\"") // Replace right double quote with straight quote
+                .Replace("\u2014", "-")  // Replace em dash with hyphen
+                .Replace("\u2013", "-")  // Replace en dash with hyphen
+                .Replace("\u2026", "..."); // Replace ellipsis with three dots
         }
 
         /// <summary>

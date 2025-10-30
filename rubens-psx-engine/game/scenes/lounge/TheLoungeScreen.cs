@@ -148,6 +148,16 @@ namespace anakinsoft.game.scenes
                 string yamlPath = Path.Combine("Content", "Data", "Lounge", "characters.yml");
                 charactersData = LoungeCharacterDataLoader.LoadCharacters(yamlPath);
 
+                // Load character profiles into scene
+                loungeScene.LoadCharacterProfiles(charactersData);
+
+                // Load character profiles into character selection menu
+                var profileManager = loungeScene.GetProfileManager();
+                if (profileManager != null)
+                {
+                    characterSelectionMenu.LoadFromProfiles(profileManager);
+                }
+
                 // Initialize bartender state machine
                 if (charactersData.bartender != null)
                 {
@@ -563,7 +573,14 @@ namespace anakinsoft.game.scenes
                 if (char1Config != null)
                 {
                     interrogationChar1StateMachine = CreateStateMachineForCharacter(char1Key, char1Config);
-                    Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[0].Name} (key: {char1Key})");
+                    if (interrogationChar1StateMachine != null)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[0].Name} (key: {char1Key})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] ERROR: State machine is NULL for {characters[0].Name} (key: {char1Key})");
+                    }
                 }
                 else
                 {
@@ -580,7 +597,14 @@ namespace anakinsoft.game.scenes
                 if (char2Config != null)
                 {
                     interrogationChar2StateMachine = CreateStateMachineForCharacter(char2Key, char2Config);
-                    Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[1].Name} (key: {char2Key})");
+                    if (interrogationChar2StateMachine != null)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[1].Name} (key: {char2Key})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] ERROR: State machine is NULL for {characters[1].Name} (key: {char2Key})");
+                    }
                 }
                 else
                 {
@@ -614,15 +638,21 @@ namespace anakinsoft.game.scenes
         private string GetCharacterKey(string displayName)
         {
             // Map display names to character keys
+            // Handles both old hardcoded names and new profile names
             return displayName switch
             {
                 "Commander Sylar Von" => "commander_von",
+                "Commander Sylara Von" => "commander_von",  // New profile name
                 "Dr. Thorne" => "dr_thorne",
+                "Dr. Lyssa Thorne" => "dr_thorne",  // New profile name
                 "Lt. Marcus Webb" => "lt_webb",
+                "Lieutenant Marcus Webb" => "lt_webb",  // New profile name
                 "Ensign Tork" => "ensign_tork",
                 "Maven Kilroth" => "maven_kilroth",
                 "Chief Kala Solis" => "chief_solis",
+                "Chief Petty Officer Raina Solis" => "chief_solis",  // New profile name
                 "Tehvora" => "tvora",
+                "T'Vora" => "tvora",  // New profile name
                 "Lucky Chen" => "lucky_chen",
                 _ => displayName.ToLower().Replace(" ", "_").Replace(".", "")
             };
