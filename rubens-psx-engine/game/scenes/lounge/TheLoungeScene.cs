@@ -729,6 +729,23 @@ namespace anakinsoft.game.scenes
             characterInitialRotation = rotation;
         }
 
+        /// <summary>
+        /// Reset player character to initial starting position and rotation
+        /// </summary>
+        public void ResetPlayerPosition()
+        {
+            if (character == null) return;
+
+            var initialPosition = new Vector3(0, 5f, 0);
+            var bodyReference = characters.Simulation.Bodies.GetBodyReference(character.Value.BodyHandle);
+            bodyReference.Pose.Position = initialPosition.ToVector3N();
+            bodyReference.Pose.Orientation = BepuUtilities.QuaternionEx.Identity;
+            bodyReference.Velocity.Linear = System.Numerics.Vector3.Zero;
+            bodyReference.Velocity.Angular = System.Numerics.Vector3.Zero;
+
+            Console.WriteLine($"[TheLoungeScene] Reset player to position: {initialPosition}");
+        }
+
         public override void Update(GameTime gameTime)
         {
             // Update load timer first
@@ -941,6 +958,16 @@ namespace anakinsoft.game.scenes
         public void ClearActiveDialogueCharacter()
         {
             uiManager.ClearActiveDialogueCharacter();
+        }
+
+        public void ShowTimePassageMessage(int hoursPassed, int hoursRemaining)
+        {
+            uiManager.ShowTimePassageMessage(hoursPassed, hoursRemaining);
+        }
+
+        public void UpdateTimePassageMessage(GameTime gameTime)
+        {
+            uiManager.UpdateTimePassageMessage(gameTime);
         }
 
         /// <summary>

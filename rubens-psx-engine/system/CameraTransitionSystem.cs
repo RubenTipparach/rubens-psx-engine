@@ -69,6 +69,12 @@ namespace anakinsoft.system
             Matrix lookAtMatrix = Matrix.CreateLookAt(interactionPosition, lookAtPosition, Vector3.Up);
             targetRotation = Quaternion.CreateFromRotationMatrix(Matrix.Invert(lookAtMatrix));
 
+            // Ensure quaternions take shortest path by checking dot product
+            if (Quaternion.Dot(startRotation, targetRotation) < 0)
+            {
+                targetRotation = -targetRotation; // Flip to ensure shortest rotation path
+            }
+
             // Debug: print the look direction
             Vector3 lookDirection = Vector3.Normalize(lookAtPosition - interactionPosition);
             Console.WriteLine($"=== Camera Transition Setup ===");
@@ -125,10 +131,16 @@ namespace anakinsoft.system
 
             // Set up return transition
             startPosition = activeCamera.Position;
-            startRotation = Quaternion.CreateFromRotationMatrix(activeCamera.View);
+            startRotation = activeCamera.GetRotation(); // Use GetRotation() not View matrix!
 
             targetPosition = returnPosition;
             targetRotation = returnRotation;
+
+            // Ensure quaternions take shortest path by checking dot product
+            if (Quaternion.Dot(startRotation, targetRotation) < 0)
+            {
+                targetRotation = -targetRotation; // Flip to ensure shortest rotation path
+            }
 
             transitionDuration = duration;
             transitionProgress = 0f;

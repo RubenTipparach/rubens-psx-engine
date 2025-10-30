@@ -57,6 +57,9 @@ namespace anakinsoft.game.scenes
         CharacterStateMachine interrogationChar1StateMachine;
         CharacterStateMachine interrogationChar2StateMachine;
 
+        // All interrogated character state machines (persistent across rounds)
+        Dictionary<string, CharacterStateMachine> interrogatedCharacters;
+
         // Interrogation round management
         InterrogationRoundManager interrogationManager;
         ScreenFadeTransition fadeTransition;
@@ -81,6 +84,9 @@ namespace anakinsoft.game.scenes
 
             // Initialize game progress tracker
             gameProgress = new LoungeGameProgress();
+
+            // Initialize interrogated characters dictionary
+            interrogatedCharacters = new Dictionary<string, CharacterStateMachine>();
 
             // Debug: Skip to suspect selection if enabled
             var config = RenderingConfigManager.Config;
@@ -226,8 +232,9 @@ namespace anakinsoft.game.scenes
                 Console.WriteLine("Dialogue ended, returning camera to player");
 
                 // Clear active dialogue character to hide portrait
-                loungeScene.SetActiveDialogueCharacter(null);
+                loungeScene.ClearActiveDialogueCharacter();
 
+                // Always transition camera back when dialogue ends
                 cameraTransitionSystem.TransitionBackToPlayer(1.0f);
             };
 
@@ -263,14 +270,6 @@ namespace anakinsoft.game.scenes
             characterSelectionMenu.OnMenuClosed += () =>
             {
                 Console.WriteLine("Character selection menu closed");
-            };
-
-            // Handle view transcript requests
-            characterSelectionMenu.OnViewTranscript += (character) =>
-            {
-                Console.WriteLine($"[TheLoungeScreen] View transcript for {character.Name}");
-                // TODO: Show transcript review UI for this character
-                // transcriptReviewUI.ShowTranscript(character.Name);
             };
         }
 
@@ -333,11 +332,11 @@ namespace anakinsoft.game.scenes
                     if (pathologistStateMachine != null)
                         stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
 
-                    // Add interrogation characters if they exist
-                    if (interrogationChar1StateMachine != null)
-                        stateMachines[interrogationChar1StateMachine.CharacterName] = interrogationChar1StateMachine;
-                    if (interrogationChar2StateMachine != null)
-                        stateMachines[interrogationChar2StateMachine.CharacterName] = interrogationChar2StateMachine;
+                    // Add all interrogated characters from persistent dictionary
+                    foreach (var kvp in interrogatedCharacters)
+                    {
+                        stateMachines[kvp.Key] = kvp.Value;
+                    }
 
                     // Open transcript UI with state machines
                     transcriptReviewUI.Open(stateMachines);
@@ -358,12 +357,37 @@ namespace anakinsoft.game.scenes
                     // If player can select suspects, show character selection menu
                     if (gameProgress.CanSelectSuspects)
                     {
-                        Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
-                        characterSelectionMenu.Show();
+                        // During active interrogation, show transcript review
+                        if (characterSelectionMenu.IsInterrogationInProgress)
+                        {
+                            Console.WriteLine("[TheLoungeScreen] Showing transcript review (interrogation in progress)");
+                            var stateMachines = new Dictionary<string, CharacterStateMachine>();
+
+                            // Add bartender and pathologist
+                            if (bartenderStateMachine != null)
+                                stateMachines["Bartender Zix"] = bartenderStateMachine;
+                            if (pathologistStateMachine != null)
+                                stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
+
+                            // Add all interrogated characters from persistent dictionary
+                            foreach (var kvp in interrogatedCharacters)
+                            {
+                                stateMachines[kvp.Key] = kvp.Value;
+                            }
+
+                            transcriptReviewUI.Open(stateMachines);
+                        }
+                        else
+                        {
+                            // Not interrogating - show character selection
+                            Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
+                            characterSelectionMenu.Show();
+                        }
                     }
                     else
                     {
-                        // Otherwise show transcript review with state machines
+                        // Cannot select suspects yet - show transcript review
+                        Console.WriteLine("[TheLoungeScreen] Showing transcript review (cannot select suspects yet)");
                         var stateMachines = new Dictionary<string, CharacterStateMachine>();
 
                         // Add bartender and pathologist
@@ -371,12 +395,6 @@ namespace anakinsoft.game.scenes
                             stateMachines["Bartender Zix"] = bartenderStateMachine;
                         if (pathologistStateMachine != null)
                             stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
-
-                        // Add interrogation characters if they exist
-                        if (interrogationChar1StateMachine != null)
-                            stateMachines[interrogationChar1StateMachine.CharacterName] = interrogationChar1StateMachine;
-                        if (interrogationChar2StateMachine != null)
-                            stateMachines[interrogationChar2StateMachine.CharacterName] = interrogationChar2StateMachine;
 
                         transcriptReviewUI.Open(stateMachines);
                     }
@@ -419,20 +437,28 @@ namespace anakinsoft.game.scenes
                         // Update character's dialogue
                         char1.Interaction.SetDialogue(currentDialogue);
 
-                        // Add dismiss action at end of dialogue
-                        var originalOnComplete = currentDialogue.OnSequenceComplete;
-                        currentDialogue.OnSequenceComplete = () =>
+                        // Note: No auto-dismiss - player must manually dismiss or reach 100% stress
+                        // The OnSequenceComplete just updates state machine state
+
+                        // Set active dialogue character to show portrait
+                        var portraitKey = GetCharacterPortraitKey(char1.Name);
+                        if (!string.IsNullOrEmpty(portraitKey))
                         {
-                            // Call original completion (state machine update)
-                            originalOnComplete?.Invoke();
+                            loungeScene.SetActiveDialogueCharacter(portraitKey);
+                        }
 
-                            Console.WriteLine($"[TheLoungeScreen] Dismissing {char1.Name}");
-                            interrogationManager.DismissCharacter(char1.Name);
-                        };
-
+                        // Start camera transition and begin dialogue after transition completes
                         cameraTransitionSystem.TransitionToInteraction(char1.Interaction.CameraInteractionPosition,
                             char1.Interaction.CameraInteractionLookAt, 1.0f);
-                        dialogueSystem.StartDialogue(currentDialogue);
+
+                        // Subscribe to transition complete event to start dialogue
+                        Action onTransitionComplete = null;
+                        onTransitionComplete = () =>
+                        {
+                            cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
+                            dialogueSystem.StartDialogue(currentDialogue);
+                        };
+                        cameraTransitionSystem.OnTransitionToInteractionComplete += onTransitionComplete;
                     }
                 };
             }
@@ -459,20 +485,28 @@ namespace anakinsoft.game.scenes
                         // Update character's dialogue
                         char2.Interaction.SetDialogue(currentDialogue);
 
-                        // Add dismiss action at end of dialogue
-                        var originalOnComplete = currentDialogue.OnSequenceComplete;
-                        currentDialogue.OnSequenceComplete = () =>
+                        // Note: No auto-dismiss - player must manually dismiss or reach 100% stress
+                        // The OnSequenceComplete just updates state machine state
+
+                        // Set active dialogue character to show portrait
+                        var portraitKey = GetCharacterPortraitKey(char2.Name);
+                        if (!string.IsNullOrEmpty(portraitKey))
                         {
-                            // Call original completion (state machine update)
-                            originalOnComplete?.Invoke();
+                            loungeScene.SetActiveDialogueCharacter(portraitKey);
+                        }
 
-                            Console.WriteLine($"[TheLoungeScreen] Dismissing {char2.Name}");
-                            interrogationManager.DismissCharacter(char2.Name);
-                        };
-
+                        // Start camera transition and begin dialogue after transition completes
                         cameraTransitionSystem.TransitionToInteraction(char2.Interaction.CameraInteractionPosition,
                             char2.Interaction.CameraInteractionLookAt, 1.0f);
-                        dialogueSystem.StartDialogue(currentDialogue);
+
+                        // Subscribe to transition complete event to start dialogue
+                        Action onTransitionComplete = null;
+                        onTransitionComplete = () =>
+                        {
+                            cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
+                            dialogueSystem.StartDialogue(currentDialogue);
+                        };
+                        cameraTransitionSystem.OnTransitionToInteractionComplete += onTransitionComplete;
                     }
                 };
             }
@@ -521,11 +555,15 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation no longer in progress
                 characterSelectionMenu.SetInterrogationInProgress(false);
 
-                // If more hours remain, allow selecting more characters
+                // Calculate hours passed and show time passage message
+                int hoursPassed = interrogationManager.CurrentRound;
+                loungeScene.ShowTimePassageMessage(hoursPassed, hoursRemaining);
+
+                // Note: Character selection is NOT auto-opened
+                // Player must interact with suspects file to select next round
                 if (hoursRemaining > 0)
                 {
-                    Console.WriteLine("[TheLoungeScreen] Opening character selection for next round");
-                    characterSelectionMenu.Show();
+                    Console.WriteLine("[TheLoungeScreen] Round complete - player can select more suspects via suspects file");
                 }
             };
 
@@ -538,6 +576,11 @@ namespace anakinsoft.game.scenes
             interrogationManager.OnCharactersSpawned += (characters) =>
             {
                 Console.WriteLine($"[TheLoungeScreen] Spawning {characters.Count} characters for interrogation");
+
+                // Reset player and camera to starting position
+                loungeScene.ResetPlayerPosition();
+                fpsCamera.SetRotation(loungeScene.GetCharacterInitialRotation());
+                Console.WriteLine("[TheLoungeScreen] Reset player and camera for new round");
 
                 // Create state machines for interrogation characters
                 CreateInterrogationStateMachines(characters);
@@ -575,6 +618,8 @@ namespace anakinsoft.game.scenes
                     interrogationChar1StateMachine = CreateStateMachineForCharacter(char1Key, char1Config);
                     if (interrogationChar1StateMachine != null)
                     {
+                        // Add to persistent interrogated characters dictionary
+                        interrogatedCharacters[characters[0].Name] = interrogationChar1StateMachine;
                         Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[0].Name} (key: {char1Key})");
                     }
                     else
@@ -599,6 +644,8 @@ namespace anakinsoft.game.scenes
                     interrogationChar2StateMachine = CreateStateMachineForCharacter(char2Key, char2Config);
                     if (interrogationChar2StateMachine != null)
                     {
+                        // Add to persistent interrogated characters dictionary
+                        interrogatedCharacters[characters[1].Name] = interrogationChar2StateMachine;
                         Console.WriteLine($"[TheLoungeScreen] Created state machine for {characters[1].Name} (key: {char2Key})");
                     }
                     else
@@ -659,13 +706,29 @@ namespace anakinsoft.game.scenes
         }
 
         /// <summary>
+        /// Get portrait key for a character name from the profile manager
+        /// </summary>
+        private string GetCharacterPortraitKey(string characterName)
+        {
+            var profileManager = loungeScene.GetProfileManager();
+            if (profileManager == null) return null;
+
+            var characterKey = GetCharacterKey(characterName);
+            var profile = profileManager.GetProfile(characterKey);
+            return profile?.PortraitKey;
+        }
+
+        /// <summary>
         /// Get dialogue from state machine for interrogation character
         /// </summary>
         private DialogueSequence GetInterrogationDialogue(CharacterStateMachine stateMachine, string characterName)
         {
             if (stateMachine == null)
             {
-                Console.WriteLine($"[TheLoungeScreen] ERROR: State machine not initialized for {characterName}");
+                var characterKey = GetCharacterKey(characterName);
+                Console.WriteLine($"[TheLoungeScreen] ERROR: State machine not initialized for {characterName} (key: {characterKey})");
+                Console.WriteLine($"[TheLoungeScreen] interrogationChar1StateMachine is null: {interrogationChar1StateMachine == null}");
+                Console.WriteLine($"[TheLoungeScreen] interrogationChar2StateMachine is null: {interrogationChar2StateMachine == null}");
                 return null;
             }
 
@@ -988,6 +1051,9 @@ namespace anakinsoft.game.scenes
 
             // Update fade transition
             fadeTransition.Update(gameTime);
+
+            // Update time passage message
+            loungeScene.UpdateTimePassageMessage(gameTime);
 
             base.Update(gameTime);
         }

@@ -190,7 +190,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             }
 
             // Draw controls hint
-            string hint = "[↑↓] Navigate  [E] Select  [ESC] Cancel";
+            string hint = "[Up/Down] Navigate  [E] Select  [ESC] Cancel";
             var hintSize = font.MeasureString(hint);
             Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding - hintSize.Y + 10);
             spriteBatch.DrawString(font, hint, hintPos, Color.Gray);

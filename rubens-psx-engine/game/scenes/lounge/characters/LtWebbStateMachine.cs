@@ -19,7 +19,8 @@ namespace anakinsoft.game.scenes.lounge.characters
             switch (currentState)
             {
                 case "initial":
-                    return GetDialogueSequence("LtWebbInterrogation");
+                    var initialDialogue = GetDialogueSequence("LtWebbInterrogation");
+                    return initialDialogue ?? CreateDefaultFollowUp();
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("LtWebbFollowUp");

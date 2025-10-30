@@ -213,12 +213,8 @@ namespace anakinsoft.game.scenes.lounge.ui
                 NextLine();
             }
 
-            // Exit dialogue with Tab or Escape
-            if ((keyboard.IsKeyDown(Keys.Tab) && !previousKeyboard.IsKeyDown(Keys.Tab)) ||
-                (keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape)))
-            {
-                StopDialogue();
-            }
+            // NOTE: ESC removed - it causes serious bugs by bypassing normal dialogue completion
+            // Player must advance through all dialogue lines normally
 
             previousKeyboard = keyboard;
         }

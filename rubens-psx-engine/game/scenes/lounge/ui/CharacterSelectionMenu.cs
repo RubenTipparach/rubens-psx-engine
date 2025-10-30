@@ -46,14 +46,13 @@ namespace anakinsoft.game.scenes.lounge.ui
 
         // Track cell rectangles for mouse interaction
         private Dictionary<int, Rectangle> cellRectangles = new Dictionary<int, Rectangle>();
-        private Dictionary<int, Rectangle> transcriptButtonRectangles = new Dictionary<int, Rectangle>();
 
         // Grid display settings
         private const int GridColumns = 4;
         private const float BoxPadding = 30f;
         private const float PortraitWidth = 64f;
         private const float PortraitHeight = 96f;
-        private const float CellWidth = 180f;  // 40% wider than portrait (64 * 1.4 ≈ 90) for name space
+        private const float CellWidth = 180f;  // 40% wider than portrait (64 * 1.4 ~= 90) for name space
         private const float ItemSpacing = 20f;
         private readonly Color BackgroundColor = Color.Black * 0.90f;
         private readonly Color SelectedColor = Color.Yellow;
@@ -65,7 +64,6 @@ namespace anakinsoft.game.scenes.lounge.ui
         // Events
         public event Action<List<SelectableCharacter>> OnCharactersSelected;
         public event Action OnMenuClosed;
-        public event Action<SelectableCharacter> OnViewTranscript;
 
         public bool IsActive => isActive;
         public SelectableCharacter SelectedCharacter =>
@@ -168,6 +166,8 @@ namespace anakinsoft.game.scenes.lounge.ui
             isInterrogationInProgress = inProgress;
         }
 
+        public bool IsInterrogationInProgress => isInterrogationInProgress;
+
         /// <summary>
         /// Shows a warning message to the player
         /// </summary>
@@ -228,24 +228,11 @@ namespace anakinsoft.game.scenes.lounge.ui
                 selectedIndex = hoveredIndex;
             }
 
-            // Mouse click to toggle selection or view transcript
+            // Mouse click to toggle selection
             if (mouse.LeftButton == ButtonState.Released && previousMouse.LeftButton == ButtonState.Pressed)
             {
-                // Check if clicking on transcript button first
-                bool clickedTranscript = false;
-                foreach (var kvp in transcriptButtonRectangles)
-                {
-                    if (kvp.Value.Contains(mousePosition) && characters[kvp.Key].IsInterrogated)
-                    {
-                        OnViewTranscript?.Invoke(characters[kvp.Key]);
-                        clickedTranscript = true;
-                        Console.WriteLine($"CharacterSelectionMenu: View transcript for {characters[kvp.Key]?.Name}");
-                        break;
-                    }
-                }
-
-                // Handle character selection if not clicking transcript button
-                if (!clickedTranscript && hoveredIndex != -1)
+                // Handle character selection
+                if (hoveredIndex != -1)
                 {
                     var character = characters[hoveredIndex];
 
@@ -442,7 +429,6 @@ namespace anakinsoft.game.scenes.lounge.ui
             // Draw character grid
             float startY = menuY + BoxPadding + titleSize.Y + counterSize.Y + 40;
             cellRectangles.Clear(); // Clear old rectangles
-            transcriptButtonRectangles.Clear(); // Clear old transcript button rectangles
 
             for (int i = 0; i < characters.Count; i++)
             {
@@ -478,11 +464,47 @@ namespace anakinsoft.game.scenes.lounge.ui
                 }
 
                 // Draw portrait (centered in cell)
+                Rectangle portraitRect = new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight);
+
                 if (portraits != null && portraits.ContainsKey(character.PortraitKey))
                 {
                     var portrait = portraits[character.PortraitKey];
-                    Rectangle portraitRect = new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight);
-                    spriteBatch.Draw(portrait, portraitRect, Color.White);
+
+                    if (portrait != null)
+                    {
+                        // Draw portrait normally
+                        spriteBatch.Draw(portrait, portraitRect, Color.White);
+                    }
+                    else
+                    {
+                        // Portrait failed to load - draw red error indicator
+                        DrawFilledRectangle(spriteBatch, portraitRect, Color.DarkRed);
+
+                        string errorText = "MISSING";
+                        float errorScale = 0.4f;
+                        Vector2 errorSize = font.MeasureString(errorText) * errorScale;
+                        Vector2 errorPos = new Vector2(
+                            portraitRect.X + (PortraitWidth - errorSize.X) / 2,
+                            portraitRect.Y + (PortraitHeight - errorSize.Y) / 2
+                        );
+                        spriteBatch.DrawString(font, errorText, errorPos, Color.White,
+                            0f, Vector2.Zero, errorScale, SpriteEffects.None, 0f);
+                    }
+                }
+                else
+                {
+                    // Portrait key not found - draw red placeholder
+                    DrawFilledRectangle(spriteBatch, portraitRect, Color.DarkRed);
+
+                    string errorText = "NO KEY";
+                    float errorScale = 0.4f;
+                    Vector2 errorSize = font.MeasureString(errorText) * errorScale;
+                    Vector2 errorPos = new Vector2(
+                        portraitRect.X + (PortraitWidth - errorSize.X) / 2,
+                        portraitRect.Y + (PortraitHeight - errorSize.Y) / 2
+                    );
+                    spriteBatch.DrawString(font, errorText, errorPos, Color.White,
+                        0f, Vector2.Zero, errorScale, SpriteEffects.None, 0f);
                 }
 
                 // Draw character name (scaled and centered within cell width)
@@ -496,7 +518,7 @@ namespace anakinsoft.game.scenes.lounge.ui
                 Vector2 rolePos = new Vector2(cellX + (CellWidth - roleSize.X) / 2, namePos.Y + nameSize.Y + 2);
                 spriteBatch.DrawString(font, character.Role, rolePos, RoleColor, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
-                // Draw interrogated overlay and transcript button (centered in cell)
+                // Draw interrogated overlay (centered in cell)
                 if (character.IsInterrogated)
                 {
                     DrawFilledRectangle(spriteBatch,
@@ -505,32 +527,8 @@ namespace anakinsoft.game.scenes.lounge.ui
 
                     string status = "DONE";
                     Vector2 statusSize = font.MeasureString(status) * 0.6f;
-                    Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2 - 10);
+                    Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2);
                     spriteBatch.DrawString(font, status, statusPos, InterrogatedColor, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
-
-                    // Draw transcript button below status
-                    string transcriptText = "[View]";
-                    float transcriptScale = 0.45f;
-                    Vector2 transcriptSize = font.MeasureString(transcriptText) * transcriptScale;
-                    Vector2 transcriptPos = new Vector2(
-                        cellX + portraitOffsetX + (PortraitWidth - transcriptSize.X) / 2,
-                        statusPos.Y + statusSize.Y + 5
-                    );
-
-                    Rectangle transcriptButton = new Rectangle(
-                        (int)(transcriptPos.X - 4),
-                        (int)(transcriptPos.Y - 2),
-                        (int)(transcriptSize.X + 8),
-                        (int)(transcriptSize.Y + 4)
-                    );
-                    transcriptButtonRectangles[i] = transcriptButton;
-
-                    // Highlight transcript button on hover
-                    bool isTranscriptHovered = transcriptButton.Contains(new Point(Mouse.GetState().X, Mouse.GetState().Y));
-                    Color transcriptColor = isTranscriptHovered ? SelectedColor : Color.LightGray;
-
-                    DrawRectangleBorder(spriteBatch, transcriptButton, transcriptColor, 1);
-                    spriteBatch.DrawString(font, transcriptText, transcriptPos, transcriptColor, 0f, Vector2.Zero, transcriptScale, SpriteEffects.None, 0f);
                 }
             }
 

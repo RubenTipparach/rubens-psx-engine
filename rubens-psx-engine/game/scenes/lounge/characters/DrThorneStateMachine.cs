@@ -73,7 +73,7 @@ namespace anakinsoft.game.scenes.lounge.characters
                     new DialogueLine
                     {
                         speaker = config?.name ?? "Dr. Thorne",
-                        text = "I-I already told you everything I know! The cultural exchange paper, the death rituals—do you need me to explain again?"
+                        text = "I-I already told you everything I know! The cultural exchange paper, the death rituals - do you need me to explain again?"
                     }
                 },
                 on_complete = ""

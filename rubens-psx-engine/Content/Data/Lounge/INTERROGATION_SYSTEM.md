@@ -9,11 +9,11 @@ The interrogation system allows the player to question suspects through a choice
 ### Stress Meter
 - **Range**: 0-100%
 - **Visual**: Progress bar or meter displayed during interrogation
+- **Stress Gain**: Only increases when you wrongly accuse or wrongly doubt someone
 - **Effects**:
-  - **Low Stress (0-30%)**: Suspect is cooperative, may volunteer extra information
-  - **Medium Stress (31-70%)**: Suspect is cautious, answers become shorter
-  - **High Stress (71-99%)**: Suspect is defensive, may withhold information
-  - **Maximum Stress (100%)**: Suspect refuses to answer, demands lawyer, or leaves
+  - **Below 100%**: No behavioral changes - suspect continues to cooperate normally
+  - **Maximum Stress (100%)**: Suspect is done talking to you and self-dismisses
+- **Note**: There are NO personality modifiers affecting stress at this time
 
 ### Interrogation Options
 
@@ -22,7 +22,7 @@ When interrogating a character, the player is presented with numbered boxes cont
 #### 1. **Alibi** (No Evidence Required)
 - **Description**: "Where were you at the time of the murder?"
 - **Purpose**: Get the suspect's official statement about their whereabouts
-- **Stress Impact**: +5% (minimal)
+- **Stress Impact**: None (safe question)
 - **Result**:
   - Suspect provides their alibi story
   - May reveal timeline details
@@ -32,7 +32,7 @@ When interrogating a character, the player is presented with numbered boxes cont
 #### 2. **Relationship** (No Evidence Required)
 - **Description**: "What was your relationship with the victim?"
 - **Purpose**: Learn about suspect's connection to the deceased
-- **Stress Impact**: +5% (minimal)
+- **Stress Impact**: None (safe question)
 - **Result**:
   - Suspect describes their relationship with the Ambassador
   - May reveal motive, personal history, or emotional connections
@@ -46,40 +46,40 @@ When interrogating a character, the player is presented with numbered boxes cont
 #### 3. **Doubt** (May Require Evidence)
 - **Description**: "I don't believe you. Tell me more."
 - **Purpose**: Press the suspect for additional information
-- **Stress Impact**: +15-25% (moderate)
+- **Stress Impact**: **Only increases if you're WRONG** - if you doubt correctly, no stress gain
 - **Evidence Window**: Optionally present evidence to support your doubt
 - **Result**:
-  - **Without Evidence**:
-    - Suspect may reveal more details if nervous
-    - Increased stress without concrete backup
-    - Can backfire if suspect is confident
-  - **With Evidence**:
-    - Suspect must explain contradiction
-    - More effective at breaking their story
-    - Lower stress increase if evidence is strong
-- **Risk**: Building stress without concrete evidence
+  - **Correct Doubt (with or without evidence)**:
+    - No stress gain
+    - Suspect reveals more details
+    - Breaks through their story
+  - **Wrong Doubt**:
+    - Increases stress toward 100%
+    - Suspect becomes frustrated but continues answering
+    - You wasted an opportunity
+- **Risk**: If you're wrong, stress builds toward dismissal
 - **Strategy**: Use when you suspect they're lying; attach evidence if you have it
 
 #### 4. **Accuse** (Requires Evidence)
 - **Description**: "You're the killer. This proves it."
 - **Purpose**: Directly accuse the suspect of murder with evidence
-- **Stress Impact**: +100% (fills meter completely)
+- **Stress Impact**: **Only if WRONG** - fills meter to 100% and suspect self-dismisses
 - **Evidence Window**: Opens automatically to select evidence
 - **Result**:
-  - **If correct with strong evidence**:
+  - **Correct Accusation**:
+    - No stress gain
     - Suspect may confess or break down
     - Case can be closed
     - May reveal accomplices
-  - **If incorrect or weak evidence**:
-    - Suspect becomes hostile
-    - Refuses further cooperation
-    - May demand lawyer
-    - Interrogation ends (cannot retry immediately)
+  - **Wrong Accusation**:
+    - Stress instantly reaches 100%
+    - Suspect is done talking and self-dismisses immediately
+    - Interrogation ends
   - **Strategic accusation** (know they didn't do it):
     - Can pressure suspect to reveal information about the real killer
     - "I know you didn't kill him, but you know who did."
     - May trade information to clear their name
-- **Risk**: High stakes - can end interrogation permanently
+- **Risk**: High stakes - wrong accusation ends interrogation immediately
 - **Notes**: Point of no return - must select evidence to proceed
 
 #### 5. **Dismiss** (No Evidence Required)
@@ -90,15 +90,10 @@ When interrogating a character, the player is presented with numbered boxes cont
   - Must select YES to confirm or NO to cancel
 - **Stress Impact**: None (ends session)
 - **Result**:
-  - **If Stress < 70%**:
-    - Suspect provides parting comments
-    - May hint at future questioning
-    - Leaves cooperatively
-    - Can be interrogated again later
-  - **If Stress >= 70%**:
-    - Suspect refuses to say anything
-    - Leaves angrily
-    - May require cooldown before re-interrogation
+  - Suspect provides parting comments
+  - Leaves cooperatively
+  - Can be interrogated again later
+  - **Note**: Stress level doesn't affect dismissal behavior (only 100% stress causes self-dismissal)
 - **Strategy**: Use when you've gathered enough information or need to regroup
 - **Note**: Wide button at bottom of screen to separate it from main interrogation actions
 
@@ -120,14 +115,14 @@ When interrogating a character, the player is presented with numbered boxes cont
 │  │      1      │ │      2      │                       │
 │  │    ALIBI    │ │ RELATIONSHIP│                       │
 │  │             │ │             │                       │
-│  │    +5%      │ │     +5%     │                       │
+│  │    (Safe)   │ │    (Safe)   │                       │
 │  └─────────────┘ └─────────────┘                       │
 │                                                          │
 │  ┌─────────────┐ ┌─────────────┐                       │
 │  │      3      │ │      4      │                       │
 │  │    DOUBT    │ │   ACCUSE    │                       │
 │  │ (Evidence?) │ │ (Evidence!) │                       │
-│  │   +15-25%   │ │    +100%    │                       │
+│  │   (Risk)    │ │ (High Risk) │                       │
 │  └─────────────┘ └─────────────┘                       │
 │                                                          │
 │  ┌───────────────────────────────────────────────┐     │
@@ -174,11 +169,11 @@ When interrogating a character, the player is presented with numbered boxes cont
 ### Stress Meter Visual States
 
 ```
-Low (0-30%):     [████░░░░░░░░░░░░░░░░] Green
-Medium (31-70%): [████████████░░░░░░░░] Yellow
-High (71-99%):   [██████████████████░░] Orange
-Max (100%):      [████████████████████] Red
+Below 100%:  [████████████████░░░░] Yellow/Orange (showing current progress)
+At 100%:     [████████████████████] Red (suspect self-dismisses)
 ```
+
+**Note**: Color changes are just visual feedback - behavior only changes at exactly 100%
 
 ## Evidence System Integration
 
@@ -310,27 +305,10 @@ START INTERROGATION
 
 ## Character-Specific Behaviors
 
-### Personality Types Affect Stress
-
-**Nervous Characters** (e.g., Ensign Tork)
-- Stress builds faster (+20% per action)
-- More likely to crack under pressure
-- May volunteer information to reduce stress
-
-**Confident Characters** (e.g., Lt. Webb)
-- Stress builds slower (+10% per action)
-- Can withstand more pressure
-- May taunt or challenge detective
-
-**Professional Characters** (e.g., Chief Solis)
-- Moderate stress build (+15% per action)
-- Responds better to evidence than doubt
-- Remains composed until high stress
-
-**Emotional Characters** (e.g., Commander Von)
-- Variable stress response
-- May explode or break down
-- Personal questions increase stress more
+**Note**: At this time, there are NO personality modifiers affecting stress. All characters have the same stress behavior:
+- Stress only increases when you make WRONG accusations or doubts
+- All characters self-dismiss at exactly 100% stress
+- No character-specific stress multipliers or resistance values
 
 ## Future Enhancements
 
@@ -366,67 +344,58 @@ interrogation_state:
 ### Data Structure
 ```yaml
 character_interrogation:
-  base_stress: 0
-  stress_resistance: 1.0  # Multiplier for stress gain
+  current_stress: 0  # Tracks stress 0-100
 
   responses:
     alibi:
       text: "I was in my quarters all night."
-      stress_gain: 5
+      is_correct: true  # Determines if stress increases
       reveals: ["quarters_alibi"]
 
     relationship:
       text: "The Ambassador and I were colleagues, nothing more."
-      stress_gain: 5
+      is_correct: true  # Safe question - always correct
       reveals: ["professional_relationship"]
 
-    doubt_no_evidence:
-      text: "I've told you the truth, Detective."
-      stress_gain: 15
-      reveals: ["defensive_response"]
-
-    doubt_with_evidence:
-      evidence_required: "access_log"
+    doubt_correct:
       text: "Fine! I stepped out briefly, but I didn't do anything!"
-      stress_gain: 20
+      stress_gain: 0  # No stress for correct doubt
       reveals: ["bar_visit", "timeline_gap"]
 
-    doubt_wrong_evidence:
-      text: "That has nothing to do with me!"
-      stress_gain: 25
-      reveals: ["frustrated"]
+    doubt_wrong:
+      text: "I've told you the truth, Detective!"
+      stress_gain: 25  # Penalty for wrong doubt
+      reveals: ["defensive_response"]
 
-    accuse_correct_evidence:
+    accuse_correct:
       evidence_required: "medical_knowledge"
       text: "Alright! I did it! But I had good reason..."
-      stress_gain: 100
+      stress_gain: 0  # No stress for correct accusation
       reveals: ["confession", "motive_revealed"]
       ends_interrogation: true
 
-    accuse_wrong_evidence:
-      text: "That's ridiculous! I'm calling my lawyer!"
-      stress_gain: 100
+    accuse_wrong:
+      text: "That's ridiculous! I'm done talking to you!"
+      stress_gain: 100  # Instant 100% stress
       ends_interrogation: true
-      refuses_future_interrogation: true
+      self_dismiss: true  # Character leaves immediately
 
-    dismiss_low_stress:
+    dismiss:
       text: "I hope you catch the real killer, Detective."
-
-    dismiss_high_stress:
-      text: [Leaves without speaking]
-      cooldown: 300  # seconds before can interrogate again
+      # Stress level doesn't affect dismiss behavior
 ```
 
 ### Stress Calculation
 ```
-Base Stress Gain = Action Base Value
-Personality Modifier = Character Stress Resistance
-Final Stress = Base * Personality Modifier
+Simplified System:
+- Alibi: 0% stress (always safe)
+- Relationship: 0% stress (always safe)
+- Doubt (Correct): 0% stress
+- Doubt (Wrong): +25% stress (or configurable value)
+- Accuse (Correct): 0% stress
+- Accuse (Wrong): +100% stress (instant self-dismissal)
 
-Example:
-DOUBT action = 15 base stress
-Nervous character = 1.5 resistance
-Final = 15 * 1.5 = 22.5% stress gain
+Note: NO personality modifiers at this time
 ```
 
 ## Testing Scenarios
@@ -456,11 +425,14 @@ The interrogation system provides:
 - **Detective Feel**: Strategic thinking and evidence management
 
 ### Key Mechanics Recap
-- **Alibi & Relationship**: Low-stress questions to establish baseline (5% each)
-- **Doubt**: Optional evidence attachment, moderate stress (15-25%)
-- **Accuse**: Mandatory evidence, maximum stress (100%), point of no return
-- **Dismiss**: End interrogation with confirmation dialog, suspect comments based on stress level
+- **Stress System**: Simplified - only increases on WRONG doubts or accusations
+- **Alibi & Relationship**: Safe questions - never increase stress
+- **Doubt**: Optional evidence attachment - only increases stress if WRONG
+- **Accuse**: Mandatory evidence - wrong accusation = instant 100% stress and self-dismissal
+- **Dismiss**: End interrogation with confirmation dialog
 - **Evidence**: Not a button - used through Doubt and Accuse options
+- **100% Stress**: Only behavioral change - suspect is done talking and self-dismisses
+- **No Personality Modifiers**: All characters follow the same stress rules
 
 ### UI Layout Recap
 - **2x2 Grid**: Four main buttons arranged together (Alibi, Relationship, Doubt, Accuse)
@@ -478,9 +450,9 @@ This system transforms interrogations from simple dialogue trees into engaging t
 ### Core Systems
 - [ ] **Stress Meter System**
   - [ ] Create stress tracking class (0-100%)
-  - [ ] Implement stress gain calculations with personality modifiers
-  - [ ] Add visual stress meter UI component (color-coded: green/yellow/orange/red)
-  - [ ] Implement stress-based behavior changes
+  - [ ] Implement simplified stress gain (only on wrong doubts/accusations)
+  - [ ] Add visual stress meter UI component (color-coded: yellow/orange/red)
+  - [ ] Implement 100% stress = self-dismissal behavior
 
 ### UI Components
 - [ ] **Interrogation Screen UI**
@@ -489,13 +461,13 @@ This system transforms interrogations from simple dialogue trees into engaging t
   - [ ] Add character portrait display
   - [ ] Add stress meter display at top
   - [ ] Create dialogue text display area
-  - [ ] Style buttons with stress indicators (+5%, +15-25%, +100%)
+  - [ ] Style buttons with risk indicators (Safe, Risk, High Risk)
 
 - [ ] **Button Actions**
-  - [ ] Implement "Alibi" button (+5% stress)
-  - [ ] Implement "Relationship" button (+5% stress)
-  - [ ] Implement "Doubt" button with optional evidence (15-25% stress)
-  - [ ] Implement "Accuse" button with required evidence (100% stress)
+  - [ ] Implement "Alibi" button (no stress - always safe)
+  - [ ] Implement "Relationship" button (no stress - always safe)
+  - [ ] Implement "Doubt" button with optional evidence (stress only if wrong)
+  - [ ] Implement "Accuse" button with required evidence (100% stress if wrong)
   - [ ] Implement "Dismiss" button (wide, bottom position)
 
 - [ ] **Confirmation Dialog**
@@ -527,9 +499,10 @@ This system transforms interrogations from simple dialogue trees into engaging t
 
 - [ ] **Response Logic**
   - [ ] Implement response selection based on action and evidence
-  - [ ] Apply personality-based stress modifiers
-  - [ ] Handle low/medium/high stress responses
+  - [ ] Determine if doubt/accusation is correct or wrong
+  - [ ] Apply stress only for wrong doubts/accusations
   - [ ] Implement confession triggers for correct accusations
+  - [ ] Implement self-dismissal at 100% stress
 
 ### Interrogation Flow
 - [ ] **Session Management**
@@ -547,9 +520,8 @@ This system transforms interrogations from simple dialogue trees into engaging t
 ### End Conditions
 - [ ] **Dismissal**
   - [ ] Implement dismiss with confirmation
-  - [ ] Generate low-stress parting comments
-  - [ ] Generate high-stress angry departure
-  - [ ] Set cooldown timer if needed
+  - [ ] Generate parting comments
+  - [ ] Implement self-dismissal at 100% stress
 
 - [ ] **Accusation Outcomes**
   - [ ] Handle correct accusation → confession
@@ -558,16 +530,11 @@ This system transforms interrogations from simple dialogue trees into engaging t
   - [ ] Mark suspect status (confessed, lawyer demanded, etc.)
 
 ### Character Personality System
-- [ ] **Personality Types**
-  - [ ] Implement Nervous personality (stress builds faster)
-  - [ ] Implement Confident personality (stress builds slower)
-  - [ ] Implement Professional personality (moderate stress)
-  - [ ] Implement Emotional personality (variable stress)
-
-- [ ] **Stress Modifiers**
-  - [ ] Apply personality multipliers to stress gain
-  - [ ] Implement different breaking points per personality
-  - [ ] Add personality-specific responses
+- [ ] **Note**: NO personality modifiers at this time
+  - [ ] All characters follow same stress rules
+  - [ ] Stress only increases on wrong doubts/accusations
+  - [ ] All characters self-dismiss at 100% stress
+  - [ ] **Future**: May add personality-specific dialogue responses (not stress modifiers)
 
 ### Testing & Polish
 - [ ] **Testing Scenarios**
@@ -627,9 +594,9 @@ This system transforms interrogations from simple dialogue trees into engaging t
 6. Response logic (with/without evidence)
 
 **Phase 3: Advanced Features**
-7. Personality system with modifiers
-8. Confirmation dialogs
-9. End conditions (dismiss, accuse outcomes)
+7. Confirmation dialogs
+8. End conditions (dismiss, accuse outcomes, self-dismissal at 100%)
+9. Correct/wrong logic for doubts and accusations
 
 **Phase 4: Integration & Polish**
 10. Integrate with character profiles

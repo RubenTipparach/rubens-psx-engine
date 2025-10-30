@@ -19,7 +19,8 @@ namespace anakinsoft.game.scenes.lounge.characters
             switch (currentState)
             {
                 case "initial":
-                    return GetDialogueSequence("ChiefSolisInterrogation");
+                    var initialDialogue = GetDialogueSequence("ChiefSolisInterrogation");
+                    return initialDialogue ?? CreateDefaultFollowUp();
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("ChiefSolisFollowUp");

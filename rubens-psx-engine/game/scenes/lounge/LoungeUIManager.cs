@@ -40,6 +40,12 @@ namespace anakinsoft.game.scenes
         private string hoveredCharacter = null;
         private string activeDialogueCharacter = null;
 
+        // Time passage message state
+        private bool showTimePassageMessage = false;
+        private string timePassageText = "";
+        private float timePassageTimer = 0f;
+        private const float TimePassageDuration = 3.0f; // Show for 3 seconds
+
         public bool ShowIntroText => showIntroText;
         public Dictionary<string, Texture2D> CharacterPortraits => characterPortraits;
 
@@ -161,6 +167,36 @@ namespace anakinsoft.game.scenes
             activeDialogueCharacter = null;
         }
 
+        /// <summary>
+        /// Show time passage message at end of round
+        /// </summary>
+        public void ShowTimePassageMessage(int hoursPassed, int hoursRemaining)
+        {
+            string hoursPassedText = hoursPassed == 1 ? "1 hour passed" : $"{hoursPassed} hours passed";
+            string hoursRemainingText = hoursRemaining == 1 ? "1 hour left" : $"{hoursRemaining} hours left";
+
+            timePassageText = $"{hoursPassedText}, {hoursRemainingText}";
+            showTimePassageMessage = true;
+            timePassageTimer = 0f;
+
+            Console.WriteLine($"[LoungeUIManager] Showing time passage: {timePassageText}");
+        }
+
+        /// <summary>
+        /// Update time passage message timer
+        /// </summary>
+        public void UpdateTimePassageMessage(GameTime gameTime)
+        {
+            if (!showTimePassageMessage) return;
+
+            timePassageTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (timePassageTimer >= TimePassageDuration)
+            {
+                showTimePassageMessage = false;
+                Console.WriteLine("[LoungeUIManager] Time passage message dismissed");
+            }
+        }
+
         public void DrawUI(GameTime gameTime, SpriteBatch spriteBatch, SpriteFont font, InteractionSystem interactionSystem, bool isDialogueActive)
         {
             if (font == null) return;
@@ -188,6 +224,12 @@ namespace anakinsoft.game.scenes
             {
                 DrawCharacterPortrait(spriteBatch, portraitCharacter);
             }
+
+            // Draw time passage message
+            if (showTimePassageMessage)
+            {
+                DrawTimePassageMessage(spriteBatch, font);
+            }
         }
 
         private void DrawLoadingScreen(SpriteBatch spriteBatch, SpriteFont font)
@@ -204,6 +246,31 @@ namespace anakinsoft.game.scenes
             spriteBatch.DrawString(font, loadingText,
                 screenCenter - textSize / 2f,
                 Color.White * fadeAlpha);
+        }
+
+        private void DrawTimePassageMessage(SpriteBatch spriteBatch, SpriteFont font)
+        {
+            var viewport = Globals.screenManager.GraphicsDevice.Viewport;
+
+            // Create semi-transparent dark background
+            var blackTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
+            blackTexture.SetData(new[] { Color.Black });
+
+            // Full screen semi-transparent overlay
+            spriteBatch.Draw(blackTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black * 0.7f);
+
+            // Measure and center the time passage text
+            var textSize = font.MeasureString(timePassageText);
+            var textPosition = new Vector2(
+                (viewport.Width - textSize.X) / 2f,
+                (viewport.Height - textSize.Y) / 2f
+            );
+
+            // Draw text with shadow
+            spriteBatch.DrawString(font, timePassageText, textPosition + new Vector2(2, 2), Color.Black);
+            spriteBatch.DrawString(font, timePassageText, textPosition, Color.White);
+
+            blackTexture.Dispose();
         }
 
         private void DrawIntroText(SpriteBatch spriteBatch, SpriteFont font)
@@ -273,11 +340,34 @@ namespace anakinsoft.game.scenes
                 portraitRect.Height + frameThickness * 2
             );
 
-            // Draw frame
-            spriteBatch.Draw(portraitFrame, frameRect, Color.Gold);
+            // Check if portrait failed to load
+            bool portraitFailed = (portrait == null);
 
-            // Draw portrait
-            spriteBatch.Draw(portrait, portraitRect, Color.White);
+            // Draw frame (red if portrait failed)
+            spriteBatch.Draw(portraitFrame, frameRect, portraitFailed ? Color.Red : Color.Gold);
+
+            // Draw portrait or error indicator
+            if (portraitFailed)
+            {
+                // Draw red background for missing portrait
+                spriteBatch.Draw(portraitFrame, portraitRect, Color.DarkRed);
+
+                // Draw "MISSING" text
+                string errorText = "MISSING\nPORTRAIT";
+                Vector2 errorSize = font.MeasureString(errorText);
+                float errorScale = 0.5f;
+                Vector2 errorPos = new Vector2(
+                    portraitRect.X + (portraitWidth - errorSize.X * errorScale) / 2,
+                    portraitRect.Y + (portraitHeight - errorSize.Y * errorScale) / 2
+                );
+                spriteBatch.DrawString(font, errorText, errorPos, Color.White,
+                    0f, Vector2.Zero, errorScale, SpriteEffects.None, 0f);
+            }
+            else
+            {
+                // Draw portrait normally
+                spriteBatch.Draw(portrait, portraitRect, Color.White);
+            }
 
             // Get character info
             var (name, role) = GetCharacterInfo(characterKey);
@@ -329,7 +419,7 @@ namespace anakinsoft.game.scenes
                 "EnsignTork" => ("Ensign Tork", "Junior Engineer"),
                 "ChiefSolis" => ("Chief Kala Solis", "Security Chief"),
                 "MavenKilroth" => ("Maven Kilroth", "Smuggler"),
-                "Tehvora" => ("Tehvora", "Diplomatic Attaché"),
+                "Tehvora" => ("Tehvora", "Diplomatic Attache"),
                 "LuckyChen" => ("Lucky Chen", "Quartermaster"),
                 _ => (characterKey, "Unknown")
             };

@@ -19,7 +19,8 @@ namespace anakinsoft.game.scenes.lounge.characters
             switch (currentState)
             {
                 case "initial":
-                    return GetDialogueSequence("MavenKilrothInterrogation");
+                    var initialDialogue = GetDialogueSequence("MavenKilrothInterrogation");
+                    return initialDialogue ?? CreateDefaultFollowUp();
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("MavenKilrothFollowUp");
