@@ -118,13 +118,8 @@ namespace anakinsoft.game.scenes.lounge.ui
                 }
             }
 
-            // Cancel with Escape
-            if (keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape))
-            {
-                Console.WriteLine("DialogueChoiceSystem: Cancelled");
-                OnChoiceCancelled?.Invoke();
-                Hide();
-            }
+            // ESC removed - causes serious bugs by bypassing dialogue flow
+            // Player must make a choice to continue
 
             previousKeyboard = keyboard;
         }

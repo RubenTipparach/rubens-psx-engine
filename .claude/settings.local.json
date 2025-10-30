@@ -33,7 +33,8 @@
       "Bash(move:*)",
       "Bash(Select-String -Pattern \"error CS\")",
       "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(Select-String \"error\")"
     ],
     "deny": [],
     "ask": []

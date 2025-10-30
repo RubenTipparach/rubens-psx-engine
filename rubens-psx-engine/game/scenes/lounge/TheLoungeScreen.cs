@@ -1104,12 +1104,9 @@ namespace anakinsoft.game.scenes
 
             if (InputManager.GetKeyboardClick(Keys.Escape))
             {
-                // If in dialogue, close dialogue instead of opening pause menu
-                if (dialogueSystem.IsActive)
-                {
-                    dialogueSystem.StopDialogue();
-                }
-                else
+                // Don't allow ESC during dialogue - causes serious bugs
+                // Player must complete dialogue normally
+                if (!dialogueSystem.IsActive && !dialogueChoiceSystem.IsActive)
                 {
                     Globals.screenManager.AddScreen(new PauseMenu());
                 }
