@@ -4,16 +4,40 @@
 
 The interrogation system allows the player to question suspects through a choice-based interaction system. Each suspect has a stress meter that affects their willingness to cooperate. The player must balance gathering information with managing the suspect's stress level.
 
+## Implementation Status
+
+### ✅ Completed
+- **Stress Meter System**: Core stress tracking (0-100%) with events
+- **Stress Meter UI**: Visual progress bar with color-coding (green/yellow/red)
+- **Auto-Dismiss at 100%**: Characters automatically dismiss when stress maxes out
+- **Round Management**: Time tracking, character spawning/despawning
+- **Camera System**: Fixed transition bugs, smooth camera movement
+- **Character Selection**: Suspects file shows character selection menu
+- **Transcript Review**: Evidence file shows interview transcripts
+
+### 🚧 In Progress
+- **Interrogation Action UI**: 5 action buttons (Alibi, Relationship, Doubt, Accuse, Dismiss)
+- **Evidence Selection UI**: For Doubt/Accuse actions
+- **Stress Increase Logic**: Triggering stress on wrong answers
+
+### ⏳ Pending
+- **Correct/Wrong Answer Data**: YAML configuration for all suspects
+- **Dialogue Branching**: Different responses based on player actions
+- **Evidence Tracking**: Collecting and managing evidence items
+- **Deduction Phase**: Final accusation system
+
 ## Core Mechanics
 
 ### Stress Meter
 - **Range**: 0-100%
-- **Visual**: Progress bar or meter displayed during interrogation
+- **Visual**: Progress bar displayed in top-right during interrogation
+- **Color Coding**: Green (0-33%), Yellow (33-66%), Red (66-100%)
 - **Stress Gain**: Only increases when you wrongly accuse or wrongly doubt someone
 - **Effects**:
   - **Below 100%**: No behavioral changes - suspect continues to cooperate normally
   - **Maximum Stress (100%)**: Suspect is done talking to you and self-dismisses
 - **Note**: There are NO personality modifiers affecting stress at this time
+- **Implementation**: `StressMeter.cs` and `StressMeterUI.cs`
 
 ### Interrogation Options
 
@@ -448,14 +472,14 @@ This system transforms interrogations from simple dialogue trees into engaging t
 ## Implementation Checklist
 
 ### Core Systems
-- [ ] **Stress Meter System**
+- [ ] **1. Stress Meter System**
   - [ ] Create stress tracking class (0-100%)
   - [ ] Implement simplified stress gain (only on wrong doubts/accusations)
   - [ ] Add visual stress meter UI component (color-coded: yellow/orange/red)
   - [ ] Implement 100% stress = self-dismissal behavior
 
 ### UI Components
-- [ ] **Interrogation Screen UI**
+- [ ] **2. Interrogation Screen UI**
   - [ ] Create main interrogation screen layout
   - [ ] Implement 2x2 button grid for main actions
   - [ ] Add character portrait display
@@ -463,41 +487,41 @@ This system transforms interrogations from simple dialogue trees into engaging t
   - [ ] Create dialogue text display area
   - [ ] Style buttons with risk indicators (Safe, Risk, High Risk)
 
-- [ ] **Button Actions**
+- [ ] **3. Button Actions**
   - [ ] Implement "Alibi" button (no stress - always safe)
   - [ ] Implement "Relationship" button (no stress - always safe)
   - [ ] Implement "Doubt" button with optional evidence (stress only if wrong)
   - [ ] Implement "Accuse" button with required evidence (100% stress if wrong)
   - [ ] Implement "Dismiss" button (wide, bottom position)
 
-- [ ] **Confirmation Dialog**
+- [ ] **4. Confirmation Dialog**
   - [ ] Create dismiss confirmation popup
   - [ ] Add "Are you sure?" message with context
   - [ ] Implement Yes/No buttons
   - [ ] Handle confirmation result (proceed or cancel)
 
 ### Evidence System Integration
-- [ ] **Evidence Window**
+- [ ] **5. Evidence Window**
   - [ ] Create evidence selection UI/popup
   - [ ] Display player's collected evidence items
   - [ ] Implement evidence selection for Doubt option (optional)
   - [ ] Implement evidence selection for Accuse option (required)
   - [ ] Show evidence name, description, and icon
 
-- [ ] **Evidence Logic**
+- [ ] **6. Evidence Logic**
   - [ ] Check evidence relevance to suspect/topic
   - [ ] Calculate stress based on evidence strength
   - [ ] Implement correct vs. wrong evidence responses
   - [ ] Track evidence usage per suspect
 
 ### Character Response System
-- [ ] **Response Data Structure**
+- [ ] **7. Response Data Structure**
   - [ ] Extend character YAML to include interrogation responses
   - [ ] Add alibi, relationship, doubt, accuse response text
   - [ ] Add stress resistance values per character
   - [ ] Define evidence requirements for each response
 
-- [ ] **Response Logic**
+- [ ] **8. Response Logic**
   - [ ] Implement response selection based on action and evidence
   - [ ] Determine if doubt/accusation is correct or wrong
   - [ ] Apply stress only for wrong doubts/accusations
@@ -505,31 +529,31 @@ This system transforms interrogations from simple dialogue trees into engaging t
   - [ ] Implement self-dismissal at 100% stress
 
 ### Interrogation Flow
-- [ ] **Session Management**
+- [ ] **9. Session Management**
   - [ ] Initialize interrogation session with character
   - [ ] Track current stress level during session
   - [ ] Manage dialogue history
   - [ ] Handle interrogation end conditions
 
-- [ ] **State Tracking**
+- [ ] **10. State Tracking**
   - [ ] Track which questions have been asked
   - [ ] Track evidence presented
   - [ ] Prevent duplicate questions (or allow with consequences)
   - [ ] Flag characters as "interviewed" in character profiles
 
 ### End Conditions
-- [ ] **Dismissal**
+- [ ] **11. Dismissal**
   - [ ] Implement dismiss with confirmation
   - [ ] Generate parting comments
   - [ ] Implement self-dismissal at 100% stress
 
-- [ ] **Accusation Outcomes**
+- [ ] **12. Accusation Outcomes**
   - [ ] Handle correct accusation → confession
   - [ ] Handle wrong accusation → suspect leaves permanently
   - [ ] Handle strategic accusation → information trading
   - [ ] Mark suspect status (confessed, lawyer demanded, etc.)
 
-### Character Personality System
+### Character Personality System 13.
 - [ ] **Note**: NO personality modifiers at this time
   - [ ] All characters follow same stress rules
   - [ ] Stress only increases on wrong doubts/accusations

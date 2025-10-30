@@ -3,7 +3,9 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using anakinsoft.system;
+using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
+using anakinsoft.game.scenes.lounge.ui;
 using System;
 using System.Collections.Generic;
 
@@ -39,6 +41,7 @@ namespace anakinsoft.game.scenes
         // Current UI state
         private string hoveredCharacter = null;
         private string activeDialogueCharacter = null;
+        private StressMeter activeStressMeter = null; // Optional stress meter for interrogations
 
         // Time passage message state
         private bool showTimePassageMessage = false;
@@ -165,6 +168,17 @@ namespace anakinsoft.game.scenes
         public void ClearActiveDialogueCharacter()
         {
             activeDialogueCharacter = null;
+            activeStressMeter = null; // Also clear stress meter when portrait is cleared
+        }
+
+        public void SetActiveStressMeter(StressMeter meter)
+        {
+            activeStressMeter = meter;
+        }
+
+        public void ClearActiveStressMeter()
+        {
+            activeStressMeter = null;
         }
 
         /// <summary>
@@ -392,18 +406,83 @@ namespace anakinsoft.game.scenes
                     0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
                 // Draw role if available
+                float currentY = namePosition.Y + nameSize.Y + 2;
                 if (!string.IsNullOrEmpty(role))
                 {
                     string wrappedRole = WrapText(role, font, maxTextWidth / textScale);
                     Vector2 roleSize = font.MeasureString(wrappedRole) * textScale;
                     Vector2 rolePosition = new Vector2(
                         portraitRect.X + (portraitWidth - roleSize.X) / 2,
-                        namePosition.Y + nameSize.Y + 2
+                        currentY
                     );
                     spriteBatch.DrawString(font, wrappedRole, rolePosition, Color.Gray,
                         0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                    currentY = rolePosition.Y + roleSize.Y + 4;
+                }
+
+                // Draw stress bar if in interrogation
+                if (activeStressMeter != null)
+                {
+                    DrawStressBar(spriteBatch, portraitRect.X, currentY, portraitWidth);
                 }
             }
+        }
+
+        /// <summary>
+        /// Draws stress bar below the portrait info during interrogation
+        /// </summary>
+        private void DrawStressBar(SpriteBatch spriteBatch, float x, float y, float width)
+        {
+            const float barHeight = 20f;
+            const float barPadding = 3f;
+
+            // Draw background
+            Rectangle bgRect = new Rectangle((int)x, (int)y, (int)width, (int)barHeight);
+            spriteBatch.Draw(portraitFrame, bgRect, Color.Black * 0.9f);
+
+            // Draw border
+            spriteBatch.Draw(portraitFrame, new Rectangle((int)x, (int)y, (int)width, 2), Color.White * 0.6f);
+            spriteBatch.Draw(portraitFrame, new Rectangle((int)x, (int)(y + barHeight - 2), (int)width, 2), Color.White * 0.6f);
+            spriteBatch.Draw(portraitFrame, new Rectangle((int)x, (int)y, 2, (int)barHeight), Color.White * 0.6f);
+            spriteBatch.Draw(portraitFrame, new Rectangle((int)(x + width - 2), (int)y, 2, (int)barHeight), Color.White * 0.6f);
+
+            // Draw fill
+            float stressPercentage = activeStressMeter.StressPercentage;
+            float fillWidth = (width - barPadding * 2) * (stressPercentage / 100f);
+
+            if (fillWidth > 0)
+            {
+                Rectangle fillRect = new Rectangle(
+                    (int)(x + barPadding),
+                    (int)(y + barPadding),
+                    (int)fillWidth,
+                    (int)(barHeight - barPadding * 2)
+                );
+
+                // Determine color based on stress level
+                Color fillColor;
+                if (stressPercentage < 33f)
+                    fillColor = new Color(50, 200, 50); // Green
+                else if (stressPercentage < 66f)
+                    fillColor = new Color(200, 200, 50); // Yellow
+                else
+                    fillColor = new Color(200, 50, 50); // Red
+
+                spriteBatch.Draw(portraitFrame, fillRect, fillColor);
+            }
+
+            // Draw stress percentage text
+            var font = Globals.fontNTR;
+            string stressText = $"{stressPercentage:F0}%";
+            Vector2 textSize = font.MeasureString(stressText);
+            float textScale = 0.5f;
+            Vector2 scaledTextSize = textSize * textScale;
+            Vector2 textPos = new Vector2(
+                x + (width - scaledTextSize.X) / 2,
+                y + (barHeight - scaledTextSize.Y) / 2
+            );
+            spriteBatch.DrawString(font, stressText, textPos + Vector2.One, Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            spriteBatch.DrawString(font, stressText, textPos, Color.White, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
         }
 
         private (string name, string role) GetCharacterInfo(string characterKey)

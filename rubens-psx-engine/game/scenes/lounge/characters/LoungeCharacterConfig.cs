@@ -41,6 +41,11 @@ namespace anakinsoft.game.scenes.lounge.characters
         public string sequence_name { get; set; }
         public List<DialogueLine> lines { get; set; }
         public string on_complete { get; set; }
+
+        // Interrogation-specific fields
+        public string action { get; set; }  // "alibi", "relationship", "doubt", "accuse"
+        public bool is_correct { get; set; }  // true = correct action (no stress), false = wrong (increase stress)
+        public bool requires_evidence { get; set; }  // true = needs evidence to select this option
     }
 
     public class CharacterConfig

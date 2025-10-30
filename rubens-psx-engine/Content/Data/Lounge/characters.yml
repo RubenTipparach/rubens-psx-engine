@@ -254,7 +254,87 @@ commander_von:
         - speaker: "Commander Sylara Von"
           text: "Whoever did this didn't just kill a diplomat - they murdered hope itself. I should have been there. I should have protected him."
 
-        # TODO: Add full interrogation dialogue
+    # Alibi - Where were you at the time of the murder?
+    - sequence_name: "CommanderVonAlibi"
+      action: "alibi"
+      is_correct: true  # This is her public story, no stress for asking
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "I was in the gymnasium. Deck 7, section B. I run combat drills every night from 0200 to 0400 hours."
+
+        - speaker: "Commander Sylara Von"
+          text: "It's logged in the facility access records. I was alone - I prefer it that way. Fewer distractions."
+
+    # Relationship - What was your relationship with the victim?
+    - sequence_name: "CommanderVonRelationship"
+      action: "relationship"
+      is_correct: true  # Safe question, she'll lie but no stress for asking
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "Professional. Nothing more. I was his head of security for three years."
+
+        - speaker: "Commander Sylara Von"
+          text: "The Ambassador was married to my... to a member of Telirian nobility. Our relationship was strictly duty-bound."
+
+        - speaker: "Commander Sylara Von"
+          text: "I admired his dedication to peace. That is all."
+
+    # Doubt (no evidence) - Pressing her story
+    - sequence_name: "CommanderVonDoubt"
+      action: "doubt"
+      is_correct: true  # She's lying, doubting is correct - no stress
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "You dare question my honor? I devoted everything to protecting him!"
+
+        - speaker: "Commander Sylara Von"
+          text: "Fine. You want the truth? I... I cared for him more than I should have. But I would NEVER harm him."
+
+        - speaker: "Commander Sylara Von"
+          text: "He was married to my sister, Detective. Do you understand what that means in Telirian culture? It means my feelings were... forbidden."
+
+    # Doubt (wrong) - If player doubts when she's telling truth
+    - sequence_name: "CommanderVonDoubtWrong"
+      action: "doubt"
+      is_correct: false  # Wrong doubt - increase stress
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "This is absurd! I've answered your questions honestly and you throw accusations at me?"
+
+        - speaker: "Commander Sylara Von"
+          text: "Perhaps you should focus on actual evidence instead of insulting a grieving officer."
+
+    # Accuse (no evidence) - Direct accusation
+    - sequence_name: "CommanderVonAccuse"
+      action: "accuse"
+      is_correct: true  # She IS the killer, but needs evidence
+      requires_evidence: true
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "Me? You think I killed him?"
+
+        - speaker: "Commander Sylara Von"
+          text: "I... I loved him, Detective. More than duty, more than honor. But he was bound to another."
+
+        - speaker: "Commander Sylara Von"
+          text: "In Telirian culture, the only way to free a soul from an arranged union is through death and spiritual reunion."
+
+        - speaker: "Commander Sylara Von"
+          text: "I gave him what he could never have in life - freedom. And one day, we will be together in the spirit realm."
+
+        - speaker: "Commander Sylara Von"
+          text: "I don't expect you to understand. Take me away."
+
+    # Accuse (wrong) - If player accuses without evidence
+    - sequence_name: "CommanderVonAccuseWrong"
+      action: "accuse"
+      is_correct: false
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "WHAT?! You accuse me of murder with no proof? This interview is OVER!"
+
+        - speaker: "Commander Sylara Von"
+          text: "I will not stand here and be insulted! Contact me when you have actual evidence, Detective!"
 
 dr_thorne:
   name: "Dr. Lyssa Thorne"

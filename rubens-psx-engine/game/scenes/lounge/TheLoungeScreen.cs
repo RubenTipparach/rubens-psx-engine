@@ -48,6 +48,12 @@ namespace anakinsoft.game.scenes
         // Transcript review system
         TranscriptReviewUI transcriptReviewUI;
 
+        // Interrogation action UI
+        InterrogationActionUI interrogationActionUI;
+
+        // Confirmation dialog for accusations
+        ConfirmationDialogUI confirmationDialog;
+
         // Character state machines
         anakinsoft.game.scenes.lounge.characters.LoungeCharactersData charactersData;
         BartenderStateMachine bartenderStateMachine;
@@ -59,6 +65,16 @@ namespace anakinsoft.game.scenes
 
         // All interrogated character state machines (persistent across rounds)
         Dictionary<string, CharacterStateMachine> interrogatedCharacters;
+
+        // Stress tracking for interrogation characters
+        StressMeter char1StressMeter;
+        StressMeter char2StressMeter;
+        StressMeterUI char1StressUI;
+        StressMeterUI char2StressUI;
+
+        // Track active interrogation character (which one player is currently talking to)
+        string activeInterrogationCharacter = null;
+        bool isChar1Active = false; // true if char1, false if char2
 
         // Interrogation round management
         InterrogationRoundManager interrogationManager;
@@ -104,6 +120,17 @@ namespace anakinsoft.game.scenes
             inventory = new LoungeInventory();
             dialogueChoiceSystem = new DialogueChoiceSystem();
             transcriptReviewUI = new TranscriptReviewUI();
+
+            // Initialize interrogation action UI
+            interrogationActionUI = new InterrogationActionUI();
+            interrogationActionUI.OnActionSelected += HandleInterrogationAction;
+
+            // Initialize confirmation dialog
+            confirmationDialog = new ConfirmationDialogUI();
+
+            // Initialize stress meters
+            char1StressUI = new StressMeterUI();
+            char2StressUI = new StressMeterUI();
 
             // Wire up inventory swapping event
             inventory.OnItemSwappedOut += (interactableItem) =>
@@ -229,13 +256,24 @@ namespace anakinsoft.game.scenes
 
             dialogueSystem.OnDialogueEnd += () =>
             {
-                Console.WriteLine("Dialogue ended, returning camera to player");
+                Console.WriteLine("Dialogue ended");
 
-                // Clear active dialogue character to hide portrait
-                loungeScene.ClearActiveDialogueCharacter();
-
-                // Always transition camera back when dialogue ends
-                cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                // Show interrogation action UI ONLY if we're interrogating a suspect character (not bartender/pathologist)
+                // DO NOT transition camera back - stay in dialogue mode!
+                // Keep portrait and stress meter visible during action selection
+                if (interrogationManager.IsInterrogating && !string.IsNullOrEmpty(activeInterrogationCharacter))
+                {
+                    Console.WriteLine("[TheLoungeScreen] Showing interrogation action UI - staying in dialogue mode");
+                    interrogationActionUI.Show();
+                    // Note: portrait and stress meter remain visible during action selection
+                }
+                else
+                {
+                    // Not interrogating - normal dialogue, clear portrait and transition camera back
+                    Console.WriteLine("Returning camera to player (not interrogating)");
+                    loungeScene.ClearActiveDialogueCharacter(); // This also clears stress meter
+                    cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                }
             };
 
             // Set up character selection menu events
@@ -354,49 +392,17 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine("Opening suspects file");
 
-                    // If player can select suspects, show character selection menu
+                    // Suspects file ALWAYS shows character selection when allowed
                     if (gameProgress.CanSelectSuspects)
                     {
-                        // During active interrogation, show transcript review
-                        if (characterSelectionMenu.IsInterrogationInProgress)
-                        {
-                            Console.WriteLine("[TheLoungeScreen] Showing transcript review (interrogation in progress)");
-                            var stateMachines = new Dictionary<string, CharacterStateMachine>();
-
-                            // Add bartender and pathologist
-                            if (bartenderStateMachine != null)
-                                stateMachines["Bartender Zix"] = bartenderStateMachine;
-                            if (pathologistStateMachine != null)
-                                stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
-
-                            // Add all interrogated characters from persistent dictionary
-                            foreach (var kvp in interrogatedCharacters)
-                            {
-                                stateMachines[kvp.Key] = kvp.Value;
-                            }
-
-                            transcriptReviewUI.Open(stateMachines);
-                        }
-                        else
-                        {
-                            // Not interrogating - show character selection
-                            Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
-                            characterSelectionMenu.Show();
-                        }
+                        Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
+                        characterSelectionMenu.Show();
                     }
                     else
                     {
-                        // Cannot select suspects yet - show transcript review
-                        Console.WriteLine("[TheLoungeScreen] Showing transcript review (cannot select suspects yet)");
-                        var stateMachines = new Dictionary<string, CharacterStateMachine>();
-
-                        // Add bartender and pathologist
-                        if (bartenderStateMachine != null)
-                            stateMachines["Bartender Zix"] = bartenderStateMachine;
-                        if (pathologistStateMachine != null)
-                            stateMachines["Dr. Harmon Kerrigan"] = pathologistStateMachine;
-
-                        transcriptReviewUI.Open(stateMachines);
+                        // Cannot select suspects yet - just show message or nothing
+                        Console.WriteLine("[TheLoungeScreen] Cannot select suspects yet");
+                        // TODO: Show message to player that they can't select suspects yet
                     }
                 };
 
@@ -430,6 +436,10 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"[TheLoungeScreen] Starting interrogation with {char1.Name}");
 
+                    // Set active character
+                    activeInterrogationCharacter = char1.Name;
+                    isChar1Active = true;
+
                     // Get fresh dialogue from state machine in case state changed
                     var currentDialogue = GetInterrogationDialogue(interrogationChar1StateMachine, char1.Name);
                     if (currentDialogue != null)
@@ -456,6 +466,10 @@ namespace anakinsoft.game.scenes
                         onTransitionComplete = () =>
                         {
                             cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
+
+                            // Set stress meter on UI manager for portrait display (char1)
+                            loungeScene.SetActiveStressMeter(char1StressMeter);
+
                             dialogueSystem.StartDialogue(currentDialogue);
                         };
                         cameraTransitionSystem.OnTransitionToInteractionComplete += onTransitionComplete;
@@ -477,6 +491,10 @@ namespace anakinsoft.game.scenes
                 char2.Interaction.OnDialogueTriggered += (sequence) =>
                 {
                     Console.WriteLine($"[TheLoungeScreen] Starting interrogation with {char2.Name}");
+
+                    // Set active character
+                    activeInterrogationCharacter = char2.Name;
+                    isChar1Active = false;
 
                     // Get fresh dialogue from state machine in case state changed
                     var currentDialogue = GetInterrogationDialogue(interrogationChar2StateMachine, char2.Name);
@@ -504,6 +522,10 @@ namespace anakinsoft.game.scenes
                         onTransitionComplete = () =>
                         {
                             cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
+
+                            // Set stress meter on UI manager for portrait display (char2)
+                            loungeScene.SetActiveStressMeter(char2StressMeter);
+
                             dialogueSystem.StartDialogue(currentDialogue);
                         };
                         cameraTransitionSystem.OnTransitionToInteractionComplete += onTransitionComplete;
@@ -552,6 +574,10 @@ namespace anakinsoft.game.scenes
                 // Despawn interrogation characters
                 loungeScene.DespawnInterrogationCharacters();
 
+                // Hide stress meters
+                char1StressUI.Hide();
+                char2StressUI.Hide();
+
                 // Mark interrogation no longer in progress
                 characterSelectionMenu.SetInterrogationInProgress(false);
 
@@ -584,6 +610,9 @@ namespace anakinsoft.game.scenes
 
                 // Create state machines for interrogation characters
                 CreateInterrogationStateMachines(characters);
+
+                // Create and show stress meters for interrogation characters
+                CreateStressMeters(characters);
 
                 // Spawn characters at interrogation positions (pass round number)
                 loungeScene.SpawnInterrogationCharacters(characters, interrogationManager.CurrentRound);
@@ -661,6 +690,64 @@ namespace anakinsoft.game.scenes
         }
 
         /// <summary>
+        /// Create stress meters for interrogation characters
+        /// </summary>
+        private void CreateStressMeters(List<SelectableCharacter> characters)
+        {
+            if (characters == null || characters.Count == 0)
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No characters provided for stress meter creation");
+                return;
+            }
+
+            // Create stress meter for character 1
+            if (characters.Count > 0)
+            {
+                char1StressMeter = new StressMeter();
+
+                // Get character config for occupation
+                var char1Key = GetCharacterKey(characters[0].Name);
+                var char1Config = charactersData?.GetCharacter(char1Key);
+                string occupation1 = char1Config?.role ?? "Suspect";
+
+                // Pass portrait key for looking up portrait texture
+                char1StressUI.Show(char1StressMeter, characters[0].Name, occupation1, characters[0].PortraitKey);
+
+                // Wire up max stress event to auto-dismiss
+                char1StressMeter.OnMaxStressReached += () =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] {characters[0].Name} reached max stress - dismissing");
+                    interrogationManager.DismissCharacter(characters[0].Name);
+                };
+
+                Console.WriteLine($"[TheLoungeScreen] Created stress meter for {characters[0].Name}");
+            }
+
+            // Create stress meter for character 2
+            if (characters.Count > 1)
+            {
+                char2StressMeter = new StressMeter();
+
+                // Get character config for occupation
+                var char2Key = GetCharacterKey(characters[1].Name);
+                var char2Config = charactersData?.GetCharacter(char2Key);
+                string occupation2 = char2Config?.role ?? "Suspect";
+
+                // Pass portrait key for looking up portrait texture
+                char2StressUI.Show(char2StressMeter, characters[1].Name, occupation2, characters[1].PortraitKey);
+
+                // Wire up max stress event to auto-dismiss
+                char2StressMeter.OnMaxStressReached += () =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] {characters[1].Name} reached max stress - dismissing");
+                    interrogationManager.DismissCharacter(characters[1].Name);
+                };
+
+                Console.WriteLine($"[TheLoungeScreen] Created stress meter for {characters[1].Name}");
+            }
+        }
+
+        /// <summary>
         /// Create the appropriate state machine for a character based on their key
         /// </summary>
         private CharacterStateMachine CreateStateMachineForCharacter(string characterKey, CharacterConfig config)
@@ -716,6 +803,255 @@ namespace anakinsoft.game.scenes
             var characterKey = GetCharacterKey(characterName);
             var profile = profileManager.GetProfile(characterKey);
             return profile?.PortraitKey;
+        }
+
+        /// <summary>
+        /// Handle interrogation action selection
+        /// </summary>
+        private void HandleInterrogationAction(InterrogationAction action)
+        {
+            Console.WriteLine($"[TheLoungeScreen] Interrogation action selected: {action}");
+
+            switch (action)
+            {
+                case InterrogationAction.Alibi:
+                    HandleAlibiAction();
+                    break;
+                case InterrogationAction.Relationship:
+                    HandleRelationshipAction();
+                    break;
+                case InterrogationAction.Doubt:
+                    HandleDoubtAction();
+                    break;
+                case InterrogationAction.Accuse:
+                    HandleAccuseAction();
+                    break;
+                case InterrogationAction.StepAway:
+                    HandleStepAwayAction();
+                    break;
+                case InterrogationAction.Dismiss:
+                    HandleDismissAction();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Handle Alibi action - ask about whereabouts
+        /// </summary>
+        private void HandleAlibiAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Alibi action");
+            var dialogue = GetDialogueForAction("alibi");
+            if (dialogue != null)
+            {
+                dialogueSystem.StartDialogue(dialogue);
+            }
+        }
+
+        /// <summary>
+        /// Handle Relationship action - ask about relationship with victim
+        /// </summary>
+        private void HandleRelationshipAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Relationship action");
+            var dialogue = GetDialogueForAction("relationship");
+            if (dialogue != null)
+            {
+                dialogueSystem.StartDialogue(dialogue);
+            }
+        }
+
+        /// <summary>
+        /// Handle Doubt action - press for more information
+        /// </summary>
+        private void HandleDoubtAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Doubt action");
+            var dialogue = GetDialogueForAction("doubt");
+            if (dialogue != null)
+            {
+                dialogueSystem.StartDialogue(dialogue);
+            }
+        }
+
+        /// <summary>
+        /// Handle Accuse action - directly accuse of murder (with confirmation)
+        /// </summary>
+        private void HandleAccuseAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Accuse action - showing confirmation");
+
+            // Clear any previous handlers and set new ones
+            confirmationDialog.OnYes += ProceedWithAccusation;
+            confirmationDialog.OnNo += CancelAccusation;
+
+            confirmationDialog.Show("Accuse without proper evidence?");
+        }
+
+        /// <summary>
+        /// Cancel the accusation
+        /// </summary>
+        private void CancelAccusation()
+        {
+            Console.WriteLine("[TheLoungeScreen] Accusation cancelled");
+            // Clear handlers
+            confirmationDialog.OnYes -= ProceedWithAccusation;
+            confirmationDialog.OnNo -= CancelAccusation;
+        }
+
+        /// <summary>
+        /// Actually perform the accusation after confirmation
+        /// </summary>
+        private void ProceedWithAccusation()
+        {
+            Console.WriteLine("[TheLoungeScreen] Proceeding with accusation");
+
+            // Clear handlers
+            confirmationDialog.OnYes -= ProceedWithAccusation;
+            confirmationDialog.OnNo -= CancelAccusation;
+
+            var dialogue = GetDialogueForAction("accuse");
+            if (dialogue != null)
+            {
+                dialogueSystem.StartDialogue(dialogue);
+            }
+        }
+
+        /// <summary>
+        /// Get dialogue for a specific action from the active character's config
+        /// </summary>
+        private DialogueSequence GetDialogueForAction(string actionType)
+        {
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: No active character for action {actionType}");
+                return null;
+            }
+
+            // Get the active character's state machine
+            CharacterStateMachine stateMachine = isChar1Active ? interrogationChar1StateMachine : interrogationChar2StateMachine;
+            if (stateMachine == null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: No state machine for active character");
+                return null;
+            }
+
+            // Get character config
+            var characterKey = GetCharacterKey(activeInterrogationCharacter);
+            var config = charactersData.GetCharacter(characterKey);
+            if (config == null || config.dialogue == null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: No config/dialogue for {characterKey}");
+                return null;
+            }
+
+            // Find dialogue sequence matching this action
+            var dialogueSequence = config.dialogue.Find(d => d.action == actionType);
+            if (dialogueSequence == null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] WARNING: No {actionType} dialogue for {characterKey}, using fallback");
+                // Fallback dialogue
+                var fallback = new DialogueSequence($"{actionType}_fallback");
+                fallback.AddLine(activeInterrogationCharacter, $"I have nothing to say about that, Detective.");
+                return fallback;
+            }
+
+            // Check if action is correct and apply stress
+            if (!dialogueSequence.is_correct)
+            {
+                Console.WriteLine($"[TheLoungeScreen] Wrong {actionType} - increasing stress");
+                if (actionType == "accuse")
+                {
+                    IncreaseCurrentCharacterStress(100f); // Max stress on wrong accusation
+                }
+                else if (actionType == "doubt")
+                {
+                    IncreaseCurrentCharacterStress(15f); // Moderate stress on wrong doubt
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[TheLoungeScreen] Correct {actionType} - no stress increase");
+            }
+
+            // Convert to DialogueSequence
+            var sequence = new DialogueSequence(dialogueSequence.sequence_name);
+            foreach (var line in dialogueSequence.lines)
+            {
+                sequence.AddLine(line.speaker, line.text);
+            }
+
+            return sequence;
+        }
+
+        /// <summary>
+        /// Handle Step Away action - temporarily leave interrogation to check evidence
+        /// </summary>
+        private void HandleStepAwayAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Step Away action");
+
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No active interrogation character");
+                return;
+            }
+
+            // Hide action UI
+            interrogationActionUI.Hide();
+
+            // Keep portrait and stress visible
+            // Don't clear activeInterrogationCharacter - we're just stepping away temporarily
+            Console.WriteLine($"[TheLoungeScreen] Player stepping away from {activeInterrogationCharacter} to check evidence");
+
+            // Transition camera back to player - but interrogation remains active
+            cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+        }
+
+        /// <summary>
+        /// Handle Dismiss action - end interrogation
+        /// </summary>
+        private void HandleDismissAction()
+        {
+            Console.WriteLine("[TheLoungeScreen] Handling Dismiss action");
+
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No active interrogation character to dismiss");
+                return;
+            }
+
+            // Dismiss the active character
+            Console.WriteLine($"[TheLoungeScreen] Player dismissed {activeInterrogationCharacter}");
+            interrogationManager.DismissCharacter(activeInterrogationCharacter);
+
+            // Clear active character and stress meter from portrait
+            activeInterrogationCharacter = null;
+            loungeScene.ClearActiveStressMeter();
+
+            // Now transition camera back to player - interrogation session ended
+            Console.WriteLine("[TheLoungeScreen] Transitioning camera back after dismiss");
+            cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+        }
+
+        /// <summary>
+        /// Increase stress for the currently active interrogation character
+        /// </summary>
+        private void IncreaseCurrentCharacterStress(float amount)
+        {
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No active interrogation character for stress increase");
+                return;
+            }
+
+            // Increase stress for the correct character
+            StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
+            if (activeMeter != null)
+            {
+                Console.WriteLine($"[TheLoungeScreen] Increasing {activeInterrogationCharacter} stress by {amount}");
+                activeMeter.IncreaseStress(amount);
+            }
         }
 
         /// <summary>
@@ -1010,7 +1346,14 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            // Update transcript review UI first (highest priority when open)
+            // Update confirmation dialog first (highest priority)
+            if (confirmationDialog.IsActive)
+            {
+                confirmationDialog.Update(gameTime);
+                return; // Don't update other systems while dialog is active
+            }
+
+            // Update transcript review UI (high priority when open)
             if (transcriptReviewUI.IsActive)
             {
                 transcriptReviewUI.Update(gameTime);
@@ -1022,6 +1365,12 @@ namespace anakinsoft.game.scenes
             {
                 characterSelectionMenu.Update(gameTime);
                 return; // Don't update other systems while menu is active
+            }
+
+            // Update interrogation action UI (but don't return - let animations continue)
+            if (interrogationActionUI.IsActive)
+            {
+                interrogationActionUI.Update(gameTime);
             }
 
             // Update dialogue choice system (higher priority than regular dialogue)
@@ -1038,7 +1387,9 @@ namespace anakinsoft.game.scenes
             }
 
             // Update scene with camera for character movement (pass dialogue active state to disable interactions)
-            loungeScene.UpdateWithCamera(gameTime, fpsCamera, dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || transcriptReviewUI.IsActive);
+            // Include interrogation action UI as "dialogue active" to prevent movement but allow animations
+            bool isDialogueActive = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive;
+            loungeScene.UpdateWithCamera(gameTime, fpsCamera, isDialogueActive);
 
             // Update camera transition system
             cameraTransitionSystem.Update(gameTime);
@@ -1084,8 +1435,8 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            // Show mouse cursor when character selection menu or transcript review is active
-            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive)
+            // Show mouse cursor when character selection menu, transcript review, interrogation actions, or confirmation dialog are active
+            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive)
             {
                 Globals.screenManager.IsMouseVisible = true;
             }
@@ -1097,7 +1448,7 @@ namespace anakinsoft.game.scenes
             // Only update FPS camera when not showing intro, not in dialogue, not in menus, and not transitioning
             if (!loungeScene.IsShowingIntroText() && !dialogueSystem.IsActive &&
                 !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning &&
-                !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive)
+                !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive && !interrogationActionUI.IsActive)
             {
                 fpsCamera.Update(gameTime);
             }
@@ -1145,10 +1496,12 @@ namespace anakinsoft.game.scenes
             var spriteBatch = Globals.screenManager.getSpriteBatch;
             var font = Globals.fontNTR;
 
-            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue)
-            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, dialogueSystem.IsActive || dialogueChoiceSystem.IsActive);
+            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue AND interrogation actions)
+            bool isInDialogueMode = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || interrogationActionUI.IsActive;
+            loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, isInDialogueMode);
 
             // Draw dialogue UI on top
+            // Note: Stress bar now integrated with portrait, not in dialogue box
             if (dialogueSystem.IsActive && font != null)
             {
                 dialogueSystem.Draw(spriteBatch, font);
@@ -1198,6 +1551,21 @@ namespace anakinsoft.game.scenes
             if (transcriptReviewUI.IsActive && font != null)
             {
                 transcriptReviewUI.Draw(spriteBatch, font);
+            }
+
+            // Note: Stress meter is now integrated into dialogue UI and shown during action selection
+            // No need for standalone stress meter drawing
+
+            // Draw interrogation action UI
+            if (interrogationActionUI.IsActive && font != null)
+            {
+                interrogationActionUI.Draw(spriteBatch, font);
+            }
+
+            // Draw confirmation dialog (on top of everything except fade)
+            if (confirmationDialog.IsActive && font != null)
+            {
+                confirmationDialog.Draw(spriteBatch, font);
             }
 
             // Draw fade transition (always last, on top of everything)

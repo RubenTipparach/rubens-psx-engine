@@ -1,4 +1,5 @@
 using anakinsoft.entities;
+using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
 using anakinsoft.game.scenes.lounge.ui;
@@ -958,6 +959,16 @@ namespace anakinsoft.game.scenes
         public void ClearActiveDialogueCharacter()
         {
             uiManager.ClearActiveDialogueCharacter();
+        }
+
+        public void SetActiveStressMeter(anakinsoft.game.scenes.lounge.StressMeter meter)
+        {
+            uiManager.SetActiveStressMeter(meter);
+        }
+
+        public void ClearActiveStressMeter()
+        {
+            uiManager.ClearActiveStressMeter();
         }
 
         public void ShowTimePassageMessage(int hoursPassed, int hoursRemaining)

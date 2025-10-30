@@ -62,15 +62,23 @@ namespace anakinsoft.game.scenes.lounge.ui
         private bool teletypeComplete = false;
         private bool acceptInput = false; // Prevent input on first frame after dialogue starts
 
+        // Stress meter integration (optional - only shown during interrogation)
+        private StressMeter activeStressMeter = null;
+
         // Display settings
         private const float BoxPadding = 20f;
         private const float LineHeight = 30f;
         private const float SpeakerOffset = 40f;
         private const float FixedBoxWidth = 800f; // Fixed width for consistency
+        private const float StressBarWidth = 200f;
+        private const float StressBarHeight = 20f;
         private readonly Color BoxColor = Color.Black * 0.85f;
         private readonly Color SpeakerColor = Color.Yellow;
         private readonly Color TextColor = Color.White;
         private readonly Color PromptColor = Color.Gray;
+        private readonly Color LowStressColor = new Color(50, 200, 50); // Green
+        private readonly Color MediumStressColor = new Color(200, 200, 50); // Yellow
+        private readonly Color HighStressColor = new Color(200, 50, 50); // Red
 
         // Events
         public event Action OnDialogueStart;
@@ -85,6 +93,22 @@ namespace anakinsoft.game.scenes.lounge.ui
 
         public DialogueSystem()
         {
+        }
+
+        /// <summary>
+        /// Sets the stress meter to display during dialogue (for interrogations)
+        /// </summary>
+        public void SetStressMeter(StressMeter meter)
+        {
+            activeStressMeter = meter;
+        }
+
+        /// <summary>
+        /// Clears the stress meter display
+        /// </summary>
+        public void ClearStressMeter()
+        {
+            activeStressMeter = null;
         }
 
         /// <summary>
@@ -271,6 +295,14 @@ namespace anakinsoft.game.scenes.lounge.ui
             spriteBatch.DrawString(font, speakerText, speakerPos + Vector2.One, Color.Black); // Shadow
             spriteBatch.DrawString(font, speakerText, speakerPos, SpeakerColor);
 
+            // Draw stress bar next to speaker name (if in interrogation mode)
+            if (activeStressMeter != null)
+            {
+                float stressBarX = boxX + boxWidth - StressBarWidth - BoxPadding;
+                float stressBarY = boxY + BoxPadding;
+                DrawStressBar(spriteBatch, stressBarX, stressBarY, StressBarWidth, StressBarHeight);
+            }
+
             // Draw dialogue text
             Vector2 dialoguePos = new Vector2(boxX + BoxPadding, boxY + BoxPadding + speakerSize.Y + SpeakerOffset);
             spriteBatch.DrawString(font, dialogueText, dialoguePos + Vector2.One, Color.Black); // Shadow
@@ -279,6 +311,50 @@ namespace anakinsoft.game.scenes.lounge.ui
             // Draw prompt
             Vector2 promptPos = new Vector2(boxX + BoxPadding, boxY + boxHeight - promptSize.Y - BoxPadding);
             spriteBatch.DrawString(font, promptText, promptPos, PromptColor);
+        }
+
+        /// <summary>
+        /// Draw the stress progress bar (for interrogations)
+        /// </summary>
+        private void DrawStressBar(SpriteBatch spriteBatch, float x, float y, float width, float height)
+        {
+            if (activeStressMeter == null)
+                return;
+
+            // Draw outer bar background (black)
+            Rectangle outerRect = new Rectangle((int)x, (int)y, (int)width, (int)height);
+            DrawFilledRectangle(spriteBatch, outerRect, Color.Black * 0.9f);
+            DrawRectangleBorder(spriteBatch, outerRect, Color.White * 0.6f, 2);
+
+            // Calculate inner fill
+            float stressPercentage = activeStressMeter.StressPercentage;
+            float fillWidth = (width - 6) * (stressPercentage / 100f); // 3px padding on each side
+
+            if (fillWidth > 0)
+            {
+                Rectangle innerRect = new Rectangle(
+                    (int)(x + 3),
+                    (int)(y + 3),
+                    (int)fillWidth,
+                    (int)(height - 6)
+                );
+
+                Color fillColor = GetStressColor(stressPercentage);
+                DrawFilledRectangle(spriteBatch, innerRect, fillColor);
+            }
+        }
+
+        /// <summary>
+        /// Get color based on stress level
+        /// </summary>
+        private Color GetStressColor(float stressPercentage)
+        {
+            if (stressPercentage < 33f)
+                return LowStressColor;
+            else if (stressPercentage < 66f)
+                return MediumStressColor;
+            else
+                return HighStressColor;
         }
 
         /// <summary>
