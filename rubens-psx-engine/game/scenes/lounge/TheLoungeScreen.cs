@@ -259,13 +259,57 @@ namespace anakinsoft.game.scenes
                 Console.WriteLine("Dialogue ended");
 
                 // Show interrogation action UI ONLY if we're interrogating a suspect character (not bartender/pathologist)
+                // AND the character is not dismissed or at 100% stress
                 // DO NOT transition camera back - stay in dialogue mode!
                 // Keep portrait and stress meter visible during action selection
                 if (interrogationManager.IsInterrogating && !string.IsNullOrEmpty(activeInterrogationCharacter))
                 {
-                    Console.WriteLine("[TheLoungeScreen] Showing interrogation action UI - staying in dialogue mode");
-                    interrogationActionUI.Show();
-                    // Note: portrait and stress meter remain visible during action selection
+                    // Check if the active character is dismissed or at 100% stress
+                    var activeChar = interrogationManager.CurrentPair?.Find(c => c.Name == activeInterrogationCharacter);
+                    StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
+                    bool isStressed = activeMeter != null && activeMeter.IsMaxStress;
+
+                    if ((activeChar != null && activeChar.IsDismissed) || isStressed)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] {activeInterrogationCharacter} is dismissed or at 100% stress - auto-dismissing");
+
+                        // Auto-dismiss the character
+                        if (isStressed && (activeChar == null || !activeChar.IsDismissed))
+                        {
+                            // Mark as dismissed if not already
+                            interrogationManager.DismissCharacter(activeInterrogationCharacter);
+
+                            // Show stress-out dialogue
+                            var dismissDialogue = new DialogueSequence("StressedOutDismissal");
+                            dismissDialogue.AddLine(activeInterrogationCharacter, "That's it! I'm done talking to you, Detective!");
+
+                            dismissDialogue.OnSequenceComplete = () =>
+                            {
+                                Console.WriteLine($"[TheLoungeScreen] Stressed character dismissed - transitioning back to player");
+                                activeInterrogationCharacter = null;
+                                loungeScene.ClearActiveStressMeter();
+                                loungeScene.ClearActiveDialogueCharacter();
+                                cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                            };
+
+                            dialogueSystem.StartDialogue(dismissDialogue);
+                        }
+                        else
+                        {
+                            // Already dismissed - just transition back without additional dialogue
+                            Console.WriteLine($"[TheLoungeScreen] Character already dismissed - transitioning back");
+                            activeInterrogationCharacter = null;
+                            loungeScene.ClearActiveStressMeter();
+                            loungeScene.ClearActiveDialogueCharacter();
+                            cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("[TheLoungeScreen] Showing interrogation action UI - staying in dialogue mode");
+                        interrogationActionUI.Show();
+                        // Note: portrait and stress meter remain visible during action selection
+                    }
                 }
                 else
                 {
@@ -440,6 +484,41 @@ namespace anakinsoft.game.scenes
                     activeInterrogationCharacter = char1.Name;
                     isChar1Active = true;
 
+                    // Check if character is dismissed or at 100% stress - auto-dismiss them
+                    var char1SelectableChar = interrogationManager.CurrentPair?.Find(c => c.Name == char1.Name);
+                    bool isStressed = char1StressMeter != null && char1StressMeter.IsMaxStress;
+
+                    if ((char1SelectableChar != null && char1SelectableChar.IsDismissed) || isStressed)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] {char1.Name} is dismissed or stressed - auto-dismissing and transitioning back");
+
+                        // Create a brief dismissal dialogue
+                        var dismissedDialogue = new DialogueSequence("CharacterAutoDismissed");
+                        if (isStressed && !char1SelectableChar.IsDismissed)
+                        {
+                            dismissedDialogue.AddLine(char1.Name, "That's it! I'm done talking to you, Detective!");
+                            // Mark as dismissed
+                            interrogationManager.DismissCharacter(char1.Name);
+                        }
+                        else
+                        {
+                            dismissedDialogue.AddLine(char1.Name, "I've said all I have to say, Detective.");
+                        }
+
+                        // Auto-transition back after dismissed dialogue completes - no interrogation options
+                        dismissedDialogue.OnSequenceComplete = () =>
+                        {
+                            Console.WriteLine($"[TheLoungeScreen] Dismissed dialogue complete - transitioning back to player");
+                            activeInterrogationCharacter = null;
+                            loungeScene.ClearActiveStressMeter();
+                            cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                        };
+
+                        char1.Interaction.SetDialogue(dismissedDialogue);
+                        dialogueSystem.StartDialogue(dismissedDialogue);
+                        return;
+                    }
+
                     // Get fresh dialogue from state machine in case state changed
                     var currentDialogue = GetInterrogationDialogue(interrogationChar1StateMachine, char1.Name);
                     if (currentDialogue != null)
@@ -495,6 +574,41 @@ namespace anakinsoft.game.scenes
                     // Set active character
                     activeInterrogationCharacter = char2.Name;
                     isChar1Active = false;
+
+                    // Check if character is dismissed or at 100% stress - auto-dismiss them
+                    var char2SelectableChar = interrogationManager.CurrentPair?.Find(c => c.Name == char2.Name);
+                    bool isStressed = char2StressMeter != null && char2StressMeter.IsMaxStress;
+
+                    if ((char2SelectableChar != null && char2SelectableChar.IsDismissed) || isStressed)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] {char2.Name} is dismissed or stressed - auto-dismissing and transitioning back");
+
+                        // Create a brief dismissal dialogue
+                        var dismissedDialogue = new DialogueSequence("CharacterAutoDismissed");
+                        if (isStressed && !char2SelectableChar.IsDismissed)
+                        {
+                            dismissedDialogue.AddLine(char2.Name, "That's it! I'm done talking to you, Detective!");
+                            // Mark as dismissed
+                            interrogationManager.DismissCharacter(char2.Name);
+                        }
+                        else
+                        {
+                            dismissedDialogue.AddLine(char2.Name, "I've said all I have to say, Detective.");
+                        }
+
+                        // Auto-transition back after dismissed dialogue completes - no interrogation options
+                        dismissedDialogue.OnSequenceComplete = () =>
+                        {
+                            Console.WriteLine($"[TheLoungeScreen] Dismissed dialogue complete - transitioning back to player");
+                            activeInterrogationCharacter = null;
+                            loungeScene.ClearActiveStressMeter();
+                            cameraTransitionSystem.TransitionBackToPlayer(1.0f);
+                        };
+
+                        char2.Interaction.SetDialogue(dismissedDialogue);
+                        dialogueSystem.StartDialogue(dismissedDialogue);
+                        return;
+                    }
 
                     // Get fresh dialogue from state machine in case state changed
                     var currentDialogue = GetInterrogationDialogue(interrogationChar2StateMachine, char2.Name);
@@ -956,22 +1070,16 @@ namespace anakinsoft.game.scenes
                 return fallback;
             }
 
-            // Check if action is correct and apply stress
-            if (!dialogueSequence.is_correct)
+            // Apply stress for doubt/accuse actions (happens regardless of correctness)
+            if (actionType == "accuse")
             {
-                Console.WriteLine($"[TheLoungeScreen] Wrong {actionType} - increasing stress");
-                if (actionType == "accuse")
-                {
-                    IncreaseCurrentCharacterStress(100f); // Max stress on wrong accusation
-                }
-                else if (actionType == "doubt")
-                {
-                    IncreaseCurrentCharacterStress(15f); // Moderate stress on wrong doubt
-                }
+                Console.WriteLine($"[TheLoungeScreen] Accuse action - increasing stress to max");
+                IncreaseCurrentCharacterStress(100f); // Max stress on accusation
             }
-            else
+            else if (actionType == "doubt")
             {
-                Console.WriteLine($"[TheLoungeScreen] Correct {actionType} - no stress increase");
+                Console.WriteLine($"[TheLoungeScreen] Doubt action - increasing stress");
+                IncreaseCurrentCharacterStress(15f); // Moderate stress on doubt
             }
 
             // Convert to DialogueSequence

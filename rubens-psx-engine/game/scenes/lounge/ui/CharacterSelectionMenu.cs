@@ -18,6 +18,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         public string PortraitKey { get; set; }
         public string Role { get; set; }
         public bool IsInterrogated { get; set; }
+        public bool IsDismissed { get; set; }
 
         public SelectableCharacter(string name, string portraitKey, string role)
         {
@@ -25,6 +26,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             PortraitKey = portraitKey;
             Role = role;
             IsInterrogated = false;
+            IsDismissed = false;
         }
     }
 
@@ -236,10 +238,14 @@ namespace anakinsoft.game.scenes.lounge.ui
                 {
                     var character = characters[hoveredIndex];
 
-                    // Check if already interrogated
+                    // Check if already interrogated or dismissed
                     if (character.IsInterrogated)
                     {
                         ShowWarning("Cannot select - Character already interrogated");
+                    }
+                    else if (character.IsDismissed)
+                    {
+                        ShowWarning("Cannot select - Character dismissed");
                     }
                     else if (selectedIndices.Contains(hoveredIndex))
                     {
@@ -299,10 +305,14 @@ namespace anakinsoft.game.scenes.lounge.ui
                 {
                     var character = characters[selectedIndex];
 
-                    // Check if already interrogated
+                    // Check if already interrogated or dismissed
                     if (character.IsInterrogated)
                     {
                         ShowWarning("Cannot select - Character already interrogated");
+                    }
+                    else if (character.IsDismissed)
+                    {
+                        ShowWarning("Cannot select - Character dismissed");
                     }
                     else if (selectedIndices.Contains(selectedIndex))
                     {
@@ -344,6 +354,12 @@ namespace anakinsoft.game.scenes.lounge.ui
                         if (characters[index].IsInterrogated)
                         {
                             ShowWarning("Cannot confirm - Selected character already interrogated");
+                            alreadyInterrogated = true;
+                            break;
+                        }
+                        if (characters[index].IsDismissed)
+                        {
+                            ShowWarning("Cannot confirm - Selected character dismissed");
                             alreadyInterrogated = true;
                             break;
                         }
@@ -518,17 +534,17 @@ namespace anakinsoft.game.scenes.lounge.ui
                 Vector2 rolePos = new Vector2(cellX + (CellWidth - roleSize.X) / 2, namePos.Y + nameSize.Y + 2);
                 spriteBatch.DrawString(font, character.Role, rolePos, RoleColor, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
 
-                // Draw interrogated overlay (centered in cell)
-                if (character.IsInterrogated)
+                // Draw interrogated/dismissed overlay (centered in cell)
+                if (character.IsInterrogated || character.IsDismissed)
                 {
                     DrawFilledRectangle(spriteBatch,
                         new Rectangle((int)(cellX + portraitOffsetX), (int)cellY, (int)PortraitWidth, (int)PortraitHeight),
                         Color.Black * 0.6f);
 
-                    string status = "DONE";
-                    Vector2 statusSize = font.MeasureString(status) * 0.6f;
+                    string status = character.IsDismissed ? "DISMISSED" : "DONE";
+                    Vector2 statusSize = font.MeasureString(status) * 0.5f;
                     Vector2 statusPos = new Vector2(cellX + portraitOffsetX + (PortraitWidth - statusSize.X) / 2, cellY + (PortraitHeight - statusSize.Y) / 2);
-                    spriteBatch.DrawString(font, status, statusPos, InterrogatedColor, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+                    spriteBatch.DrawString(font, status, statusPos, InterrogatedColor, 0f, Vector2.Zero, 0.5f, SpriteEffects.None, 0f);
                 }
             }
 

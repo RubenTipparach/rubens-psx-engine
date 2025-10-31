@@ -67,6 +67,15 @@ namespace anakinsoft.game.scenes.lounge
                 return;
 
             dismissedCharacters.Add(characterName);
+
+            // Mark the character as dismissed in the SelectableCharacter object
+            var character = currentInterrogationPair?.Find(c => c.Name == characterName);
+            if (character != null)
+            {
+                character.IsDismissed = true;
+                Console.WriteLine($"[InterrogationRoundManager] Marked {characterName} as dismissed");
+            }
+
             Console.WriteLine($"[InterrogationRoundManager] Dismissed {characterName} ({dismissedCharacters.Count}/{currentInterrogationPair.Count})");
 
             // Check if both characters have been dismissed

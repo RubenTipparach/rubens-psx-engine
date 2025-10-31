@@ -710,6 +710,78 @@ namespace anakinsoft.game.scenes
             evidenceTable.PlaceItem("keycard", 2, 1, keycard);
             Console.WriteLine($"Ambassador's Keycard created at position: {keycardPos}");
 
+            // DNA Evidence - slot [0,1] (top-center)
+            Vector3 dnaPos = evidenceTable.GetSlotPosition(0, 1);
+            var dnaItem = new InventoryItem(
+                id: "dna_evidence",
+                name: "DNA Analysis Report",
+                description: "Forensic DNA from under the Ambassador's fingernails. Matches Commander Von and trace amounts of Dr. Thorne."
+            );
+            var dnaEvidence = new InteractableItem(
+                "DNA Analysis",
+                dnaPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                dnaItem
+            );
+            interactionSystem.RegisterInteractable(dnaEvidence);
+            evidenceTable.PlaceItem("dna_evidence", 0, 1, dnaEvidence);
+            Console.WriteLine($"DNA Evidence created at position: {dnaPos}");
+
+            // Access Code Log - slot [0,2] (top-right)
+            Vector3 accessLogPos = evidenceTable.GetSlotPosition(0, 2);
+            var accessLogItem = new InventoryItem(
+                id: "access_codes",
+                name: "Door Access Logs",
+                description: "Four access codes used on Ambassador's door: his own (2045h), Diplomatic #1 - Thorne (2100h), Diplomatic #2 - Von (0200h), Override - Solis (0230h)."
+            );
+            var accessLog = new InteractableItem(
+                "Access Codes",
+                accessLogPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                accessLogItem
+            );
+            interactionSystem.RegisterInteractable(accessLog);
+            evidenceTable.PlaceItem("access_codes", 0, 2, accessLog);
+            Console.WriteLine($"Access Code Log created at position: {accessLogPos}");
+
+            // Medical Training Record - slot [2,0] (bottom-left)
+            Vector3 medicalRecordPos = evidenceTable.GetSlotPosition(2, 0);
+            var medicalRecordItem = new InventoryItem(
+                id: "medical_training",
+                name: "Combat Medic Certification",
+                description: "Commander Von's advanced medical training record. Shows she has the skills to perform precise injections."
+            );
+            var medicalRecord = new InteractableItem(
+                "Medical Records",
+                medicalRecordPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                medicalRecordItem
+            );
+            interactionSystem.RegisterInteractable(medicalRecord);
+            evidenceTable.PlaceItem("medical_training", 2, 0, medicalRecord);
+            Console.WriteLine($"Medical Training Record created at position: {medicalRecordPos}");
+
+            // Breturium Sample - slot [2,2] (bottom-right)
+            Vector3 breturiumPos = evidenceTable.GetSlotPosition(2, 2);
+            var breturiumItem = new InventoryItem(
+                id: "breturium_sample",
+                name: "Breturium Sample",
+                description: "Exotic radioactive mineral used in the murder. Extremely rare and expensive. Supply chain: Kilroth → Lucky Chen → Dr. Kerrigan → Unknown buyer."
+            );
+            var breturiumSample = new InteractableItem(
+                "Breturium Sample",
+                breturiumPos,
+                Vector3.Zero,
+                Vector3.Zero,
+                breturiumItem
+            );
+            interactionSystem.RegisterInteractable(breturiumSample);
+            evidenceTable.PlaceItem("breturium_sample", 2, 2, breturiumSample);
+            Console.WriteLine($"Breturium Sample created at position: {breturiumPos}");
+
             Console.WriteLine("========================================\n");
         }
 

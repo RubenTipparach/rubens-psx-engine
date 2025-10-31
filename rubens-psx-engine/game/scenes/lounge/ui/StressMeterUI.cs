@@ -17,6 +17,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         private string portraitKey; // Key to look up portrait in dictionary
         private Texture2D portraitTexture;
         private bool isVisible = false;
+        private bool isDismissed = false;
 
         // UI settings
         private const float PanelWidth = 280f;
@@ -55,15 +56,16 @@ namespace anakinsoft.game.scenes.lounge.ui
         /// <summary>
         /// Show stress meter for a character
         /// </summary>
-        public void Show(StressMeter meter, string charName, string occupation = null, string charPortraitKey = null, Texture2D portrait = null)
+        public void Show(StressMeter meter, string charName, string occupation = null, string charPortraitKey = null, Texture2D portrait = null, bool dismissed = false)
         {
             stressMeter = meter;
             characterName = charName;
             characterOccupation = occupation ?? "Suspect";
             portraitKey = charPortraitKey ?? charName; // Use portraitKey if provided, otherwise fallback to name
             portraitTexture = portrait;
+            isDismissed = dismissed;
             isVisible = true;
-            Console.WriteLine($"[StressMeterUI] Showing stress meter for {characterName} (portrait key: {portraitKey})");
+            Console.WriteLine($"[StressMeterUI] Showing stress meter for {characterName} (portrait key: {portraitKey}, dismissed: {dismissed})");
         }
 
         /// <summary>
@@ -77,6 +79,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             characterOccupation = null;
             portraitKey = null;
             portraitTexture = null;
+            isDismissed = false;
             Console.WriteLine($"[StressMeterUI] Hiding stress meter");
         }
 
@@ -141,20 +144,31 @@ namespace anakinsoft.game.scenes.lounge.ui
             DrawTextWithShadow(spriteBatch, font, characterOccupation, occupationPos, TextColor * 0.8f, TextShadowColor, TextScale);
             currentY += occupationSize.Y + ElementSpacing;
 
-            // Draw stress bar
-            float barX = panelX + PanelPadding;
-            DrawStressBar(spriteBatch, barX, currentY, BarWidth, BarHeight);
-            currentY += BarHeight + ElementSpacing;
+            // If dismissed, show DISMISSED status instead of stress bar
+            if (isDismissed)
+            {
+                string dismissedText = "DISMISSED";
+                var dismissedTextSize = font.MeasureString(dismissedText) * 1.0f;
+                Vector2 dismissedTextPos = new Vector2(panelX + (PanelWidth - dismissedTextSize.X) / 2f, currentY + BarHeight / 2f - dismissedTextSize.Y / 2f);
+                DrawTextWithShadow(spriteBatch, font, dismissedText, dismissedTextPos, Color.Red, TextShadowColor, 1.0f);
+            }
+            else
+            {
+                // Draw stress bar
+                float barX = panelX + PanelPadding;
+                DrawStressBar(spriteBatch, barX, currentY, BarWidth, BarHeight);
+                currentY += BarHeight + ElementSpacing;
 
-            // Draw stress percentage text (scaled)
-            float stressPercentage = stressMeter.StressPercentage;
-            string stressText = $"Stress: {stressPercentage:F0}%";
-            var stressTextSize = font.MeasureString(stressText) * TextScale;
-            Vector2 stressTextPos = new Vector2(panelX + (PanelWidth - stressTextSize.X) / 2f, currentY);
+                // Draw stress percentage text (scaled)
+                float stressPercentage = stressMeter.StressPercentage;
+                string stressText = $"Stress: {stressPercentage:F0}%";
+                var stressTextSize = font.MeasureString(stressText) * TextScale;
+                Vector2 stressTextPos = new Vector2(panelX + (PanelWidth - stressTextSize.X) / 2f, currentY);
 
-            // Color text based on stress level
-            Color stressTextColor = GetStressColor(stressPercentage);
-            DrawTextWithShadow(spriteBatch, font, stressText, stressTextPos, stressTextColor, TextShadowColor, TextScale);
+                // Color text based on stress level
+                Color stressTextColor = GetStressColor(stressPercentage);
+                DrawTextWithShadow(spriteBatch, font, stressText, stressTextPos, stressTextColor, TextShadowColor, TextScale);
+            }
         }
 
         /// <summary>
