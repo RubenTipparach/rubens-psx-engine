@@ -80,10 +80,17 @@ namespace anakinsoft.game.scenes
         // Evidence vial item
         InteractableItem evidenceVial;
 
-        // Additional evidence items
-        InteractableItem securityLog;
-        InteractableItem datapad;
-        InteractableItem keycard;
+        // Additional evidence documents (7 new items)
+        EvidenceDocument securityLog;
+        EvidenceDocument datapad;
+        EvidenceDocument keycard;
+        EvidenceDocument dnaEvidence;
+        EvidenceDocument accessLog;
+        EvidenceDocument medicalRecord;
+        EvidenceDocument breturiumSample;
+
+        // List for easier iteration
+        List<EvidenceDocument> evidenceDocuments;
 
         // Evidence table system
         EvidenceTable evidenceTable;
@@ -452,7 +459,7 @@ namespace anakinsoft.game.scenes
 
             // Define table area near pathologist's location
             // Table center positioned on the left side of the lounge
-            Vector3 tableCenter = new Vector3(-4f, 14f, -25f); // Same general area as bar table 2
+            Vector3 tableCenter = new Vector3(-4f, 12.8f, -25f); // Same general area as bar table 2
             Vector3 tableSize = new Vector3(12f, 2f, 20f); // 20 units wide, 15 units deep
 
             // Create 3x3 grid (9 slots for evidence items)
@@ -651,136 +658,89 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("CREATING ADDITIONAL EVIDENCE ITEMS");
             Console.WriteLine("========================================");
 
+            // Create factory for evidence documents
+            var factory = new EvidenceDocumentFactory(physicsSystem, interactionSystem, evidenceTable, LevelScale);
+
             // Grid layout (3x3):
             // [0,0] [0,1] [0,2]
             // [1,0] [1,1] [1,2]  <- [1,0] autopsy report, [1,1] suspects file
             // [2,0] [2,1] [2,2]
 
-            // Security Log - slot [0,0] (top-left)
-            Vector3 securityLogPos = evidenceTable.GetSlotPosition(0, 0);
-            var securityLogItem = new InventoryItem(
-                id: "security_log",
-                name: "Security Log",
-                description: "Station security logs from the night of the murder. Shows unusual access patterns."
-            );
-            securityLog = new InteractableItem(
+            // Create all evidence documents using factory
+            var (securityLogDoc, securityLogVis) = factory.CreateEvidenceDocument(
                 "Security Log",
-                securityLogPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                securityLogItem
-            );
-            interactionSystem.RegisterInteractable(securityLog);
-            evidenceTable.PlaceItem("security_log", 0, 0, securityLog);
-            Console.WriteLine($"Security Log created at position: {securityLogPos}");
+                "Station security logs from the night of the murder. Shows unusual access patterns.",
+                "security_log",
+                0, 0,
+                new Vector3(0.3f, 0.05f, 0.2f));
+            securityLog = securityLogDoc;
+            AddRenderingEntity(securityLogVis);
 
-            // Datapad - slot [1,2] (center-right)
-            Vector3 datapadPos = evidenceTable.GetSlotPosition(1, 2);
-            var datapadItem = new InventoryItem(
-                id: "datapad",
-                name: "Encrypted Datapad",
-                description: "A personal datapad found near the body. Contains encrypted messages."
-            );
-            datapad = new InteractableItem(
+            var (datapadDoc, datapadVis) = factory.CreateEvidenceDocument(
                 "Encrypted Datapad",
-                datapadPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                datapadItem
-            );
-            interactionSystem.RegisterInteractable(datapad);
-            evidenceTable.PlaceItem("datapad", 1, 2, datapad);
-            Console.WriteLine($"Encrypted Datapad created at position: {datapadPos}");
+                "A personal datapad found near the body. Contains encrypted messages.",
+                "datapad",
+                1, 2,
+                new Vector3(0.3f, 0.05f, 0.2f));
+            datapad = datapadDoc;
+            AddRenderingEntity(datapadVis);
 
-            // Keycard - slot [2,1] (bottom-center)
-            Vector3 keycardPos = evidenceTable.GetSlotPosition(2, 1);
-            var keycardItem = new InventoryItem(
-                id: "keycard",
-                name: "Ambassador's Keycard",
-                description: "The ambassador's personal keycard. Shows recent usage at medical bay."
-            );
-            keycard = new InteractableItem(
+            var (keycardDoc, keycardVis) = factory.CreateEvidenceDocument(
                 "Ambassador's Keycard",
-                keycardPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                keycardItem
-            );
-            interactionSystem.RegisterInteractable(keycard);
-            evidenceTable.PlaceItem("keycard", 2, 1, keycard);
-            Console.WriteLine($"Ambassador's Keycard created at position: {keycardPos}");
+                "The ambassador's personal keycard. Shows recent usage at medical bay.",
+                "keycard",
+                2, 1,
+                new Vector3(0.2f, 0.03f, 0.3f));
+            keycard = keycardDoc;
+            AddRenderingEntity(keycardVis);
 
-            // DNA Evidence - slot [0,1] (top-center)
-            Vector3 dnaPos = evidenceTable.GetSlotPosition(0, 1);
-            var dnaItem = new InventoryItem(
-                id: "dna_evidence",
-                name: "DNA Analysis Report",
-                description: "Forensic DNA from under the Ambassador's fingernails. Matches Commander Von and trace amounts of Dr. Thorne."
-            );
-            var dnaEvidence = new InteractableItem(
-                "DNA Analysis",
-                dnaPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                dnaItem
-            );
-            interactionSystem.RegisterInteractable(dnaEvidence);
-            evidenceTable.PlaceItem("dna_evidence", 0, 1, dnaEvidence);
-            Console.WriteLine($"DNA Evidence created at position: {dnaPos}");
+            var (dnaDoc, dnaVis) = factory.CreateEvidenceDocument(
+                "DNA Analysis Report",
+                "Forensic DNA from under the Ambassador's fingernails. Matches Commander Von and trace amounts of Dr. Thorne.",
+                "dna_evidence",
+                0, 1,
+                new Vector3(0.3f, 0.05f, 0.2f));
+            dnaEvidence = dnaDoc;
+            AddRenderingEntity(dnaVis);
 
-            // Access Code Log - slot [0,2] (top-right)
-            Vector3 accessLogPos = evidenceTable.GetSlotPosition(0, 2);
-            var accessLogItem = new InventoryItem(
-                id: "access_codes",
-                name: "Door Access Logs",
-                description: "Four access codes used on Ambassador's door: his own (2045h), Diplomatic #1 - Thorne (2100h), Diplomatic #2 - Von (0200h), Override - Solis (0230h)."
-            );
-            var accessLog = new InteractableItem(
-                "Access Codes",
-                accessLogPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                accessLogItem
-            );
-            interactionSystem.RegisterInteractable(accessLog);
-            evidenceTable.PlaceItem("access_codes", 0, 2, accessLog);
-            Console.WriteLine($"Access Code Log created at position: {accessLogPos}");
+            var (accessLogDoc, accessLogVis) = factory.CreateEvidenceDocument(
+                "Door Access Logs",
+                "Four access codes used on Ambassador's door: his own (2045h), Diplomatic #1 - Thorne (2100h), Diplomatic #2 - Von (0200h), Override - Solis (0230h).",
+                "access_codes",
+                0, 2,
+                new Vector3(0.3f, 0.05f, 0.2f));
+            accessLog = accessLogDoc;
+            AddRenderingEntity(accessLogVis);
 
-            // Medical Training Record - slot [2,0] (bottom-left)
-            Vector3 medicalRecordPos = evidenceTable.GetSlotPosition(2, 0);
-            var medicalRecordItem = new InventoryItem(
-                id: "medical_training",
-                name: "Combat Medic Certification",
-                description: "Commander Von's advanced medical training record. Shows she has the skills to perform precise injections."
-            );
-            var medicalRecord = new InteractableItem(
-                "Medical Records",
-                medicalRecordPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                medicalRecordItem
-            );
-            interactionSystem.RegisterInteractable(medicalRecord);
-            evidenceTable.PlaceItem("medical_training", 2, 0, medicalRecord);
-            Console.WriteLine($"Medical Training Record created at position: {medicalRecordPos}");
+            var (medicalRecordDoc, medicalRecordVis) = factory.CreateEvidenceDocument(
+                "Combat Medic Certification",
+                "Commander Von's advanced medical training record. Shows she has the skills to perform precise injections.",
+                "medical_training",
+                2, 0,
+                new Vector3(0.3f, 0.05f, 0.2f));
+            medicalRecord = medicalRecordDoc;
+            AddRenderingEntity(medicalRecordVis);
 
-            // Breturium Sample - slot [2,2] (bottom-right)
-            Vector3 breturiumPos = evidenceTable.GetSlotPosition(2, 2);
-            var breturiumItem = new InventoryItem(
-                id: "breturium_sample",
-                name: "Breturium Sample",
-                description: "Exotic radioactive mineral used in the murder. Extremely rare and expensive. Supply chain: Kilroth → Lucky Chen → Dr. Kerrigan → Unknown buyer."
-            );
-            var breturiumSample = new InteractableItem(
+            var (breturiumDoc, breturiumVis) = factory.CreateEvidenceDocument(
                 "Breturium Sample",
-                breturiumPos,
-                Vector3.Zero,
-                Vector3.Zero,
-                breturiumItem
-            );
-            interactionSystem.RegisterInteractable(breturiumSample);
-            evidenceTable.PlaceItem("breturium_sample", 2, 2, breturiumSample);
-            Console.WriteLine($"Breturium Sample created at position: {breturiumPos}");
+                "Exotic radioactive mineral used in the murder. Extremely rare and expensive. Supply chain: Kilroth > Lucky Chen > Dr. Kerrigan > Unknown buyer.",
+                "breturium_sample",
+                2, 2,
+                new Vector3(0.25f, 0.08f, 0.15f));
+            breturiumSample = breturiumDoc;
+            AddRenderingEntity(breturiumVis);
+
+            // Initialize evidence documents list for iteration
+            evidenceDocuments = new List<EvidenceDocument>
+            {
+                securityLog,
+                datapad,
+                keycard,
+                dnaEvidence,
+                accessLog,
+                medicalRecord,
+                breturiumSample
+            };
 
             Console.WriteLine("========================================\n");
         }
@@ -931,6 +891,18 @@ namespace anakinsoft.game.scenes
                 debugVisualizer.DrawAutopsyReportBox(autopsyReport, camera);
             }
 
+            // Draw evidence documents bounding boxes (always visible for gameplay)
+            if (evidenceDocuments != null)
+            {
+                foreach (var document in evidenceDocuments)
+                {
+                    if (document != null)
+                    {
+                        debugVisualizer.DrawEvidenceDocumentBox(document, camera);
+                    }
+                }
+            }
+
             // Draw wireframe visualization of static mesh collision geometry if debug mode enabled
             if (ShowPhysicsWireframe)
             {
@@ -1003,9 +975,13 @@ namespace anakinsoft.game.scenes
         public InteractableCharacter GetBartender() => bartender.Interaction;
         public InteractableCharacter GetPathologist() => pathologist.Interaction;
         public InteractableItem GetEvidenceVial() => evidenceVial;
-        public InteractableItem GetSecurityLog() => securityLog;
-        public InteractableItem GetDatapad() => datapad;
-        public InteractableItem GetKeycard() => keycard;
+        public EvidenceDocument GetSecurityLog() => securityLog;
+        public EvidenceDocument GetDatapad() => datapad;
+        public EvidenceDocument GetKeycard() => keycard;
+        public EvidenceDocument GetDNAEvidence() => dnaEvidence;
+        public EvidenceDocument GetAccessLog() => accessLog;
+        public EvidenceDocument GetMedicalRecord() => medicalRecord;
+        public EvidenceDocument GetBreturiumSample() => breturiumSample;
         public SuspectsFile GetSuspectsFile() => suspectsFile;
         public AutopsyReport GetAutopsyReport() => autopsyReport;
         public EvidenceTable GetEvidenceTable() => evidenceTable;

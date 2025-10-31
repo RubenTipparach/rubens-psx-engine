@@ -199,6 +199,15 @@ namespace anakinsoft.system
                         return report;
                     }
                 }
+                // If it's an EvidenceDocument, check its static handle
+                else if (interactable is EvidenceDocument document)
+                {
+                    var documentHandle = document.GetStaticHandle();
+                    if (documentHandle.HasValue && documentHandle.Value.Value == handle.Value)
+                    {
+                        return document;
+                    }
+                }
                 // Can be extended for other interactable types that have physics handles
             }
 

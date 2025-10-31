@@ -229,6 +229,26 @@ namespace anakinsoft.game.scenes
             basicEffect.Dispose();
         }
 
+        public void DrawEvidenceDocumentBox(anakinsoft.game.scenes.lounge.evidence.EvidenceDocument document, Camera camera)
+        {
+            if (document == null) return;
+
+            var graphicsDevice = Globals.screenManager.GraphicsDevice;
+            var basicEffect = new BasicEffect(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                View = camera.View,
+                Projection = camera.Projection,
+                World = Matrix.Identity
+            };
+
+            // Draw bounding box - yellow when targeted, white otherwise
+            Color boxColor = document.IsTargeted ? Color.Yellow : Color.White;
+            DrawBoundingBox(document.BoundingBox, basicEffect, graphicsDevice, boxColor);
+
+            basicEffect.Dispose();
+        }
+
         private Microsoft.Xna.Framework.BoundingBox GetModelBoundingBox(Model model, Matrix worldMatrix)
         {
             // Initialize with max/min values

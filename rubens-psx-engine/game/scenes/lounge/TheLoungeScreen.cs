@@ -54,6 +54,10 @@ namespace anakinsoft.game.scenes
         // Confirmation dialog for accusations
         ConfirmationDialogUI confirmationDialog;
 
+        // Evidence selection UI
+        EvidenceSelectionUI evidenceSelectionUI;
+        string pendingEvidenceId = null;
+
         // Character state machines
         anakinsoft.game.scenes.lounge.characters.LoungeCharactersData charactersData;
         BartenderStateMachine bartenderStateMachine;
@@ -127,6 +131,11 @@ namespace anakinsoft.game.scenes
 
             // Initialize confirmation dialog
             confirmationDialog = new ConfirmationDialogUI();
+
+            // Initialize evidence selection UI
+            evidenceSelectionUI = new EvidenceSelectionUI();
+            evidenceSelectionUI.OnEvidenceSelected += HandleEvidenceSelected;
+            evidenceSelectionUI.OnCancelled += HandleEvidenceSelectionCancelled;
 
             // Initialize stress meters
             char1StressUI = new StressMeterUI();
@@ -359,9 +368,9 @@ namespace anakinsoft.game.scenes
         {
             // Wire up all evidence items to inventory system
             SetupEvidenceItem(loungeScene.GetEvidenceVial());
-            SetupEvidenceItem(loungeScene.GetSecurityLog());
-            SetupEvidenceItem(loungeScene.GetDatapad());
-            SetupEvidenceItem(loungeScene.GetKeycard());
+
+            // Note: Security Log, Datapad, and Keycard are now EvidenceDocument objects
+            // They are examined (like AutopsyReport/SuspectsFile), not collected as items
         }
 
         private void SetupEvidenceItem(InteractableItem item)
@@ -993,13 +1002,25 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void HandleAccuseAction()
         {
-            Console.WriteLine("[TheLoungeScreen] Handling Accuse action - showing confirmation");
+            Console.WriteLine("[TheLoungeScreen] Handling Accuse action - showing evidence selection");
 
-            // Clear any previous handlers and set new ones
-            confirmationDialog.OnYes += ProceedWithAccusation;
-            confirmationDialog.OnNo += CancelAccusation;
+            // Hide the interrogation action UI
+            interrogationActionUI.Hide();
 
-            confirmationDialog.Show("Accuse without proper evidence?");
+            // Build list of available evidence from evidence table
+            var availableEvidence = new List<EvidenceItem>
+            {
+                new EvidenceItem("dna_evidence", "DNA Analysis Report", "Commander Von and Dr. Thorne DNA found under Ambassador's fingernails"),
+                new EvidenceItem("access_codes", "Door Access Logs", "Von's code used at 0200h (time of murder), Thorne at 2100h"),
+                new EvidenceItem("medical_training", "Combat Medic Certification", "Proves Von has advanced medical training for precise injections"),
+                new EvidenceItem("breturium_sample", "Breturium Sample", "Murder weapon - rare exotic material"),
+                new EvidenceItem("security_log", "Security Logs", "Shows unusual access patterns that night"),
+                new EvidenceItem("datapad", "Encrypted Datapad", "Contains encrypted messages"),
+                new EvidenceItem("keycard", "Ambassador's Keycard", "Shows recent usage patterns")
+            };
+
+            // Show evidence selection UI
+            evidenceSelectionUI.Show(availableEvidence);
         }
 
         /// <summary>
@@ -1018,17 +1039,170 @@ namespace anakinsoft.game.scenes
         /// </summary>
         private void ProceedWithAccusation()
         {
-            Console.WriteLine("[TheLoungeScreen] Proceeding with accusation");
+            Console.WriteLine("[TheLoungeScreen] Proceeding with accusation with evidence: " + pendingEvidenceId);
 
             // Clear handlers
             confirmationDialog.OnYes -= ProceedWithAccusation;
             confirmationDialog.OnNo -= CancelAccusation;
 
-            var dialogue = GetDialogueForAction("accuse");
+            // Get the dialogue based on evidence presented
+            var dialogue = GetDialogueForEvidence(pendingEvidenceId);
             if (dialogue != null)
             {
                 dialogueSystem.StartDialogue(dialogue);
             }
+
+            // Clear pending evidence
+            pendingEvidenceId = null;
+        }
+
+        /// <summary>
+        /// Handle evidence selection
+        /// </summary>
+        private void HandleEvidenceSelected(string evidenceId)
+        {
+            Console.WriteLine($"[TheLoungeScreen] Evidence selected: {evidenceId}");
+
+            // Store the evidence ID for use in confirmation
+            pendingEvidenceId = evidenceId;
+
+            // Get evidence name for confirmation message
+            string evidenceName = GetEvidenceName(evidenceId);
+
+            // Show confirmation dialog
+            confirmationDialog.OnYes += ProceedWithAccusation;
+            confirmationDialog.OnNo += CancelAccusation;
+            confirmationDialog.Show($"Accuse with {evidenceName}?");
+        }
+
+        /// <summary>
+        /// Handle evidence selection cancelled
+        /// </summary>
+        private void HandleEvidenceSelectionCancelled()
+        {
+            Console.WriteLine("[TheLoungeScreen] Evidence selection cancelled");
+            // Show interrogation UI again
+            interrogationActionUI.Show();
+        }
+
+        /// <summary>
+        /// Get display name for evidence ID
+        /// </summary>
+        private static string GetEvidenceName(string evidenceId)
+        {
+            return evidenceId switch
+            {
+                "dna_evidence" => "DNA Evidence",
+                "access_codes" => "Access Code Logs",
+                "medical_training" => "Medical Training Records",
+                "breturium_sample" => "Breturium Sample",
+                "security_log" => "Security Logs",
+                "datapad" => "Encrypted Datapad",
+                "keycard" => "Ambassador's Keycard",
+                _ => "Evidence"
+            };
+        }
+
+        /// <summary>
+        /// Get dialogue based on evidence presented
+        /// </summary>
+        private DialogueSequence GetDialogueForEvidence(string evidenceId)
+        {
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: No active character for evidence presentation");
+                return null;
+            }
+
+            // Get active stress meter
+            StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
+            float stressLevel = activeMeter?.StressPercentage ?? 0f;
+
+            Console.WriteLine($"[TheLoungeScreen] Presenting evidence '{evidenceId}' to {activeInterrogationCharacter}, stress level: {stressLevel}%");
+
+            // Check if this is Commander Von with key evidence at 50%+ stress
+            if (activeInterrogationCharacter.Contains("Von") || activeInterrogationCharacter.Contains("Sylara"))
+            {
+                return GetCommanderVonEvidenceResponse(evidenceId, stressLevel);
+            }
+
+            // Default: Wrong evidence or wrong character - max stress and dismiss
+            var wrongEvidenceDialogue = new DialogueSequence("WrongEvidence");
+            wrongEvidenceDialogue.AddLine(activeInterrogationCharacter, "What?! This doesn't prove anything! This interview is OVER!");
+
+            // Max out stress (will auto-dismiss)
+            IncreaseCurrentCharacterStress(100f);
+
+            return wrongEvidenceDialogue;
+        }
+
+        /// <summary>
+        /// Get Commander Von's response to evidence based on stress level
+        /// </summary>
+        private DialogueSequence GetCommanderVonEvidenceResponse(string evidenceId, float stressLevel)
+        {
+            // Check if stress is at 50% or higher (breakthrough threshold)
+            bool canBreakthrough = stressLevel >= 50f;
+
+            // DNA Evidence - smoking gun
+            if (evidenceId == "dna_evidence" && canBreakthrough)
+            {
+                var confession = new DialogueSequence("VonDNAConfession");
+                confession.AddLine(activeInterrogationCharacter, "*Long pause, staring at the evidence*");
+                confession.AddLine(activeInterrogationCharacter, "...You don't understand Telirian culture, Detective.");
+                confession.AddLine(activeInterrogationCharacter, "He was bound to my sister in an arranged marriage. We loved each other, but could never be together in this life.");
+                confession.AddLine(activeInterrogationCharacter, "In our beliefs, only death can free a soul from such bonds. I... I freed him.");
+                confession.AddLine(activeInterrogationCharacter, "The breturium, the precision - I gave him a warrior's death. Honorable. Quick.");
+                confession.AddLine(activeInterrogationCharacter, "One day, in the spirit realm, we'll finally be together. No sister. No duty. Just us.");
+                confession.AddLine(activeInterrogationCharacter, "I don't expect you to understand. Take me away.");
+
+                // Mark as breakthrough - stress to max, auto-dismiss
+                IncreaseCurrentCharacterStress(100f);
+
+                Console.WriteLine("[TheLoungeScreen] BREAKTHROUGH! Commander Von confessed!");
+                return confession;
+            }
+
+            // Access Codes - strong evidence
+            if (evidenceId == "access_codes" && canBreakthrough)
+            {
+                var admission = new DialogueSequence("VonAccessCodeAdmission");
+                admission.AddLine(activeInterrogationCharacter, "*Eyes narrow* My access code was used... because I was checking on him.");
+                admission.AddLine(activeInterrogationCharacter, "I... I cared for him more than I should have. He was my sister's husband.");
+                admission.AddLine(activeInterrogationCharacter, "The gym alibi? A lie. I was with him that night. But I didn't... I couldn't...");
+                admission.AddLine(activeInterrogationCharacter, "*Voice breaking* This was supposed to free us both!");
+
+                // Increase stress to max
+                IncreaseCurrentCharacterStress(100f);
+
+                Console.WriteLine("[TheLoungeScreen] BREAKTHROUGH! Commander Von admitted to being there!");
+                return admission;
+            }
+
+            // Medical Training - circumstantial but damning
+            if (evidenceId == "medical_training" && canBreakthrough)
+            {
+                var reaction = new DialogueSequence("VonMedicalTrainingReaction");
+                reaction.AddLine(activeInterrogationCharacter, "Yes, I have advanced combat medic training. So what?");
+                reaction.AddLine(activeInterrogationCharacter, "That's standard for security personnel! You're grasping at straws!");
+                reaction.AddLine(activeInterrogationCharacter, "*Pause* ...Unless you have more evidence than this, Detective.");
+
+                // Moderate stress increase
+                IncreaseCurrentCharacterStress(30f);
+
+                return reaction;
+            }
+
+            // Not enough stress or wrong evidence - she gets angry and dismisses
+            var angryResponse = new DialogueSequence("VonAngryDismissal");
+            angryResponse.AddLine(activeInterrogationCharacter, "You DARE accuse me with this... THIS?!");
+            angryResponse.AddLine(activeInterrogationCharacter, "I have given EVERYTHING to protect the Ambassador!");
+            angryResponse.AddLine(activeInterrogationCharacter, "This interview is OVER! Come back when you have real evidence!");
+
+            // Max stress - auto-dismiss
+            IncreaseCurrentCharacterStress(100f);
+
+            return angryResponse;
         }
 
         /// <summary>
@@ -1454,7 +1628,14 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            // Update confirmation dialog first (highest priority)
+            // Update evidence selection UI (highest priority)
+            if (evidenceSelectionUI.IsVisible)
+            {
+                evidenceSelectionUI.Update(gameTime);
+                return; // Don't update other systems while selecting evidence
+            }
+
+            // Update confirmation dialog (high priority)
             if (confirmationDialog.IsActive)
             {
                 confirmationDialog.Update(gameTime);
@@ -1543,8 +1724,8 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            // Show mouse cursor when character selection menu, transcript review, interrogation actions, or confirmation dialog are active
-            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive)
+            // Show mouse cursor when character selection menu, transcript review, interrogation actions, evidence selection, or confirmation dialog are active
+            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive || evidenceSelectionUI.IsVisible)
             {
                 Globals.screenManager.IsMouseVisible = true;
             }
@@ -1668,6 +1849,12 @@ namespace anakinsoft.game.scenes
             if (interrogationActionUI.IsActive && font != null)
             {
                 interrogationActionUI.Draw(spriteBatch, font);
+            }
+
+            // Draw evidence selection UI (on top of most things)
+            if (evidenceSelectionUI.IsVisible && font != null)
+            {
+                evidenceSelectionUI.Draw(spriteBatch, font);
             }
 
             // Draw confirmation dialog (on top of everything except fade)
