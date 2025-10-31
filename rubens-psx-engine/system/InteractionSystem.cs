@@ -230,22 +230,29 @@ namespace anakinsoft.system
             string descriptionText = currentTarget.InteractionDescription;
 
             var promptSize = font.MeasureString(promptText);
-            var descriptionSize = font.MeasureString(descriptionText);
 
             // Position in center-bottom of screen
             var promptPos = new Vector2(
                 (viewport.Width - promptSize.X) / 2,
                 viewport.Height * 0.7f);
 
-            var descriptionPos = new Vector2(
-                (viewport.Width - descriptionSize.X) / 2,
-                promptPos.Y + promptSize.Y + 5);
-
             // Draw with background for readability
             DrawTextWithBackground(spriteBatch, promptText, promptPos, Color.White, Color.Black);
+
             if (!string.IsNullOrEmpty(descriptionText))
             {
-                DrawTextWithBackground(spriteBatch, descriptionText, descriptionPos, Color.Yellow, Color.Black);
+                // Wrap description text to fit screen (max 80% of screen width)
+                float maxWidth = viewport.Width * 0.8f;
+                var wrappedLines = WrapText(descriptionText, maxWidth, font);
+
+                float currentY = promptPos.Y + promptSize.Y + 5;
+                foreach (var line in wrappedLines)
+                {
+                    var lineSize = font.MeasureString(line);
+                    var linePos = new Vector2((viewport.Width - lineSize.X) / 2, currentY);
+                    DrawTextWithBackground(spriteBatch, line, linePos, Color.Yellow, Color.Black);
+                    currentY += lineSize.Y + 2; // Small spacing between lines
+                }
             }
 
             // Debug info
@@ -254,6 +261,36 @@ namespace anakinsoft.system
                 string debugText = $"Interactables: {interactables.Count}\nDistance: {Vector3.Distance(Vector3.Zero, currentTarget.Position):F1}";
                 spriteBatch.DrawString(font, debugText, new Vector2(10, 100), Color.Lime);
             }
+        }
+
+        private List<string> WrapText(string text, float maxWidth, SpriteFont font)
+        {
+            var lines = new List<string>();
+            var words = text.Split(' ');
+            var currentLine = "";
+
+            foreach (var word in words)
+            {
+                var testLine = string.IsNullOrEmpty(currentLine) ? word : currentLine + " " + word;
+                var testSize = font.MeasureString(testLine);
+
+                if (testSize.X > maxWidth && !string.IsNullOrEmpty(currentLine))
+                {
+                    lines.Add(currentLine);
+                    currentLine = word;
+                }
+                else
+                {
+                    currentLine = testLine;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(currentLine))
+            {
+                lines.Add(currentLine);
+            }
+
+            return lines;
         }
 
         private void DrawTextWithBackground(SpriteBatch spriteBatch, string text, Vector2 position, Color textColor, Color backgroundColor)
