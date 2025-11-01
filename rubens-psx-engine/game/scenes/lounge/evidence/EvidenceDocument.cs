@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using anakinsoft.entities;
 using BepuPhysics;
 using System;
+using rubens_psx_engine.entities;
 
 namespace anakinsoft.game.scenes.lounge.evidence
 {
@@ -16,9 +17,16 @@ namespace anakinsoft.game.scenes.lounge.evidence
         public BoundingBox BoundingBox { get; private set; }
         public Vector3 VisualScale { get; private set; }
         public Vector3 ColliderSize { get; private set; }
+        public bool IsCollected { get; private set; }
+        public int TableRow { get; private set; }
+        public int TableColumn { get; private set; }
+        public Vector3 OriginalPosition { get; private set; }
 
         // Physics handle for raycast detection
         private StaticHandle? staticHandle;
+
+        // Reference to visual entity for showing/hiding
+        private RenderingEntity visual;
 
         public event Action<EvidenceDocument> OnDocumentExamined;
 
@@ -28,12 +36,17 @@ namespace anakinsoft.game.scenes.lounge.evidence
             string evidenceId,
             Vector3 position,
             Vector3 visualScale,
-            float levelScale)
+            float levelScale,
+            int tableRow,
+            int tableColumn)
         {
             Name = name;
             Description = description;
             EvidenceId = evidenceId;
             this.position = position;
+            OriginalPosition = position;
+            TableRow = tableRow;
+            TableColumn = tableColumn;
             interactionDistance = 100f;
             interactionPrompt = $"[E] Examine {name}";
 
@@ -57,6 +70,18 @@ namespace anakinsoft.game.scenes.lounge.evidence
         /// </summary>
         protected override void OnInteractAction()
         {
+            if (!IsCollected)
+            {
+                IsCollected = true;
+                Console.WriteLine($"Collected {Name}");
+
+                // Hide visual when collected
+                if (visual != null)
+                {
+                    visual.IsVisible = false;
+                }
+            }
+
             Console.WriteLine($"Examining {Name}");
             OnDocumentExamined?.Invoke(this);
         }
@@ -68,10 +93,13 @@ namespace anakinsoft.game.scenes.lounge.evidence
         {
             get
             {
+                if (IsCollected)
+                    return ""; // Don't show prompt if already collected
+
                 if (!CanInteract)
                     return $"{Name} - Not available yet";
 
-                return $"[E] Examine {Name}";
+                return $"[E] Pick up {Name}";
             }
         }
 
@@ -103,6 +131,34 @@ namespace anakinsoft.game.scenes.lounge.evidence
         public StaticHandle? GetStaticHandle()
         {
             return staticHandle;
+        }
+
+        /// <summary>
+        /// Sets the visual entity reference for this document
+        /// </summary>
+        public void SetVisual(RenderingEntity visualEntity)
+        {
+            visual = visualEntity;
+        }
+
+        /// <summary>
+        /// Return document to world (when placed back on table)
+        /// </summary>
+        public void ReturnToWorld()
+        {
+            IsCollected = false;
+
+            // Return visual to original position
+            if (visual != null)
+            {
+                visual.Position = OriginalPosition;
+                visual.IsVisible = true;
+            }
+
+            // Reset position
+            position = OriginalPosition;
+
+            Console.WriteLine($"[EvidenceDocument] Returned {Name} to world at position {OriginalPosition}");
         }
     }
 }

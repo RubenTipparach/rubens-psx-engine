@@ -183,10 +183,10 @@ namespace rubens_psx_engine
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar");
             CreateStaticMesh(new Vector3(0, 0, 0), Quaternion.Identity, new[] { barMat }, "models/lounge/furnitures/lounge_bar_2");
 
-            // Load bar stools
-            CreateStaticMesh(new Vector3(-1.70852f, 0, -3.29662f) * posScale,
+            // Load bar stools (visual only, no colliders)
+            CreateVisualOnlyMesh(new Vector3(-1.70852f, 0, -3.29662f) * posScale,
                 Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
-            CreateStaticMesh(new Vector3(-1.70852f, 0, -2) * posScale,
+            CreateVisualOnlyMesh(new Vector3(-1.70852f, 0, -2) * posScale,
                 Quaternion.Identity, new[] { chairMat }, "models/lounge/furnitures/lounge_high_chair");
 
             // Load lounge chairs
@@ -265,6 +265,31 @@ namespace rubens_psx_engine
             // Create physics mesh for the model
             CreatePhysicsMesh(mesh, offset, rotation,
                 QuaternionExtensions.CreateFromYawPitchRollDegrees(0, -90, 0), Vector3.Zero);
+        }
+
+        /// <summary>
+        /// Create a visual-only mesh without physics collider
+        /// </summary>
+        private void CreateVisualOnlyMesh(Vector3 offset, Quaternion rotation, Material[] mats, string mesh)
+        {
+            // Create entity with material channels
+            var loadedMats = new Dictionary<int, Material>();
+            for (int i = 0; i < mats.Length; i++)
+            {
+                loadedMats.Add(i, mats[i]);
+            }
+            var entity = new MultiMaterialRenderingEntity(mesh, loadedMats);
+
+            entity.Position = Vector3.Zero + offset;
+            entity.Scale = Vector3.One * 0.2f * levelScale;
+            entity.Rotation = rotation;
+            entity.IsVisible = true;
+
+            // Add to rendering entities
+            entities.Add(entity);
+            addRenderingEntityCallback(entity);
+
+            // No physics collider created
         }
 
         /// <summary>

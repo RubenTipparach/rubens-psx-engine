@@ -394,6 +394,14 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine($"Collected {report.ReportTitle}");
 
+                    // Return any evidence document currently held to the table
+                    var evidenceInventory = loungeScene.GetEvidenceInventory();
+                    if (evidenceInventory != null && evidenceInventory.HasDocument)
+                    {
+                        evidenceInventory.DropDocument();
+                        Console.WriteLine("[TheLoungeScreen] Returned evidence document to table before picking up autopsy report");
+                    }
+
                     // Add to inventory
                     var reportItem = new InventoryItem(
                         id: "autopsy_report",
@@ -672,19 +680,32 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation in progress
                 characterSelectionMenu.SetInterrogationInProgress(true);
 
-                // On first round, convert autopsy report to transcript mode and clear inventory
+                // On first round, enable all evidence items and prepare for interrogation
                 if (interrogationManager.CurrentRound == 1)
                 {
-                    var autopsyReport = loungeScene.GetAutopsyReport();
-                    if (autopsyReport != null)
+                    // Enable all evidence documents for pickup
+                    loungeScene.EnableAllEvidenceDocuments();
+                    Console.WriteLine("[TheLoungeScreen] All evidence documents enabled for round 1");
+
+                    // Clear evidence inventory and return any held item to table
+                    var evidenceInventory = loungeScene.GetEvidenceInventory();
+                    if (evidenceInventory != null && evidenceInventory.HasDocument)
                     {
-                        autopsyReport.ConvertToTranscriptMode();
-                        Console.WriteLine("[TheLoungeScreen] Autopsy report converted to transcript mode");
+                        evidenceInventory.DropDocument();
                     }
 
-                    // Clear inventory (autopsy report was delivered to pathologist)
+                    // Autopsy report is already in transcript mode (converted when delivered to Dr. Harmon)
+                    // Just make sure it's visible and interactable
+                    var autopsyReport = loungeScene.GetAutopsyReport();
+                    if (autopsyReport != null && autopsyReport.IsTranscriptMode)
+                    {
+                        autopsyReport.CanInteract = true;
+                        Console.WriteLine("[TheLoungeScreen] Autopsy report transcript enabled for round 1");
+                    }
+
+                    // Clear old inventory (just in case)
                     inventory.Clear();
-                    Console.WriteLine("[TheLoungeScreen] Inventory cleared for interrogation");
+                    Console.WriteLine("[TheLoungeScreen] Inventories cleared for interrogation");
                 }
 
                 // TODO: Display time message to player
@@ -1522,13 +1543,18 @@ namespace anakinsoft.game.scenes
                             Console.WriteLine("[TheLoungeScreen] Suspects file is now interactable");
                         }
 
-                        // Disable the autopsy report (already delivered)
+                        // Convert autopsy report to transcript mode and return to table
                         var autopsyReport = loungeScene.GetAutopsyReport();
                         if (autopsyReport != null)
                         {
-                            autopsyReport.CanInteract = false;
-                            Console.WriteLine("[TheLoungeScreen] Autopsy report is disabled");
+                            autopsyReport.ConvertToTranscriptMode();
+                            autopsyReport.ReturnToWorld();
+                            Console.WriteLine("[TheLoungeScreen] Autopsy report converted to transcript mode and returned to table");
                         }
+
+                        // Clear the old inventory (remove autopsy report)
+                        inventory.Clear();
+                        Console.WriteLine("[TheLoungeScreen] Inventory cleared after delivering autopsy report");
                     }
                 };
             }
@@ -1802,11 +1828,39 @@ namespace anakinsoft.game.scenes
                 dialogueChoiceSystem.Draw(spriteBatch, font);
             }
 
-            // Draw inventory at center-left of screen
+            // Draw inventory at center-left of screen (old inventory system - autopsy report)
             if (inventory.HasItem && font != null && !transcriptReviewUI.IsActive)
             {
                 var viewport = Globals.screenManager.GraphicsDevice.Viewport;
                 string inventoryText = inventory.GetDisplayText();
+                Vector2 textSize = font.MeasureString(inventoryText);
+
+                // Position at center-left with some padding
+                Vector2 position = new Vector2(
+                    30, // Left padding
+                    (viewport.Height - textSize.Y) / 2 // Vertically centered
+                );
+
+                // Draw background box (darker for better readability)
+                Rectangle bgRect = new Rectangle(
+                    (int)position.X - 10,
+                    (int)position.Y - 5,
+                    (int)textSize.X + 20,
+                    (int)textSize.Y + 10
+                );
+                DrawFilledRectangle(spriteBatch, bgRect, Color.Black * 0.9f);
+                DrawRectangleBorder(spriteBatch, bgRect, Color.Yellow, 2);
+
+                // Draw text
+                spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
+            }
+
+            // Draw evidence inventory at center-left of screen
+            var evidenceInventory = loungeScene.GetEvidenceInventory();
+            if (evidenceInventory != null && evidenceInventory.HasDocument && font != null && !transcriptReviewUI.IsActive)
+            {
+                var viewport = Globals.screenManager.GraphicsDevice.Viewport;
+                string inventoryText = evidenceInventory.GetDisplayText();
                 Vector2 textSize = font.MeasureString(inventoryText);
 
                 // Position at center-left with some padding

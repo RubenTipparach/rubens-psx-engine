@@ -95,6 +95,9 @@ namespace anakinsoft.game.scenes
         // Evidence table system
         EvidenceTable evidenceTable;
 
+        // Evidence inventory (holds 1 item at a time)
+        EvidenceInventory evidenceInventory;
+
         // Suspects file
         SuspectsFile suspectsFile;
         RenderingEntity suspectsFileVisual; // Cube placeholder for the file
@@ -469,6 +472,9 @@ namespace anakinsoft.game.scenes
             // - Future collectibles
             evidenceTable = new EvidenceTable(tableCenter, tableSize, 3, 3);
 
+            // Initialize evidence inventory
+            evidenceInventory = new EvidenceInventory();
+
             Console.WriteLine($"Evidence table created at {tableCenter}");
             Console.WriteLine($"Table size: {tableSize.X}x{tableSize.Z}, Grid: 3x3 (9 slots)");
             Console.WriteLine("========================================\n");
@@ -742,7 +748,20 @@ namespace anakinsoft.game.scenes
                 breturiumSample
             };
 
+            // Hook up event handlers for all evidence documents
+            foreach (var doc in evidenceDocuments)
+            {
+                doc.OnDocumentExamined += OnEvidenceDocumentExamined;
+            }
+
             Console.WriteLine("========================================\n");
+        }
+
+        private void OnEvidenceDocumentExamined(EvidenceDocument document)
+        {
+            // Add to inventory (automatically swaps out current item if holding one)
+            evidenceInventory.PickUpDocument(document);
+            Console.WriteLine($"[TheLoungeScene] Evidence document examined and added to inventory: {document.Name}");
         }
 
         void CreateCharacter(Vector3 position, Quaternion rotation)
@@ -986,6 +1005,7 @@ namespace anakinsoft.game.scenes
         public AutopsyReport GetAutopsyReport() => autopsyReport;
         public EvidenceTable GetEvidenceTable() => evidenceTable;
         public InteractionSystem GetInteractionSystem() => interactionSystem;
+        public EvidenceInventory GetEvidenceInventory() => evidenceInventory;
         public bool IsShowingIntroText() => uiManager.ShowIntroText;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
         public CharacterProfileManager GetProfileManager() => profileManager;
@@ -1007,6 +1027,21 @@ namespace anakinsoft.game.scenes
         public void ClearActiveDialogueCharacter()
         {
             uiManager.ClearActiveDialogueCharacter();
+        }
+
+        /// <summary>
+        /// Enable all evidence documents for interaction (called when round 1 starts)
+        /// </summary>
+        public void EnableAllEvidenceDocuments()
+        {
+            if (evidenceDocuments != null)
+            {
+                foreach (var doc in evidenceDocuments)
+                {
+                    doc.CanInteract = true;
+                }
+                Console.WriteLine("[TheLoungeScene] All evidence documents enabled for interaction");
+            }
         }
 
         public void SetActiveStressMeter(anakinsoft.game.scenes.lounge.StressMeter meter)

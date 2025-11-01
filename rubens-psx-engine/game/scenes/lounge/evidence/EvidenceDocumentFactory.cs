@@ -51,7 +51,9 @@ namespace anakinsoft.game.scenes.lounge.evidence
                 evidenceId: evidenceId,
                 position: position,
                 visualScale: visualScale,
-                levelScale: levelScale
+                levelScale: levelScale,
+                tableRow: tableRow,
+                tableColumn: tableColumn
             );
 
             // Register with interaction system
@@ -77,6 +79,9 @@ namespace anakinsoft.game.scenes.lounge.evidence
             visual.Scale = document.VisualScale;
             visual.Rotation = QuaternionExtensions.CreateFromYawPitchRollDegrees(0, 0, 0);
             visual.IsVisible = true;
+
+            // Set visual reference in document
+            document.SetVisual(visual);
 
             System.Console.WriteLine($"{name} created at position: {position} with collider handle: {staticHandle.Value}");
 
