@@ -75,15 +75,31 @@ namespace anakinsoft.game.scenes.lounge.evidence
                 IsCollected = true;
                 Console.WriteLine($"Collected {Name}");
 
-                // Hide visual when collected
+                // Hide visual when picked up
                 if (visual != null)
                 {
                     visual.IsVisible = false;
                 }
-            }
 
-            Console.WriteLine($"Examining {Name}");
-            OnDocumentExamined?.Invoke(this);
+                // Fire event to add to inventory
+                Console.WriteLine($"Examining {Name}");
+                OnDocumentExamined?.Invoke(this);
+            }
+            else
+            {
+                // If already collected (holding it), drop it back
+                IsCollected = false;
+                Console.WriteLine($"Dropped {Name} back to table");
+
+                // Show visual when put back
+                if (visual != null)
+                {
+                    visual.IsVisible = true;
+                }
+
+                // Fire event to remove from inventory
+                OnDocumentExamined?.Invoke(this);
+            }
         }
 
         /// <summary>
@@ -93,11 +109,11 @@ namespace anakinsoft.game.scenes.lounge.evidence
         {
             get
             {
-                if (IsCollected)
-                    return ""; // Don't show prompt if already collected
-
                 if (!CanInteract)
                     return $"{Name} - Not available yet";
+
+                if (IsCollected)
+                    return $"[E] Put back {Name}";
 
                 return $"[E] Pick up {Name}";
             }
@@ -148,7 +164,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
         {
             IsCollected = false;
 
-            // Return visual to original position
+            // Show visual when returned to table (after being swapped out)
             if (visual != null)
             {
                 visual.Position = OriginalPosition;

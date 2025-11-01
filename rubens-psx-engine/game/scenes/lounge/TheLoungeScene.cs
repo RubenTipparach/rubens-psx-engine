@@ -759,9 +759,19 @@ namespace anakinsoft.game.scenes
 
         private void OnEvidenceDocumentExamined(EvidenceDocument document)
         {
-            // Add to inventory (automatically swaps out current item if holding one)
-            evidenceInventory.PickUpDocument(document);
-            Console.WriteLine($"[TheLoungeScene] Evidence document examined and added to inventory: {document.Name}");
+            // Check if this document is already in inventory (player wants to drop it)
+            if (evidenceInventory.HasDocument && evidenceInventory.CurrentDocument == document)
+            {
+                // Drop the document
+                evidenceInventory.DropDocument();
+                Console.WriteLine($"[TheLoungeScene] Evidence document dropped: {document.Name}");
+            }
+            else
+            {
+                // Pick up document (automatically swaps out current item if holding one)
+                evidenceInventory.PickUpDocument(document);
+                Console.WriteLine($"[TheLoungeScene] Evidence document examined and added to inventory: {document.Name}");
+            }
         }
 
         void CreateCharacter(Vector3 position, Quaternion rotation)

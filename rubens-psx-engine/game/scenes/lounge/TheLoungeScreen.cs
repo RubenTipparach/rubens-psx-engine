@@ -1,6 +1,7 @@
 using anakinsoft.system.cameras;
 using anakinsoft.utilities;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using rubens_psx_engine.system;
@@ -171,6 +172,9 @@ namespace anakinsoft.game.scenes
 
             // Set up autopsy report collection
             SetupAutopsyReport();
+
+            // Set up evidence inventory cross-talk with old inventory
+            SetupEvidenceInventory();
 
             // Set up suspects file interaction
             SetupSuspectsFile();
@@ -440,6 +444,29 @@ namespace anakinsoft.game.scenes
                     // Open transcript UI with state machines
                     transcriptReviewUI.Open(stateMachines);
                     Console.WriteLine($"[TheLoungeScreen] Opened transcript review UI with {stateMachines.Count} characters");
+                };
+            }
+        }
+
+        private void SetupEvidenceInventory()
+        {
+            var evidenceInventory = loungeScene.GetEvidenceInventory();
+            if (evidenceInventory != null)
+            {
+                // When picking up an evidence document, return autopsy report if holding it
+                evidenceInventory.OnDocumentPickedUp += (document) =>
+                {
+                    // If holding autopsy report in old inventory, return it to table
+                    if (inventory.HasItem && inventory.HasItemById("autopsy_report"))
+                    {
+                        var autopsyReport = loungeScene.GetAutopsyReport();
+                        if (autopsyReport != null)
+                        {
+                            autopsyReport.ReturnToWorld();
+                            Console.WriteLine("[TheLoungeScreen] Returned autopsy report to table when picking up evidence document");
+                        }
+                        inventory.Clear();
+                    }
                 };
             }
         }
@@ -1841,17 +1868,21 @@ namespace anakinsoft.game.scenes
                     (viewport.Height - textSize.Y) / 2 // Vertically centered
                 );
 
-                // Draw background box (darker for better readability)
+                // Draw background box with better styling
                 Rectangle bgRect = new Rectangle(
-                    (int)position.X - 10,
-                    (int)position.Y - 5,
-                    (int)textSize.X + 20,
-                    (int)textSize.Y + 10
+                    (int)position.X - 5,
+                    (int)position.Y - 2,
+                    (int)textSize.X + 10,
+                    (int)textSize.Y + 4
                 );
-                DrawFilledRectangle(spriteBatch, bgRect, Color.Black * 0.9f);
-                DrawRectangleBorder(spriteBatch, bgRect, Color.Yellow, 2);
 
-                // Draw text
+                // Draw semi-transparent background
+                var backgroundTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
+                backgroundTexture.SetData(new[] { Color.Black });
+                spriteBatch.Draw(backgroundTexture, bgRect, Color.Black * 0.7f);
+
+                // Draw text with shadow for better readability
+                spriteBatch.DrawString(font, inventoryText, position + Vector2.One, Color.Black); // Shadow
                 spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
             }
 
@@ -1869,17 +1900,21 @@ namespace anakinsoft.game.scenes
                     (viewport.Height - textSize.Y) / 2 // Vertically centered
                 );
 
-                // Draw background box (darker for better readability)
+                // Draw background box with better styling
                 Rectangle bgRect = new Rectangle(
-                    (int)position.X - 10,
-                    (int)position.Y - 5,
-                    (int)textSize.X + 20,
-                    (int)textSize.Y + 10
+                    (int)position.X - 5,
+                    (int)position.Y - 2,
+                    (int)textSize.X + 10,
+                    (int)textSize.Y + 4
                 );
-                DrawFilledRectangle(spriteBatch, bgRect, Color.Black * 0.9f);
-                DrawRectangleBorder(spriteBatch, bgRect, Color.Yellow, 2);
 
-                // Draw text
+                // Draw semi-transparent background
+                var backgroundTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
+                backgroundTexture.SetData(new[] { Color.Black });
+                spriteBatch.Draw(backgroundTexture, bgRect, Color.Black * 0.7f);
+
+                // Draw text with shadow for better readability
+                spriteBatch.DrawString(font, inventoryText, position + Vector2.One, Color.Black); // Shadow
                 spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
             }
 

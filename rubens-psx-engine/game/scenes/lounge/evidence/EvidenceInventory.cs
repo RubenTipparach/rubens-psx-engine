@@ -14,6 +14,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
         public EvidenceDocument CurrentDocument => currentDocument;
 
         public event Action<EvidenceDocument> OnDocumentSwappedOut; // Fires when document is returned to table
+        public event Action<EvidenceDocument> OnDocumentPickedUp; // Fires when document is picked up
 
         /// <summary>
         /// Pick up an evidence document (returns current document to table if holding one)
@@ -33,6 +34,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
             }
 
             currentDocument = document;
+            OnDocumentPickedUp?.Invoke(document);
         }
 
         /// <summary>
