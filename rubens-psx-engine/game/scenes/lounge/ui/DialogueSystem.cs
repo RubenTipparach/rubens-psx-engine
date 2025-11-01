@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using rubens_psx_engine;
 using System;
 using System.Collections.Generic;
+using anakinsoft.game.scenes.lounge.characters;
 
 namespace anakinsoft.game.scenes.lounge.ui
 {
@@ -62,8 +63,8 @@ namespace anakinsoft.game.scenes.lounge.ui
         private bool teletypeComplete = false;
         private bool acceptInput = false; // Prevent input on first frame after dialogue starts
 
-        // Stress meter integration (optional - only shown during interrogation)
-        private StressMeter activeStressMeter = null;
+        // State machine integration (optional - only shown during interrogation, includes stress)
+        private CharacterStateMachine activeCharacterStateMachine = null;
 
         // Display settings
         private const float BoxPadding = 20f;
@@ -96,19 +97,19 @@ namespace anakinsoft.game.scenes.lounge.ui
         }
 
         /// <summary>
-        /// Sets the stress meter to display during dialogue (for interrogations)
+        /// Sets the state machine to display during dialogue (for interrogations with stress)
         /// </summary>
-        public void SetStressMeter(StressMeter meter)
+        public void SetStressMeter(CharacterStateMachine stateMachine)
         {
-            activeStressMeter = meter;
+            activeCharacterStateMachine = stateMachine;
         }
 
         /// <summary>
-        /// Clears the stress meter display
+        /// Clears the state machine display
         /// </summary>
         public void ClearStressMeter()
         {
-            activeStressMeter = null;
+            activeCharacterStateMachine = null;
         }
 
         /// <summary>
@@ -296,7 +297,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             spriteBatch.DrawString(font, speakerText, speakerPos, SpeakerColor);
 
             // Draw stress bar next to speaker name (if in interrogation mode)
-            if (activeStressMeter != null)
+            if (activeCharacterStateMachine != null)
             {
                 float stressBarX = boxX + boxWidth - StressBarWidth - BoxPadding;
                 float stressBarY = boxY + BoxPadding;
@@ -318,7 +319,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         /// </summary>
         private void DrawStressBar(SpriteBatch spriteBatch, float x, float y, float width, float height)
         {
-            if (activeStressMeter == null)
+            if (activeCharacterStateMachine == null)
                 return;
 
             // Draw outer bar background (black)
@@ -327,7 +328,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             DrawRectangleBorder(spriteBatch, outerRect, Color.White * 0.6f, 2);
 
             // Calculate inner fill
-            float stressPercentage = activeStressMeter.StressPercentage;
+            float stressPercentage = activeCharacterStateMachine.StressPercentage;
             float fillWidth = (width - 6) * (stressPercentage / 100f); // 3px padding on each side
 
             if (fillWidth > 0)

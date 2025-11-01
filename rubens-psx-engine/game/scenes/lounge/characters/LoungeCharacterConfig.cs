@@ -30,6 +30,12 @@ namespace anakinsoft.game.scenes.lounge.characters
         public float depth { get; set; }
     }
 
+    public class StressThresholdsConfig
+    {
+        public float doubt_effective { get; set; }
+        public float accuse_effective { get; set; }
+    }
+
     public class DialogueLine
     {
         public string speaker { get; set; }
@@ -75,6 +81,7 @@ namespace anakinsoft.game.scenes.lounge.characters
         public string killer_type { get; set; }
         public bool red_herring { get; set; }
         public List<string> key_evidence { get; set; }
+        public StressThresholdsConfig stress_thresholds { get; set; }
 
         public List<CharacterDialogueSequence> dialogue { get; set; }
     }

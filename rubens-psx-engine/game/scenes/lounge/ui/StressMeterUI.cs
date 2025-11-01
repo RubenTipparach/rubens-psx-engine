@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using rubens_psx_engine;
 using System;
 using System.Collections.Generic;
+using anakinsoft.game.scenes.lounge.characters;
 
 namespace anakinsoft.game.scenes.lounge.ui
 {
@@ -11,7 +12,7 @@ namespace anakinsoft.game.scenes.lounge.ui
     /// </summary>
     public class StressMeterUI
     {
-        private StressMeter stressMeter;
+        private CharacterStateMachine stateMachine;
         private string characterName;
         private string characterOccupation;
         private string portraitKey; // Key to look up portrait in dictionary
@@ -56,9 +57,9 @@ namespace anakinsoft.game.scenes.lounge.ui
         /// <summary>
         /// Show stress meter for a character
         /// </summary>
-        public void Show(StressMeter meter, string charName, string occupation = null, string charPortraitKey = null, Texture2D portrait = null, bool dismissed = false)
+        public void Show(CharacterStateMachine machine, string charName, string occupation = null, string charPortraitKey = null, Texture2D portrait = null, bool dismissed = false)
         {
-            stressMeter = meter;
+            stateMachine = machine;
             characterName = charName;
             characterOccupation = occupation ?? "Suspect";
             portraitKey = charPortraitKey ?? charName; // Use portraitKey if provided, otherwise fallback to name
@@ -74,7 +75,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         public void Hide()
         {
             isVisible = false;
-            stressMeter = null;
+            stateMachine = null;
             characterName = null;
             characterOccupation = null;
             portraitKey = null;
@@ -88,7 +89,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, SpriteFont font, Dictionary<string, Texture2D> portraits = null)
         {
-            if (!isVisible || stressMeter == null || font == null)
+            if (!isVisible || stateMachine == null || font == null)
                 return;
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
@@ -160,7 +161,7 @@ namespace anakinsoft.game.scenes.lounge.ui
                 currentY += BarHeight + ElementSpacing;
 
                 // Draw stress percentage text (scaled)
-                float stressPercentage = stressMeter.StressPercentage;
+                float stressPercentage = stateMachine.StressPercentage;
                 string stressText = $"Stress: {stressPercentage:F0}%";
                 var stressTextSize = font.MeasureString(stressText) * TextScale;
                 Vector2 stressTextPos = new Vector2(panelX + (PanelWidth - stressTextSize.X) / 2f, currentY);
@@ -182,7 +183,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             DrawRectangleBorder(spriteBatch, outerRect, Color.White * 0.6f, 2);
 
             // Calculate inner fill
-            float stressPercentage = stressMeter.StressPercentage;
+            float stressPercentage = stateMachine.StressPercentage;
             float fillWidth = (width - BarInnerPadding * 2) * (stressPercentage / 100f);
 
             if (fillWidth > 0)

@@ -66,40 +66,13 @@ namespace anakinsoft.game.scenes.lounge.evidence
         }
 
         /// <summary>
-        /// Handle interaction - examine the document
+        /// Handle interaction - examine the document (read-only, no pickup)
         /// </summary>
         protected override void OnInteractAction()
         {
-            if (!IsCollected)
-            {
-                IsCollected = true;
-                Console.WriteLine($"Collected {Name}");
-
-                // Hide visual when picked up
-                if (visual != null)
-                {
-                    visual.IsVisible = false;
-                }
-
-                // Fire event to add to inventory
-                Console.WriteLine($"Examining {Name}");
-                OnDocumentExamined?.Invoke(this);
-            }
-            else
-            {
-                // If already collected (holding it), drop it back
-                IsCollected = false;
-                Console.WriteLine($"Dropped {Name} back to table");
-
-                // Show visual when put back
-                if (visual != null)
-                {
-                    visual.IsVisible = true;
-                }
-
-                // Fire event to remove from inventory
-                OnDocumentExamined?.Invoke(this);
-            }
+            // Evidence is read-only - can only hover and read description
+            // Actual evidence presentation happens through dialogue system
+            Console.WriteLine($"[EvidenceDocument] Examining {Name} (read-only)");
         }
 
         /// <summary>
@@ -112,10 +85,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
                 if (!CanInteract)
                     return $"{Name} - Not available yet";
 
-                if (IsCollected)
-                    return $"[E] Put back {Name}";
-
-                return $"[E] Pick up {Name}";
+                return $"[E] Examine {Name}";
             }
         }
 

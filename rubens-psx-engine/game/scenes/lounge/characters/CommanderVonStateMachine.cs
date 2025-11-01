@@ -16,6 +16,17 @@ namespace anakinsoft.game.scenes.lounge.characters
 
         public override CharacterDialogueSequence GetCurrentDialogue()
         {
+            // Check for special high-stress medical training confrontation
+            if (GetFlag("confronted_with_medical_training_high_stress"))
+            {
+                var stressed = GetDialogueSequence("CommanderVonMedicalTrainingStressed");
+                if (stressed != null)
+                {
+                    Console.WriteLine("[CommanderVonStateMachine] Using high-stress medical training dialogue");
+                    return stressed;
+                }
+            }
+
             switch (currentState)
             {
                 case "initial":
@@ -53,6 +64,14 @@ namespace anakinsoft.game.scenes.lounge.characters
                     if (!string.IsNullOrEmpty(evidenceId))
                     {
                         SetFlag($"presented_{evidenceId}", true);
+                        Console.WriteLine($"[CommanderVonStateMachine] Evidence presented: {evidenceId}");
+
+                        // Medical Training evidence is especially damning
+                        if (evidenceId == "medical_training" && IsHighStress)
+                        {
+                            SetFlag("confronted_with_medical_training_high_stress", true);
+                            Console.WriteLine($"[CommanderVonStateMachine] CRITICAL: Medical training presented at {StressPercentage:F1}% stress!");
+                        }
                     }
                     break;
 

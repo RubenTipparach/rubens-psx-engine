@@ -21,6 +21,18 @@ namespace anakinsoft.game.scenes.lounge.characters
         protected Dictionary<string, List<string>> transcriptSubjects;
         protected List<string> subjectOrder; // Track order subjects were discussed
 
+        // Stress tracking
+        private float currentStress = 0f;
+        private const float MaxStress = 100f;
+
+        // Stress thresholds (loaded from config or defaults)
+        private float doubtEffectiveThreshold = 30f;   // Default: 30%
+        private float accuseEffectiveThreshold = 50f;  // Default: 50%
+
+        // Events
+        public event Action<float> OnStressChanged; // Fires with new stress percentage
+        public event Action OnMaxStressReached; // Fires when stress hits 100%
+
         public CharacterStateMachine(CharacterConfig characterConfig)
         {
             config = characterConfig;
@@ -29,6 +41,15 @@ namespace anakinsoft.game.scenes.lounge.characters
             dialogueHistory = new List<string>();
             transcriptSubjects = new Dictionary<string, List<string>>();
             subjectOrder = new List<string>();
+            currentStress = 0f;
+
+            // Load stress thresholds from config if available
+            if (characterConfig.stress_thresholds != null)
+            {
+                doubtEffectiveThreshold = characterConfig.stress_thresholds.doubt_effective;
+                accuseEffectiveThreshold = characterConfig.stress_thresholds.accuse_effective;
+                Console.WriteLine($"[{config.name}] Loaded stress thresholds: Doubt={doubtEffectiveThreshold}%, Accuse={accuseEffectiveThreshold}%");
+            }
         }
 
         /// <summary>
@@ -40,6 +61,46 @@ namespace anakinsoft.game.scenes.lounge.characters
         /// Get current state name
         /// </summary>
         public string CurrentState => currentState;
+
+        /// <summary>
+        /// Get current stress level (0-100)
+        /// </summary>
+        public float CurrentStress => currentStress;
+
+        /// <summary>
+        /// Get stress as percentage (0-100%)
+        /// </summary>
+        public float StressPercentage => (currentStress / MaxStress) * 100f;
+
+        /// <summary>
+        /// Check if stress has reached maximum
+        /// </summary>
+        public bool IsMaxStress => currentStress >= MaxStress;
+
+        /// <summary>
+        /// Check if stress is at or above 50%
+        /// </summary>
+        public bool IsHighStress => currentStress >= (MaxStress * 0.5f);
+
+        /// <summary>
+        /// Check if doubt action is currently effective based on stress threshold
+        /// </summary>
+        public bool IsDoubtEffective => StressPercentage >= doubtEffectiveThreshold;
+
+        /// <summary>
+        /// Check if accuse action is currently effective based on stress threshold
+        /// </summary>
+        public bool IsAccuseEffective => StressPercentage >= accuseEffectiveThreshold;
+
+        /// <summary>
+        /// Get doubt effective threshold
+        /// </summary>
+        public float DoubtEffectiveThreshold => doubtEffectiveThreshold;
+
+        /// <summary>
+        /// Get accuse effective threshold
+        /// </summary>
+        public float AccuseEffectiveThreshold => accuseEffectiveThreshold;
 
         /// <summary>
         /// Get the next dialogue sequence based on current state
@@ -211,6 +272,38 @@ namespace anakinsoft.game.scenes.lounge.characters
         public bool HasBeenInterviewed()
         {
             return subjectOrder.Count > 0;
+        }
+
+        /// <summary>
+        /// Increase stress by a given amount
+        /// </summary>
+        public void IncreaseStress(float amount)
+        {
+            if (amount <= 0) return;
+
+            float previousStress = currentStress;
+            currentStress = Math.Min(currentStress + amount, MaxStress);
+
+            Console.WriteLine($"[{config.name}] Stress increased by {amount:F1} (was {previousStress:F1}, now {currentStress:F1}, {StressPercentage:F1}%)");
+
+            OnStressChanged?.Invoke(StressPercentage);
+
+            // Check if max stress reached
+            if (previousStress < MaxStress && currentStress >= MaxStress)
+            {
+                Console.WriteLine($"[{config.name}] MAX STRESS REACHED - character will self-dismiss");
+                OnMaxStressReached?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Reset stress to 0
+        /// </summary>
+        public void ResetStress()
+        {
+            currentStress = 0f;
+            Console.WriteLine($"[{config.name}] Stress reset to 0%");
+            OnStressChanged?.Invoke(0f);
         }
     }
 }

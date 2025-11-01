@@ -14,6 +14,7 @@ namespace anakinsoft.game.scenes.lounge
         private int currentRound = 0;
         private int hoursRemaining = 3;
         private bool isInterrogating = false;
+        private bool allCharactersDismissed = false; // True when both characters dismissed, waiting for player to continue
 
         // Track which characters are currently being interrogated
         private List<SelectableCharacter> currentInterrogationPair;
@@ -22,11 +23,13 @@ namespace anakinsoft.game.scenes.lounge
         public int CurrentRound => currentRound;
         public int HoursRemaining => hoursRemaining;
         public bool IsInterrogating => isInterrogating;
+        public bool AllCharactersDismissed => allCharactersDismissed;
         public List<SelectableCharacter> CurrentPair => currentInterrogationPair;
 
         // Events
         public event Action<int> OnRoundStarted; // Fires with hours remaining
-        public event Action<int> OnRoundEnded;
+        public event Action OnBothCharactersDismissed; // Fires when both dismissed, characters still seated
+        public event Action<int> OnRoundEnded; // Fires when player confirms next round
         public event Action OnAllRoundsComplete;
         public event Action<List<SelectableCharacter>> OnCharactersSpawned; // Request to spawn characters
 
@@ -50,6 +53,7 @@ namespace anakinsoft.game.scenes.lounge
             currentRound++;
             currentInterrogationPair = new List<SelectableCharacter>(selectedCharacters);
             dismissedCharacters.Clear();
+            allCharactersDismissed = false;
             isInterrogating = true;
 
             Console.WriteLine($"[InterrogationRoundManager] Starting round {currentRound}/{totalRounds} - {hoursRemaining} hours remaining");
@@ -81,7 +85,9 @@ namespace anakinsoft.game.scenes.lounge
             // Check if both characters have been dismissed
             if (dismissedCharacters.Count >= currentInterrogationPair.Count)
             {
-                EndRound();
+                allCharactersDismissed = true;
+                Console.WriteLine("[InterrogationRoundManager] Both characters dismissed - waiting for player to continue");
+                OnBothCharactersDismissed?.Invoke();
             }
         }
 
@@ -94,11 +100,27 @@ namespace anakinsoft.game.scenes.lounge
         }
 
         /// <summary>
-        /// End the current round
+        /// Continue to next round after both characters dismissed
+        /// Called when player selects new characters after dismissing both
+        /// </summary>
+        public void ContinueToNextRound()
+        {
+            if (!allCharactersDismissed)
+            {
+                Console.WriteLine("[InterrogationRoundManager] ERROR: Cannot continue - not all characters dismissed");
+                return;
+            }
+
+            EndRound();
+        }
+
+        /// <summary>
+        /// End the current round (private - called by ContinueToNextRound)
         /// </summary>
         private void EndRound()
         {
             isInterrogating = false;
+            allCharactersDismissed = false;
             hoursRemaining--;
 
             Console.WriteLine($"[InterrogationRoundManager] Round {currentRound} complete - {hoursRemaining} hours remaining");

@@ -244,6 +244,11 @@ commander_von:
     - "Advanced combat medicine training"
     - "Took emergency personal leave from her own security post that night"
 
+  # Interrogation stress thresholds (percentage 0-100)
+  stress_thresholds:
+    doubt_effective: 30.0      # Doubt becomes effective at 30% stress
+    accuse_effective: 50.0     # Accuse becomes effective at 50% stress
+
   # Opening dialogue
   dialogue:
     - sequence_name: "CommanderVonInterrogation"
@@ -388,6 +393,11 @@ dr_thorne:
     - "Quarters adjacent to Ambassador's"
     - "T.B. meeting = Thorne - Briefing"
     - "Served wine to Ambassador that evening"
+
+  # Interrogation stress thresholds (percentage 0-100)
+  stress_thresholds:
+    doubt_effective: 25.0      # Doubt becomes effective at 25% stress (nervous personality)
+    accuse_effective: 40.0     # Accuse becomes effective at 40% stress (breaks easier)
 
   # Opening dialogue
   dialogue:

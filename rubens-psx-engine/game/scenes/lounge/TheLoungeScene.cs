@@ -19,6 +19,7 @@ using rubens_psx_engine.Extensions;
 using rubens_psx_engine.system.lighting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Matrix = Microsoft.Xna.Framework.Matrix;
 
@@ -664,6 +665,16 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("CREATING ADDITIONAL EVIDENCE ITEMS");
             Console.WriteLine("========================================");
 
+            // Load evidence data from YAML
+            string yamlPath = Path.Combine("Content", "Data", "Lounge", "evidence.yml");
+            var evidenceData = EvidenceDataLoader.LoadEvidence(yamlPath);
+
+            if (evidenceData == null || evidenceData.evidence == null || evidenceData.evidence.Count == 0)
+            {
+                Console.WriteLine("[TheLoungeScene] ERROR: Failed to load evidence data from YAML");
+                return;
+            }
+
             // Create factory for evidence documents
             var factory = new EvidenceDocumentFactory(physicsSystem, interactionSystem, evidenceTable, LevelScale);
 
@@ -672,81 +683,54 @@ namespace anakinsoft.game.scenes
             // [1,0] [1,1] [1,2]  <- [1,0] autopsy report, [1,1] suspects file
             // [2,0] [2,1] [2,2]
 
-            // Create all evidence documents using factory
-            var (securityLogDoc, securityLogVis) = factory.CreateEvidenceDocument(
-                "Security Log",
-                "Station security logs from the night of the murder. Shows unusual access patterns.",
-                "security_log",
-                0, 0,
-                new Vector3(0.3f, 0.05f, 0.2f));
-            securityLog = securityLogDoc;
-            AddRenderingEntity(securityLogVis);
+            // Initialize evidence documents list
+            evidenceDocuments = new List<EvidenceDocument>();
 
-            var (datapadDoc, datapadVis) = factory.CreateEvidenceDocument(
-                "Encrypted Datapad",
-                "A personal datapad found near the body. Contains encrypted messages.",
-                "datapad",
-                1, 2,
-                new Vector3(0.3f, 0.05f, 0.2f));
-            datapad = datapadDoc;
-            AddRenderingEntity(datapadVis);
-
-            var (keycardDoc, keycardVis) = factory.CreateEvidenceDocument(
-                "Ambassador's Keycard",
-                "The ambassador's personal keycard. Shows recent usage at medical bay.",
-                "keycard",
-                2, 1,
-                new Vector3(0.2f, 0.03f, 0.3f));
-            keycard = keycardDoc;
-            AddRenderingEntity(keycardVis);
-
-            var (dnaDoc, dnaVis) = factory.CreateEvidenceDocument(
-                "DNA Analysis Report",
-                "Forensic DNA from under the Ambassador's fingernails. Matches Commander Von and trace amounts of Dr. Thorne.",
-                "dna_evidence",
-                0, 1,
-                new Vector3(0.3f, 0.05f, 0.2f));
-            dnaEvidence = dnaDoc;
-            AddRenderingEntity(dnaVis);
-
-            var (accessLogDoc, accessLogVis) = factory.CreateEvidenceDocument(
-                "Door Access Logs",
-                "Four access codes used on Ambassador's door: his own (2045h), Diplomatic #1 - Thorne (2100h), Diplomatic #2 - Von (0200h), Override - Solis (0230h).",
-                "access_codes",
-                0, 2,
-                new Vector3(0.3f, 0.05f, 0.2f));
-            accessLog = accessLogDoc;
-            AddRenderingEntity(accessLogVis);
-
-            var (medicalRecordDoc, medicalRecordVis) = factory.CreateEvidenceDocument(
-                "Combat Medic Certification",
-                "Commander Von's advanced medical training record. Shows she has the skills to perform precise injections.",
-                "medical_training",
-                2, 0,
-                new Vector3(0.3f, 0.05f, 0.2f));
-            medicalRecord = medicalRecordDoc;
-            AddRenderingEntity(medicalRecordVis);
-
-            var (breturiumDoc, breturiumVis) = factory.CreateEvidenceDocument(
-                "Breturium Sample",
-                "Exotic radioactive mineral used in the murder. Extremely rare and expensive. Supply chain: Kilroth > Lucky Chen > Dr. Kerrigan > Unknown buyer.",
-                "breturium_sample",
-                2, 2,
-                new Vector3(0.25f, 0.08f, 0.15f));
-            breturiumSample = breturiumDoc;
-            AddRenderingEntity(breturiumVis);
-
-            // Initialize evidence documents list for iteration
-            evidenceDocuments = new List<EvidenceDocument>
+            // Create all evidence documents from YAML data
+            foreach (var evidenceConfig in evidenceData.evidence)
             {
-                securityLog,
-                datapad,
-                keycard,
-                dnaEvidence,
-                accessLog,
-                medicalRecord,
-                breturiumSample
-            };
+                var (doc, vis) = factory.CreateEvidenceDocument(
+                    evidenceConfig.name,
+                    evidenceConfig.description,
+                    evidenceConfig.id,
+                    evidenceConfig.table_row,
+                    evidenceConfig.table_column,
+                    evidenceConfig.visual_scale.ToVector3(),
+                    evidenceConfig.texture
+                );
+
+                // Add to list for iteration
+                evidenceDocuments.Add(doc);
+                AddRenderingEntity(vis);
+
+                // Store specific references for backwards compatibility
+                switch (evidenceConfig.id)
+                {
+                    case "security_log":
+                        securityLog = doc;
+                        break;
+                    case "datapad":
+                        datapad = doc;
+                        break;
+                    case "keycard":
+                        keycard = doc;
+                        break;
+                    case "dna_evidence":
+                        dnaEvidence = doc;
+                        break;
+                    case "access_codes":
+                        accessLog = doc;
+                        break;
+                    case "medical_training":
+                        medicalRecord = doc;
+                        break;
+                    case "breturium_sample":
+                        breturiumSample = doc;
+                        break;
+                }
+
+                Console.WriteLine($"[TheLoungeScene] Created evidence: {evidenceConfig.name} ({evidenceConfig.id})");
+            }
 
             // Hook up event handlers for all evidence documents
             foreach (var doc in evidenceDocuments)
@@ -754,6 +738,7 @@ namespace anakinsoft.game.scenes
                 doc.OnDocumentExamined += OnEvidenceDocumentExamined;
             }
 
+            Console.WriteLine($"[TheLoungeScene] Loaded {evidenceDocuments.Count} evidence items from YAML");
             Console.WriteLine("========================================\n");
         }
 
@@ -1054,9 +1039,9 @@ namespace anakinsoft.game.scenes
             }
         }
 
-        public void SetActiveStressMeter(anakinsoft.game.scenes.lounge.StressMeter meter)
+        public void SetActiveStressMeter(anakinsoft.game.scenes.lounge.characters.CharacterStateMachine stateMachine)
         {
-            uiManager.SetActiveStressMeter(meter);
+            uiManager.SetActiveStressMeter(stateMachine);
         }
 
         public void ClearActiveStressMeter()

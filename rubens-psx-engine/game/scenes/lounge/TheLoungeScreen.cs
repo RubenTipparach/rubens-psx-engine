@@ -71,9 +71,7 @@ namespace anakinsoft.game.scenes
         // All interrogated character state machines (persistent across rounds)
         Dictionary<string, CharacterStateMachine> interrogatedCharacters;
 
-        // Stress tracking for interrogation characters
-        StressMeter char1StressMeter;
-        StressMeter char2StressMeter;
+        // Stress UI for interrogation characters (stress tracked in state machines)
         StressMeterUI char1StressUI;
         StressMeterUI char2StressUI;
 
@@ -173,8 +171,8 @@ namespace anakinsoft.game.scenes
             // Set up autopsy report collection
             SetupAutopsyReport();
 
-            // Set up evidence inventory cross-talk with old inventory
-            SetupEvidenceInventory();
+            // Evidence items are now read-only (hover to view description only)
+            // Evidence presentation happens through dialogue system
 
             // Set up suspects file interaction
             SetupSuspectsFile();
@@ -279,8 +277,11 @@ namespace anakinsoft.game.scenes
                 {
                     // Check if the active character is dismissed or at 100% stress
                     var activeChar = interrogationManager.CurrentPair?.Find(c => c.Name == activeInterrogationCharacter);
-                    StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
-                    bool isStressed = activeMeter != null && activeMeter.IsMaxStress;
+                    bool isStressed = false;
+                    if (interrogatedCharacters.TryGetValue(activeInterrogationCharacter, out var activeStateMachine))
+                    {
+                        isStressed = activeStateMachine.IsMaxStress;
+                    }
 
                     if ((activeChar != null && activeChar.IsDismissed) || isStressed)
                     {
@@ -357,6 +358,14 @@ namespace anakinsoft.game.scenes
                 if (pendingInterrogationCharacters != null && pendingInterrogationCharacters.Count > 0)
                 {
                     Console.WriteLine("[TheLoungeScreen] Fade out complete - starting interrogation round");
+
+                    // If characters were dismissed, continue to next round first (shows time passage)
+                    if (interrogationManager.AllCharactersDismissed)
+                    {
+                        Console.WriteLine("[TheLoungeScreen] Continuing from dismissed characters to next round");
+                        interrogationManager.ContinueToNextRound();
+                    }
+
                     interrogationManager.StartRound(pendingInterrogationCharacters);
                     pendingInterrogationCharacters = null;
                 }
@@ -530,7 +539,11 @@ namespace anakinsoft.game.scenes
 
                     // Check if character is dismissed or at 100% stress - auto-dismiss them
                     var char1SelectableChar = interrogationManager.CurrentPair?.Find(c => c.Name == char1.Name);
-                    bool isStressed = char1StressMeter != null && char1StressMeter.IsMaxStress;
+                    bool isStressed = false;
+                    if (interrogatedCharacters.TryGetValue(char1.Name, out var char1StateMachine))
+                    {
+                        isStressed = char1StateMachine.IsMaxStress;
+                    }
 
                     if ((char1SelectableChar != null && char1SelectableChar.IsDismissed) || isStressed)
                     {
@@ -590,8 +603,11 @@ namespace anakinsoft.game.scenes
                         {
                             cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
 
-                            // Set stress meter on UI manager for portrait display (char1)
-                            loungeScene.SetActiveStressMeter(char1StressMeter);
+                            // Set state machine on UI manager for portrait display (char1)
+                            if (interrogatedCharacters.TryGetValue(char1.Name, out var char1SM))
+                            {
+                                loungeScene.SetActiveStressMeter(char1SM);
+                            }
 
                             dialogueSystem.StartDialogue(currentDialogue);
                         };
@@ -621,7 +637,11 @@ namespace anakinsoft.game.scenes
 
                     // Check if character is dismissed or at 100% stress - auto-dismiss them
                     var char2SelectableChar = interrogationManager.CurrentPair?.Find(c => c.Name == char2.Name);
-                    bool isStressed = char2StressMeter != null && char2StressMeter.IsMaxStress;
+                    bool isStressed = false;
+                    if (interrogatedCharacters.TryGetValue(char2.Name, out var char2StateMachine))
+                    {
+                        isStressed = char2StateMachine.IsMaxStress;
+                    }
 
                     if ((char2SelectableChar != null && char2SelectableChar.IsDismissed) || isStressed)
                     {
@@ -681,8 +701,11 @@ namespace anakinsoft.game.scenes
                         {
                             cameraTransitionSystem.OnTransitionToInteractionComplete -= onTransitionComplete;
 
-                            // Set stress meter on UI manager for portrait display (char2)
-                            loungeScene.SetActiveStressMeter(char2StressMeter);
+                            // Set state machine on UI manager for portrait display (char2)
+                            if (interrogatedCharacters.TryGetValue(char2.Name, out var char2SM))
+                            {
+                                loungeScene.SetActiveStressMeter(char2SM);
+                            }
 
                             dialogueSystem.StartDialogue(currentDialogue);
                         };
@@ -710,16 +733,12 @@ namespace anakinsoft.game.scenes
                 // On first round, enable all evidence items and prepare for interrogation
                 if (interrogationManager.CurrentRound == 1)
                 {
-                    // Enable all evidence documents for pickup
+                    // Enable all evidence documents for examination (read-only)
                     loungeScene.EnableAllEvidenceDocuments();
-                    Console.WriteLine("[TheLoungeScreen] All evidence documents enabled for round 1");
+                    Console.WriteLine("[TheLoungeScreen] All evidence documents enabled for round 1 (read-only)");
 
-                    // Clear evidence inventory and return any held item to table
-                    var evidenceInventory = loungeScene.GetEvidenceInventory();
-                    if (evidenceInventory != null && evidenceInventory.HasDocument)
-                    {
-                        evidenceInventory.DropDocument();
-                    }
+                    // Evidence is now read-only (hover to view) - no inventory management needed
+                    // Evidence presentation happens through dialogue system
 
                     // Autopsy report is already in transcript mode (converted when delivered to Dr. Harmon)
                     // Just make sure it's visible and interactable
@@ -730,27 +749,36 @@ namespace anakinsoft.game.scenes
                         Console.WriteLine("[TheLoungeScreen] Autopsy report transcript enabled for round 1");
                     }
 
-                    // Clear old inventory (just in case)
+                    // Clear old inventory (autopsy report was in old system)
                     inventory.Clear();
-                    Console.WriteLine("[TheLoungeScreen] Inventories cleared for interrogation");
+                    Console.WriteLine("[TheLoungeScreen] Inventory cleared for interrogation");
                 }
 
                 // TODO: Display time message to player
+            };
+
+            // New event: Both characters dismissed but still seated
+            interrogationManager.OnBothCharactersDismissed += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Both characters dismissed - staying seated until player continues");
+
+                // Hide stress meters
+                char1StressUI.Hide();
+                char2StressUI.Hide();
+
+                // Mark interrogation no longer in progress (allows suspects file interaction)
+                characterSelectionMenu.SetInterrogationInProgress(false);
+
+                // Characters remain seated - player can walk around and select next round
+                Console.WriteLine("[TheLoungeScreen] Player can now select next round via suspects file");
             };
 
             interrogationManager.OnRoundEnded += (hoursRemaining) =>
             {
                 Console.WriteLine($"[TheLoungeScreen] Round ended - {hoursRemaining} hours remaining");
 
-                // Despawn interrogation characters
+                // Despawn interrogation characters NOW (after player selects new round)
                 loungeScene.DespawnInterrogationCharacters();
-
-                // Hide stress meters
-                char1StressUI.Hide();
-                char2StressUI.Hide();
-
-                // Mark interrogation no longer in progress
-                characterSelectionMenu.SetInterrogationInProgress(false);
 
                 // Calculate hours passed and show time passage message
                 int hoursPassed = interrogationManager.CurrentRound;
@@ -871,50 +899,54 @@ namespace anakinsoft.game.scenes
                 return;
             }
 
-            // Create stress meter for character 1
+            // Wire up stress UI for character 1 (using state machine stress)
             if (characters.Count > 0)
             {
-                char1StressMeter = new StressMeter();
-
                 // Get character config for occupation
                 var char1Key = GetCharacterKey(characters[0].Name);
                 var char1Config = charactersData?.GetCharacter(char1Key);
                 string occupation1 = char1Config?.role ?? "Suspect";
 
-                // Pass portrait key for looking up portrait texture
-                char1StressUI.Show(char1StressMeter, characters[0].Name, occupation1, characters[0].PortraitKey);
-
-                // Wire up max stress event to auto-dismiss
-                char1StressMeter.OnMaxStressReached += () =>
+                // Get state machine for character 1
+                if (interrogatedCharacters.TryGetValue(characters[0].Name, out var char1StateMachine))
                 {
-                    Console.WriteLine($"[TheLoungeScreen] {characters[0].Name} reached max stress - dismissing");
-                    interrogationManager.DismissCharacter(characters[0].Name);
-                };
+                    // Pass state machine to UI (UI will read stress from it)
+                    char1StressUI.Show(char1StateMachine, characters[0].Name, occupation1, characters[0].PortraitKey);
 
-                Console.WriteLine($"[TheLoungeScreen] Created stress meter for {characters[0].Name}");
+                    // Wire up max stress event to auto-dismiss
+                    char1StateMachine.OnMaxStressReached += () =>
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] {characters[0].Name} reached max stress - dismissing");
+                        interrogationManager.DismissCharacter(characters[0].Name);
+                    };
+
+                    Console.WriteLine($"[TheLoungeScreen] Wired up stress UI for {characters[0].Name}");
+                }
             }
 
-            // Create stress meter for character 2
+            // Wire up stress UI for character 2 (using state machine stress)
             if (characters.Count > 1)
             {
-                char2StressMeter = new StressMeter();
-
                 // Get character config for occupation
                 var char2Key = GetCharacterKey(characters[1].Name);
                 var char2Config = charactersData?.GetCharacter(char2Key);
                 string occupation2 = char2Config?.role ?? "Suspect";
 
-                // Pass portrait key for looking up portrait texture
-                char2StressUI.Show(char2StressMeter, characters[1].Name, occupation2, characters[1].PortraitKey);
-
-                // Wire up max stress event to auto-dismiss
-                char2StressMeter.OnMaxStressReached += () =>
+                // Get state machine for character 2
+                if (interrogatedCharacters.TryGetValue(characters[1].Name, out var char2StateMachine))
                 {
-                    Console.WriteLine($"[TheLoungeScreen] {characters[1].Name} reached max stress - dismissing");
-                    interrogationManager.DismissCharacter(characters[1].Name);
-                };
+                    // Pass state machine to UI (UI will read stress from it)
+                    char2StressUI.Show(char2StateMachine, characters[1].Name, occupation2, characters[1].PortraitKey);
 
-                Console.WriteLine($"[TheLoungeScreen] Created stress meter for {characters[1].Name}");
+                    // Wire up max stress event to auto-dismiss
+                    char2StateMachine.OnMaxStressReached += () =>
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] {characters[1].Name} reached max stress - dismissing");
+                        interrogationManager.DismissCharacter(characters[1].Name);
+                    };
+
+                    Console.WriteLine($"[TheLoungeScreen] Wired up stress UI for {characters[1].Name}");
+                }
             }
         }
 
@@ -1162,9 +1194,12 @@ namespace anakinsoft.game.scenes
                 return null;
             }
 
-            // Get active stress meter
-            StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
-            float stressLevel = activeMeter?.StressPercentage ?? 0f;
+            // Get active state machine stress
+            float stressLevel = 0f;
+            if (interrogatedCharacters.TryGetValue(activeInterrogationCharacter, out var activeStateMachine))
+            {
+                stressLevel = activeStateMachine.StressPercentage;
+            }
 
             Console.WriteLine($"[TheLoungeScreen] Presenting evidence '{evidenceId}' to {activeInterrogationCharacter}, stress level: {stressLevel}%");
 
@@ -1375,12 +1410,11 @@ namespace anakinsoft.game.scenes
                 return;
             }
 
-            // Increase stress for the correct character
-            StressMeter activeMeter = isChar1Active ? char1StressMeter : char2StressMeter;
-            if (activeMeter != null)
+            // Increase stress directly on state machine
+            if (interrogatedCharacters.TryGetValue(activeInterrogationCharacter, out var stateMachine))
             {
                 Console.WriteLine($"[TheLoungeScreen] Increasing {activeInterrogationCharacter} stress by {amount}");
-                activeMeter.IncreaseStress(amount);
+                stateMachine.IncreaseStress(amount);
             }
         }
 
@@ -1886,37 +1920,8 @@ namespace anakinsoft.game.scenes
                 spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
             }
 
-            // Draw evidence inventory at center-left of screen
-            var evidenceInventory = loungeScene.GetEvidenceInventory();
-            if (evidenceInventory != null && evidenceInventory.HasDocument && font != null && !transcriptReviewUI.IsActive)
-            {
-                var viewport = Globals.screenManager.GraphicsDevice.Viewport;
-                string inventoryText = evidenceInventory.GetDisplayText();
-                Vector2 textSize = font.MeasureString(inventoryText);
-
-                // Position at center-left with some padding
-                Vector2 position = new Vector2(
-                    30, // Left padding
-                    (viewport.Height - textSize.Y) / 2 // Vertically centered
-                );
-
-                // Draw background box with better styling
-                Rectangle bgRect = new Rectangle(
-                    (int)position.X - 5,
-                    (int)position.Y - 2,
-                    (int)textSize.X + 10,
-                    (int)textSize.Y + 4
-                );
-
-                // Draw semi-transparent background
-                var backgroundTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
-                backgroundTexture.SetData(new[] { Color.Black });
-                spriteBatch.Draw(backgroundTexture, bgRect, Color.Black * 0.7f);
-
-                // Draw text with shadow for better readability
-                spriteBatch.DrawString(font, inventoryText, position + Vector2.One, Color.Black); // Shadow
-                spriteBatch.DrawString(font, inventoryText, position, Color.Yellow);
-            }
+            // Evidence items are now read-only (no inventory display needed)
+            // Evidence is presented through dialogue system
 
             // Draw character selection menu
             if (characterSelectionMenu.IsActive && font != null)

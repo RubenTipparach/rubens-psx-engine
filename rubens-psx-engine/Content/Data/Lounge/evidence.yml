@@ -1,0 +1,102 @@
+# The Lounge - Evidence Items Configuration
+# All evidence documents available for examination during investigation
+
+evidence:
+  - id: "security_log"
+    name: "Security Log"
+    description: "Station security logs from the night of the murder. Shows unusual access patterns."
+    table_row: 0
+    table_column: 0
+    visual_scale:
+      x: 0.3
+      y: 0.05
+      z: 0.2
+    texture: "textures/prototype/concrete"
+    # Characters this evidence implicates or relates to
+    related_characters:
+      - "chief_solis"      # Used override code
+      - "commander_von"    # Used diplomatic code #2
+      - "dr_thorne"        # Used diplomatic code #1
+
+  - id: "datapad"
+    name: "Encrypted Datapad"
+    description: "A personal datapad found near the body. Contains encrypted messages."
+    table_row: 1
+    table_column: 2
+    visual_scale:
+      x: 0.3
+      y: 0.05
+      z: 0.2
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "dr_thorne"        # Messages related to diplomatic tensions
+
+  - id: "keycard"
+    name: "Ambassador's Keycard"
+    description: "The ambassador's personal keycard. Shows recent usage at medical bay."
+    table_row: 2
+    table_column: 1
+    visual_scale:
+      x: 0.2
+      y: 0.03
+      z: 0.3
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "commander_von"    # Medical bay usage suspicious
+
+  - id: "dna_evidence"
+    name: "DNA Analysis Report"
+    description: "Forensic DNA from under the Ambassador's fingernails. Matches Commander Von and trace amounts of Dr. Thorne."
+    table_row: 0
+    table_column: 1
+    visual_scale:
+      x: 0.3
+      y: 0.05
+      z: 0.2
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "commander_von"    # Primary DNA match
+      - "dr_thorne"        # Trace amounts found
+
+  - id: "access_codes"
+    name: "Door Access Logs"
+    description: "Four access codes used on Ambassador's door: his own (2045h), Diplomatic #1 - Thorne (2100h), Diplomatic #2 - Von (0200h), Override - Solis (0230h)."
+    table_row: 0
+    table_column: 2
+    visual_scale:
+      x: 0.3
+      y: 0.05
+      z: 0.2
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "dr_thorne"        # Visited at 2100h
+      - "commander_von"    # Visited at 0200h (time of murder)
+      - "chief_solis"      # Used override at 0230h
+
+  - id: "medical_training"
+    name: "Combat Medic Certification"
+    description: "Commander Von's advanced medical training record. Shows she has the skills to perform precise injections."
+    table_row: 2
+    table_column: 0
+    visual_scale:
+      x: 0.3
+      y: 0.05
+      z: 0.2
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "commander_von"    # Her medical training - key evidence at high stress
+
+  - id: "breturium_sample"
+    name: "Breturium Sample"
+    description: "Exotic radioactive mineral used in the murder. Extremely rare and expensive. Supply chain: Kilroth > Lucky Chen > Dr. Kerrigan > Unknown buyer."
+    table_row: 2
+    table_column: 2
+    visual_scale:
+      x: 0.25
+      y: 0.08
+      z: 0.15
+    texture: "textures/prototype/concrete"
+    related_characters:
+      - "maven_kilroth"    # Original source
+      - "lucky_chen"       # Middleman in supply chain
+      - "pathologist"      # Dr. Kerrigan had access

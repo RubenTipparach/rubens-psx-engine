@@ -41,7 +41,7 @@ namespace anakinsoft.game.scenes
         // Current UI state
         private string hoveredCharacter = null;
         private string activeDialogueCharacter = null;
-        private StressMeter activeStressMeter = null; // Optional stress meter for interrogations
+        private CharacterStateMachine activeCharacterStateMachine = null; // Optional state machine for interrogations (includes stress)
 
         // Time passage message state
         private bool showTimePassageMessage = false;
@@ -168,17 +168,17 @@ namespace anakinsoft.game.scenes
         public void ClearActiveDialogueCharacter()
         {
             activeDialogueCharacter = null;
-            activeStressMeter = null; // Also clear stress meter when portrait is cleared
+            activeCharacterStateMachine = null; // Also clear state machine when portrait is cleared
         }
 
-        public void SetActiveStressMeter(StressMeter meter)
+        public void SetActiveStressMeter(CharacterStateMachine stateMachine)
         {
-            activeStressMeter = meter;
+            activeCharacterStateMachine = stateMachine;
         }
 
         public void ClearActiveStressMeter()
         {
-            activeStressMeter = null;
+            activeCharacterStateMachine = null;
         }
 
         /// <summary>
@@ -421,7 +421,7 @@ namespace anakinsoft.game.scenes
                 }
 
                 // Draw stress bar if in interrogation
-                if (activeStressMeter != null)
+                if (activeCharacterStateMachine != null)
                 {
                     DrawStressBar(spriteBatch, portraitRect.X, currentY, portraitWidth);
                 }
@@ -447,7 +447,7 @@ namespace anakinsoft.game.scenes
             spriteBatch.Draw(portraitFrame, new Rectangle((int)(x + width - 2), (int)y, 2, (int)barHeight), Color.White * 0.6f);
 
             // Draw fill
-            float stressPercentage = activeStressMeter.StressPercentage;
+            float stressPercentage = activeCharacterStateMachine.StressPercentage;
             float fillWidth = (width - barPadding * 2) * (stressPercentage / 100f);
 
             if (fillWidth > 0)
