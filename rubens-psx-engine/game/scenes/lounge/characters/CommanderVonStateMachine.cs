@@ -16,17 +16,6 @@ namespace anakinsoft.game.scenes.lounge.characters
 
         public override CharacterDialogueSequence GetCurrentDialogue()
         {
-            // Check for special high-stress medical training confrontation
-            if (GetFlag("confronted_with_medical_training_high_stress"))
-            {
-                var stressed = GetDialogueSequence("CommanderVonMedicalTrainingStressed");
-                if (stressed != null)
-                {
-                    Console.WriteLine("[CommanderVonStateMachine] Using high-stress medical training dialogue");
-                    return stressed;
-                }
-            }
-
             switch (currentState)
             {
                 case "initial":
@@ -64,14 +53,7 @@ namespace anakinsoft.game.scenes.lounge.characters
                     if (!string.IsNullOrEmpty(evidenceId))
                     {
                         SetFlag($"presented_{evidenceId}", true);
-                        Console.WriteLine($"[CommanderVonStateMachine] Evidence presented: {evidenceId}");
-
-                        // Medical Training evidence is especially damning
-                        if (evidenceId == "medical_training" && IsHighStress)
-                        {
-                            SetFlag("confronted_with_medical_training_high_stress", true);
-                            Console.WriteLine($"[CommanderVonStateMachine] CRITICAL: Medical training presented at {StressPercentage:F1}% stress!");
-                        }
+                        Console.WriteLine($"[CommanderVonStateMachine] Evidence presented: {evidenceId} at {StressPercentage:F1}% stress");
                     }
                     break;
 
@@ -80,6 +62,23 @@ namespace anakinsoft.game.scenes.lounge.characters
                     Console.WriteLine("[CommanderVonStateMachine] Commander Von accused");
                     break;
             }
+        }
+
+        /// <summary>
+        /// Get evidence presentation dialogue based on evidence ID and stress level
+        /// </summary>
+        public CharacterDialogueSequence GetEvidenceReaction(string evidenceId)
+        {
+            var dialogue = GetEvidenceDialogue(evidenceId);
+            if (dialogue != null)
+            {
+                Console.WriteLine($"[CommanderVonStateMachine] Returning evidence dialogue for {evidenceId}: {dialogue.sequence_name}");
+            }
+            else
+            {
+                Console.WriteLine($"[CommanderVonStateMachine] No evidence dialogue found for {evidenceId}");
+            }
+            return dialogue;
         }
 
         private CharacterDialogueSequence CreateDefaultFollowUp()

@@ -1143,16 +1143,83 @@ namespace anakinsoft.game.scenes
         {
             Console.WriteLine($"[TheLoungeScreen] Evidence selected: {evidenceId}");
 
-            // Store the evidence ID for use in confirmation
-            pendingEvidenceId = evidenceId;
+            // Present evidence to get character's reaction
+            PresentEvidenceToCharacter(evidenceId);
+        }
 
-            // Get evidence name for confirmation message
-            string evidenceName = GetEvidenceName(evidenceId);
+        /// <summary>
+        /// Present evidence to the active character and show their stress-based reaction
+        /// </summary>
+        private void PresentEvidenceToCharacter(string evidenceId)
+        {
+            if (string.IsNullOrEmpty(activeInterrogationCharacter))
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: No active character for evidence presentation");
+                return;
+            }
 
-            // Show confirmation dialog
-            confirmationDialog.OnYes += ProceedWithAccusation;
-            confirmationDialog.OnNo += CancelAccusation;
-            confirmationDialog.Show($"Accuse with {evidenceName}?");
+            // Get the active state machine
+            if (!interrogatedCharacters.TryGetValue(activeInterrogationCharacter, out var stateMachine))
+            {
+                Console.WriteLine($"[TheLoungeScreen] ERROR: No state machine found for {activeInterrogationCharacter}");
+                return;
+            }
+
+            Console.WriteLine($"[TheLoungeScreen] Presenting evidence '{evidenceId}' to {activeInterrogationCharacter} at {stateMachine.StressPercentage:F1}% stress");
+
+            // Notify state machine of evidence presentation
+            stateMachine.OnPlayerAction("present_evidence", evidenceId);
+
+            // Get stress-appropriate dialogue reaction from state machine
+            CharacterDialogueSequence evidenceReaction = null;
+
+            // Try character-specific GetEvidenceReaction if available
+            if (stateMachine is CommanderVonStateMachine commanderVon)
+            {
+                evidenceReaction = commanderVon.GetEvidenceReaction(evidenceId);
+            }
+            else if (stateMachine is DrThorneStateMachine drThorne)
+            {
+                evidenceReaction = drThorne.GetEvidenceReaction(evidenceId);
+            }
+            else if (stateMachine is ChiefSolisStateMachine chiefSolis)
+            {
+                evidenceReaction = chiefSolis.GetEvidenceReaction(evidenceId);
+            }
+
+            if (evidenceReaction != null)
+            {
+                // Convert YAML dialogue to game dialogue sequence
+                var gameDialogue = stateMachine.ConvertToDialogueSequence(evidenceReaction);
+
+                if (gameDialogue != null)
+                {
+                    // Show the dialogue
+                    dialogueSystem.StartDialogue(gameDialogue);
+
+                    // Determine stress impact based on correctness
+                    // TODO: Add stress impact logic based on is_correct field
+                    // For now, presenting evidence increases stress slightly
+                    IncreaseCurrentCharacterStress(5f);
+
+                    Console.WriteLine($"[TheLoungeScreen] Showing evidence reaction: {evidenceReaction.sequence_name}");
+                }
+                else
+                {
+                    Console.WriteLine("[TheLoungeScreen] ERROR: Failed to convert evidence dialogue");
+                }
+            }
+            else
+            {
+                // No specific dialogue for this evidence - show default reaction
+                Console.WriteLine($"[TheLoungeScreen] No specific dialogue for evidence '{evidenceId}', showing default");
+                var defaultDialogue = new DialogueSequence("NoReaction");
+                defaultDialogue.AddLine(activeInterrogationCharacter, "I don't see how that's relevant, Detective.");
+                dialogueSystem.StartDialogue(defaultDialogue);
+
+                // Wrong evidence = stress increase
+                IncreaseCurrentCharacterStress(10f);
+            }
         }
 
         /// <summary>

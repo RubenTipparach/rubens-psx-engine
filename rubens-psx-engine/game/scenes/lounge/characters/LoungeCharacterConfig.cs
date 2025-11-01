@@ -49,9 +49,14 @@ namespace anakinsoft.game.scenes.lounge.characters
         public string on_complete { get; set; }
 
         // Interrogation-specific fields
-        public string action { get; set; }  // "alibi", "relationship", "doubt", "accuse"
+        public string action { get; set; }  // "alibi", "relationship", "doubt", "accuse", "present_evidence"
         public bool is_correct { get; set; }  // true = correct action (no stress), false = wrong (increase stress)
         public bool requires_evidence { get; set; }  // true = needs evidence to select this option
+
+        // Evidence presentation fields
+        public string evidence_id { get; set; }  // ID of evidence this dialogue is for
+        public float requires_stress_above { get; set; }  // Minimum stress % required (0 if not set)
+        public float requires_stress_below { get; set; }  // Maximum stress % required (100 if not set)
     }
 
     public class CharacterConfig

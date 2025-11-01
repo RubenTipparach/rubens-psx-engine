@@ -125,7 +125,27 @@ namespace anakinsoft.game.scenes.lounge.ui
                 characters.Add(character);
             }
 
-            Console.WriteLine($"[CharacterSelectionMenu] Loaded {characters.Count} characters from ProfileManager");
+            // Scramble the order to make each playthrough unique
+            ScrambleCharacterOrder();
+
+            Console.WriteLine($"[CharacterSelectionMenu] Loaded {characters.Count} characters from ProfileManager (order scrambled)");
+        }
+
+        /// <summary>
+        /// Scramble the character list order using Fisher-Yates shuffle
+        /// </summary>
+        private void ScrambleCharacterOrder()
+        {
+            Random rng = new Random();
+            int n = characters.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = rng.Next(n + 1);
+                var temp = characters[k];
+                characters[k] = characters[n];
+                characters[n] = temp;
+            }
         }
 
         /// <summary>

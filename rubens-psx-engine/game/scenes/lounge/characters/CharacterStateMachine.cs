@@ -192,9 +192,47 @@ namespace anakinsoft.game.scenes.lounge.characters
         }
 
         /// <summary>
+        /// Get evidence dialogue based on evidence ID and current stress level
+        /// Returns the appropriate dialogue variant based on stress thresholds
+        /// </summary>
+        protected CharacterDialogueSequence GetEvidenceDialogue(string evidenceId)
+        {
+            if (config.dialogue == null)
+                return null;
+
+            // Find all evidence dialogues for this evidence ID
+            var evidenceDialogues = config.dialogue
+                .Where(d => d.action == "present_evidence" && d.evidence_id == evidenceId)
+                .ToList();
+
+            if (evidenceDialogues.Count == 0)
+                return null;
+
+            // Filter by stress level
+            float currentStressPercent = StressPercentage;
+
+            foreach (var dialogue in evidenceDialogues)
+            {
+                // Check stress_above threshold (default 0 if not set)
+                float minStress = dialogue.requires_stress_above;
+                float maxStress = dialogue.requires_stress_below > 0 ? dialogue.requires_stress_below : 100f;
+
+                if (currentStressPercent >= minStress && currentStressPercent < maxStress)
+                {
+                    Console.WriteLine($"[{config.name}] Found evidence dialogue for {evidenceId} at {currentStressPercent:F1}% stress: {dialogue.sequence_name}");
+                    return dialogue;
+                }
+            }
+
+            // Fallback: return first dialogue if no stress match
+            Console.WriteLine($"[{config.name}] No stress-matched dialogue for {evidenceId}, using first variant");
+            return evidenceDialogues.FirstOrDefault();
+        }
+
+        /// <summary>
         /// Convert YAML dialogue to game DialogueSequence
         /// </summary>
-        protected DialogueSequence ConvertToDialogueSequence(CharacterDialogueSequence yamlDialogue)
+        public DialogueSequence ConvertToDialogueSequence(CharacterDialogueSequence yamlDialogue)
         {
             if (yamlDialogue == null) return null;
 

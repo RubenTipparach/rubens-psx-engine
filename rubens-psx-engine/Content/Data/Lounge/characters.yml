@@ -341,6 +341,90 @@ commander_von:
         - speaker: "Commander Sylara Von"
           text: "I will not stand here and be insulted! Contact me when you have actual evidence, Detective!"
 
+    # Evidence: DNA Analysis (low stress < 30%)
+    - sequence_name: "CommanderVonDNALowStress"
+      action: "present_evidence"
+      evidence_id: "dna_evidence"
+      requires_stress_below: 30.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "My DNA under his nails? Of course. We sparred together regularly - combat training. Telirian honor demands physical excellence."
+
+        - speaker: "Commander Sylara Von"
+          text: "We trained the evening before he died. He was preparing for a ceremonial duel. That's all this proves, Detective."
+
+    # Evidence: DNA Analysis (high stress >= 30%)
+    - sequence_name: "CommanderVonDNAHighStress"
+      action: "present_evidence"
+      evidence_id: "dna_evidence"
+      requires_stress_above: 30.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "So what if my DNA was there? We... we were close. Closer than we should have been."
+
+        - speaker: "Commander Sylara Von"
+          text: "But that doesn't mean I killed him! It means I cared! Is that a crime now?"
+
+    # Evidence: Access Codes (low stress)
+    - sequence_name: "CommanderVonAccessCodesLowStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_below: 30.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "Yes, I have diplomatic access code #2. I'm head of his security detail. How else would I protect him?"
+
+        - speaker: "Commander Sylara Von"
+          text: "I checked on him at 0200 hours - standard security sweep. He was alive when I left."
+
+    # Evidence: Access Codes (high stress)
+    - sequence_name: "CommanderVonAccessCodesHighStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_above: 30.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "0200 hours... that's when you think I... No. I was checking on him. I always checked on him."
+
+        - speaker: "Commander Sylara Von"
+          text: "He couldn't sleep. We talked about the peace talks. About duty. About... sacrifice."
+
+    # Evidence: Medical Training (THIS IS THE KEY - high stress >= 50%)
+    - sequence_name: "CommanderVonMedicalTrainingStressed"
+      action: "present_evidence"
+      evidence_id: "medical_training"
+      requires_stress_above: 50.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "My medical certification? You think... you know I have those skills?"
+
+        - speaker: "Commander Sylara Von"
+          text: "Fine. YES. I knew exactly where to inject. I knew what the Breturium would do to his copper-based blood."
+
+        - speaker: "Commander Sylara Von"
+          text: "I am a trained warrior, Detective. When I strike, I strike with precision. That's what you wanted to hear, isn't it?"
+
+        - speaker: "Commander Sylara Von"
+          text: "But you don't understand WHY. In Telirian culture, an arranged marriage is a cage for the soul. Death is the only key."
+
+    # Evidence: Medical Training (low stress - deflects)
+    - sequence_name: "CommanderVonMedicalTrainingLowStress"
+      action: "present_evidence"
+      evidence_id: "medical_training"
+      requires_stress_below: 50.0
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "Combat medic training? Every elite Telirian guard has it. We're taught to save lives, not take them."
+
+        - speaker: "Commander Sylara Von"
+          text: "If you're implying I used my skills to harm him... that's insulting beyond measure."
+
+    # Follow-up dialogue after initial interrogation
+    - sequence_name: "CommanderVonFollowUp"
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "More questions? Make them count, Detective. I won't be here forever."
+
 dr_thorne:
   name: "Dr. Lyssa Thorne"
   species: "Human"
@@ -412,7 +496,161 @@ dr_thorne:
         - speaker: "Dr. Lyssa Thorne"
           text: "Do you need me to explain Telirian death rituals? I can explain those."
 
-        # TODO: Add full interrogation dialogue
+    # Alibi - Where were you at the time of the murder?
+    - sequence_name: "DrThorneAlibi"
+      action: "alibi"
+      is_correct: true
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Me? I was in my quarters. Right next door actually - we're on the same deck for diplomatic protocol reasons."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I was reviewing my notes. Cross-referencing Telirian spiritual customs with human psychology. Fascinating stuff, really."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I didn't hear anything unusual. The walls are quite thick - soundproofed for privacy."
+
+    # Relationship - What was your relationship with the victim?
+    - sequence_name: "DrThorneRelationship"
+      action: "relationship"
+      is_correct: true
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Professional! Purely professional. I was his cultural liaison for the peace talks."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "He was... he was brilliant, actually. His understanding of cross-species diplomacy was unparalleled."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "We spent hours discussing Telirian philosophy. He taught me so much about their concept of spiritual bonds and... *trails off*"
+
+    # Doubt (low stress < 25%) - She's lying about not hearing anything
+    - sequence_name: "DrThorneDoubtLowStress"
+      action: "doubt"
+      is_correct: true
+      requires_stress_below: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "You think I'm lying? I - okay, fine. I heard voices around 0200 hours. Through the walls."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "It sounded like... Commander Von. And the Ambassador. They were speaking in Telirian - I only caught fragments."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Something about duty and forbidden feelings. I didn't want to pry - cultural sensitivity and all that."
+
+    # Doubt (high stress >= 25%) - She starts cracking
+    - sequence_name: "DrThorneDoubtHighStress"
+      action: "doubt"
+      is_correct: true
+      requires_stress_above: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Okay okay! I wasn't just in my quarters! I was... I was with him earlier that evening!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "We shared ceremonial wine - Telirian tradition before important diplomatic meetings. That's all!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I left at 2100 hours. He was fine. Drowsy from the wine but... but fine."
+
+    # Accuse (without evidence - wrong timing)
+    - sequence_name: "DrThorneAccuseNoEvidence"
+      action: "accuse"
+      is_correct: false
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "WHAT?! You think I - no! No no no! I study cultures, I don't kill people!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "This is absurd! I'm a SCHOLAR! Do you have any idea how this accusation could destroy my career?!"
+
+    # Evidence: DNA Analysis (low stress)
+    - sequence_name: "DrThorneDNALowStress"
+      action: "present_evidence"
+      evidence_id: "dna_evidence"
+      requires_stress_below: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Trace amounts of my DNA? Well, yes - we worked closely together. Same room, shared documents."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Cross-contamination is extremely common in diplomatic settings. That proves nothing."
+
+    # Evidence: DNA Analysis (high stress)
+    - sequence_name: "DrThorneDNAHighStress"
+      action: "present_evidence"
+      evidence_id: "dna_evidence"
+      requires_stress_above: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "My DNA? I... I was there that evening. I already told you about the wine!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "We might have... there might have been some contact when I helped him with his ceremonial robes. That's all!"
+
+    # Evidence: Access Codes (low stress)
+    - sequence_name: "DrThorneAccessCodesLowStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_below: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "T.B. on his calendar? That's me - Thorne Briefing. We had a scheduled meeting at 2100 hours."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I have Diplomatic Access #1 as his cultural liaison. It's all perfectly legitimate."
+
+    # Evidence: Access Codes (high stress)
+    - sequence_name: "DrThorneAccessCodesHighStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_above: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Yes, I was there at 2100! I already admitted that! We discussed the peace talks!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "He was... he was going to recommend AGAINST peace. Said humans were 'boring' - can you imagine?"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "My entire life's work - decades of research - destroyed because of one man's prejudice!"
+
+    # Evidence: Datapad (encrypted messages)
+    - sequence_name: "DrThorneDatapadLowStress"
+      action: "present_evidence"
+      evidence_id: "datapad"
+      requires_stress_below: 25.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Encrypted messages? Those were just... research notes. Cultural observations."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I encrypt everything - academic espionage is a real problem in xenoanthropology."
+
+    # Evidence: Datapad (HIGH STRESS - admits to collaboration)
+    - sequence_name: "DrThorneDatapadHighStress"
+      action: "present_evidence"
+      evidence_id: "datapad"
+      requires_stress_above: 40.0
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Those messages... they're between me and... and Commander Von."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "We were... writing together. Romance novels. Telirian romance novels. It's embarrassing but it's not illegal!"
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "She told me about her feelings for the Ambassador. About the arranged marriage. I... I understood her pain."
+
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I gave him the sedative in the wine. Just to make him drowsy. That's ALL I did. The rest was... was her."
+
+    # Follow-up dialogue after initial interrogation
+    - sequence_name: "DrThorneFollowUp"
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "Is there... is there anything else? I really should get back to my research."
 
 lt_webb:
   name: "Lieutenant Marcus Webb"
@@ -602,6 +840,188 @@ chief_solis:
   secret: "Investigating Maven Kilroth's smuggling for months; broke into Ambassador's quarters to plant surveillance devices; used override code; accidentally left lockbox open"
   is_killer: false
   red_herring: true
+
+  key_evidence:
+    - "Used Override code at 0230h"
+    - "Security Chief has access to everything"
+    - "Has been investigating smuggling ring"
+
+  # Interrogation stress thresholds (percentage 0-100)
+  stress_thresholds:
+    doubt_effective: 35.0      # Doubt becomes effective at 35% stress (tough but cracks under pressure)
+    accuse_effective: 60.0     # Accuse becomes effective at 60% stress (very defensive)
+
+  # Opening dialogue
+  dialogue:
+    - sequence_name: "ChiefSolisInterrogation"
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Detective. I've already provided my initial statement to station security. The Ambassador's death occurred during my shift - I take full responsibility for the failure to prevent it."
+
+        - speaker: "Chief Raina Solis"
+          text: "My duty is to protect everyone on this ship. I failed. That's all there is to it."
+
+    # Alibi - Where were you at the time of the murder?
+    - sequence_name: "ChiefSolisAlibi"
+      action: "alibi"
+      is_correct: true
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "I was conducting security sweeps. Deck 2 through Deck 5, standard patrol route. It's logged in the security system."
+
+        - speaker: "Chief Raina Solis"
+          text: "The Ambassador's quarters are on Deck 3. I passed by his door at approximately 0225 hours."
+
+        - speaker: "Chief Raina Solis"
+          text: "Everything appeared normal. No disturbances, no unauthorized access alerts. I continued my patrol."
+
+    # Relationship - What was your relationship with the victim?
+    - sequence_name: "ChiefSolisRelationship"
+      action: "relationship"
+      is_correct: true
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Professional. The Ambassador was a VIP under my protection. I briefed him weekly on security protocols."
+
+        - speaker: "Chief Raina Solis"
+          text: "He was... difficult sometimes. Thought security procedures were 'excessive'. Refused escort details."
+
+        - speaker: "Chief Raina Solis"
+          text: "I respected his position, but he made my job harder than it needed to be."
+
+    # Doubt (low stress) - She's hiding something
+    - sequence_name: "ChiefSolisDoubtLowStress"
+      action: "doubt"
+      is_correct: true
+      requires_stress_below: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "You think I'm lying? Fine. I was near his quarters longer than I stated."
+
+        - speaker: "Chief Raina Solis"
+          text: "I had suspicions about... irregularities. Unauthorized personnel in diplomatic areas."
+
+        - speaker: "Chief Raina Solis"
+          text: "I was conducting surveillance. That's within my authority as Security Chief."
+
+    # Doubt (high stress) - Starts revealing investigation
+    - sequence_name: "ChiefSolisDoubtHighStress"
+      action: "doubt"
+      is_correct: true
+      requires_stress_above: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "All right! You want the truth? I was running an unsanctioned investigation!"
+
+        - speaker: "Chief Raina Solis"
+          text: "Maven Kilroth. The smuggler. I've been tracking his network for months. The Ambassador... he was connected somehow."
+
+        - speaker: "Chief Raina Solis"
+          text: "I needed to plant surveillance devices in his quarters. I used my override code. But he was already DEAD when I arrived!"
+
+    # Accuse (wrong - she's innocent)
+    - sequence_name: "ChiefSolisAccuseWrong"
+      action: "accuse"
+      is_correct: false
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "You're accusing ME? I'm the HEAD OF SECURITY! I'm trying to SOLVE this case!"
+
+        - speaker: "Chief Raina Solis"
+          text: "I've dedicated my entire career to protecting people. This accusation is insulting and completely baseless!"
+
+    # Evidence: Access Codes (low stress)
+    - sequence_name: "ChiefSolisAccessCodesLowStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_below: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Override code at 0230 hours? Yes, that was me. Security Chief has master override for emergencies."
+
+        - speaker: "Chief Raina Solis"
+          text: "I was conducting a routine security check of all VIP quarters. Standard protocol during high-level diplomatic visits."
+
+    # Evidence: Access Codes (high stress - admits truth)
+    - sequence_name: "ChiefSolisAccessCodesHighStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_above: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Fine! YES! I used my override at 0230! But the Ambassador was already dead!"
+
+        - speaker: "Chief Raina Solis"
+          text: "I found him on the floor, the breturium injector nearby. I... I panicked. I shouldn't have, but I did."
+
+        - speaker: "Chief Raina Solis"
+          text: "I planted my surveillance devices anyway - evidence of the smuggling ring - and left. I reported finding the body 15 minutes later."
+
+        - speaker: "Chief Raina Solis"
+          text: "I know how this looks. But I swear on my badge, I did NOT kill him."
+
+    # Evidence: Security Logs
+    - sequence_name: "ChiefSolisSecurityLogLowStress"
+      action: "present_evidence"
+      evidence_id: "security_log"
+      requires_stress_below: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "The security logs show exactly what I said - my patrol route, all door accesses, everything by the book."
+
+        - speaker: "Chief Raina Solis"
+          text: "If you're looking for unauthorized access, focus on the people who SHOULDN'T have been there."
+
+    # Evidence: Security Logs (high stress)
+    - sequence_name: "ChiefSolisSecurityLogHighStress"
+      action: "present_evidence"
+      evidence_id: "security_log"
+      requires_stress_above: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Those logs... I may have edited them. Slightly. To remove the 15-minute gap."
+
+        - speaker: "Chief Raina Solis"
+          text: "I needed time to secure the surveillance devices I'd planted. Evidence for the smuggling case."
+
+        - speaker: "Chief Raina Solis"
+          text: "Look, I tampered with evidence. I know. But I'm not a murderer - I'm a cop who made a mistake!"
+
+    # Evidence: Breturium Sample
+    - sequence_name: "ChiefSolisBreturiumLowStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_below: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "Breturium. That's what I've been investigating. Maven Kilroth's been smuggling it through this station for months."
+
+        - speaker: "Chief Raina Solis"
+          text: "I've been trying to trace his supply chain. Chen, the quartermaster, handles requisitions. Dr. Kerrigan had lab access."
+
+    # Evidence: Breturium Sample (high stress - connects dots)
+    - sequence_name: "ChiefSolisBreturiumHighStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_above: 35.0
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "That's Maven's breturium. I'd recognize the isotope signature anywhere - I've been tracking it for three months."
+
+        - speaker: "Chief Raina Solis"
+          text: "Kilroth smuggled it in. Lucky Chen moved it through supply channels. Dr. Kerrigan provided the medical cover story."
+
+        - speaker: "Chief Raina Solis"
+          text: "But who BOUGHT it? That's what I've been trying to figure out. The Ambassador knew something - that's why I was surveilling him."
+
+        - speaker: "Chief Raina Solis"
+          text: "Whoever killed him... they were part of this network. And they're still on this ship."
+
+    # Follow-up dialogue
+    - sequence_name: "ChiefSolisFollowUp"
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "What else do you need, Detective? I've told you everything I know."
 
 tvora:
   name: "T'Vora"

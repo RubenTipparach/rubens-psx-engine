@@ -62,7 +62,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             "Where were you?",
             "Your relationship?",
             "I don't believe you",
-            "You're the killer",
+            "Present evidence",
             "Check evidence",
             "That's all for now"
         };
