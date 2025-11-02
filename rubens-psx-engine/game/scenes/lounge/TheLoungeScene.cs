@@ -42,6 +42,12 @@ namespace anakinsoft.game.scenes
         // Debug settings
         public bool ShowPhysicsWireframe = false; // Toggle to show/hide physics collision wireframes
 
+        // Starfield shader parameters (exposed for tweaking)
+        public float StarDensity = 150.0f;           // Higher = more stars
+        public float StarBrightness = 3.0f;         // Star brightness multiplier
+        public float StarSize = 0.1f;             // Star size threshold (smaller = smaller stars)
+        public float NebulaBrightness = 0.15f;      // Background nebula glow
+
         // Level scaling
         private const float LevelScale = 0.5f; // Scale factor for the entire level
 
@@ -74,6 +80,7 @@ namespace anakinsoft.game.scenes
 
         // Starfield
         private LoungeStarfield starfield;
+        private LoungeStarfieldSphere starfieldSphere;
 
         // Mesh loader
         private LoungeSceneMeshLoader meshLoader;
@@ -129,6 +136,7 @@ namespace anakinsoft.game.scenes
             debugVisualizer = new LoungeDebugVisualizer();
             uiManager = new LoungeUIManager();
             starfield = new LoungeStarfield();
+            starfieldSphere = new LoungeStarfieldSphere();
 
             // Initialize mesh loader
             meshLoader = new LoungeSceneMeshLoader(LevelScale, physicsSystem, entity => AddRenderingEntity(entity));
@@ -873,6 +881,7 @@ namespace anakinsoft.game.scenes
 
             // Update starfield
             starfield.Update(gameTime);
+            starfieldSphere.Update(gameTime);
         }
 
         private void HandleInput()
@@ -891,7 +900,16 @@ namespace anakinsoft.game.scenes
 
         public override void Draw(GameTime gameTime, Camera camera)
         {
-            // Draw starfield first (background)
+            // Apply starfield shader parameters from scene settings
+            starfieldSphere.StarDensity = StarDensity;
+            starfieldSphere.StarBrightness = StarBrightness;
+            starfieldSphere.StarSize = StarSize;
+            starfieldSphere.NebulaBrightness = NebulaBrightness;
+
+            // Draw shader-based starfield sphere first (far background)
+            starfieldSphere.Draw(camera);
+
+            // Draw particle starfield on top (closer to camera)
             starfield.Draw(camera);
 
             // Draw all entities using the base scene drawing

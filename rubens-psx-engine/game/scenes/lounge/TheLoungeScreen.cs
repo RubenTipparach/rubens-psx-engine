@@ -158,7 +158,7 @@ namespace anakinsoft.game.scenes
             };
 
             // Initialize interrogation management
-            interrogationManager = new InterrogationRoundManager();
+            interrogationManager = new InterrogationRoundManager(gameProgress);
             fadeTransition = new ScreenFadeTransition(gd);
 
             // Load character data from YAML and initialize state machines
@@ -611,6 +611,7 @@ namespace anakinsoft.game.scenes
                             if (interrogatedCharacters.TryGetValue(char1.Name, out var char1SM))
                             {
                                 loungeScene.SetActiveStressMeter(char1SM);
+                                dialogueSystem.SetActiveCharacter(char1SM); // Also set for transcript recording
                             }
 
                             dialogueSystem.StartDialogue(currentDialogue);
@@ -709,6 +710,7 @@ namespace anakinsoft.game.scenes
                             if (interrogatedCharacters.TryGetValue(char2.Name, out var char2SM))
                             {
                                 loungeScene.SetActiveStressMeter(char2SM);
+                                dialogueSystem.SetActiveCharacter(char2SM); // Also set for transcript recording
                             }
 
                             dialogueSystem.StartDialogue(currentDialogue);
@@ -1766,11 +1768,14 @@ namespace anakinsoft.game.scenes
                 bartender.SetDialogue(currentDialogue);
 
                 // Disable interactions during camera transition
-    
+
                 cameraTransitionSystem.TransitionToInteraction(
                     bartender.CameraInteractionPosition,
                     bartender.CameraInteractionLookAt,
                     1.0f);
+
+                // Set state machine for transcript recording
+                dialogueSystem.SetActiveCharacter(bartenderStateMachine);
 
                 // Start dialogue immediately - don't wait for camera
                 dialogueSystem.StartDialogue(currentDialogue);
@@ -1809,11 +1814,14 @@ namespace anakinsoft.game.scenes
                 pathologist.SetDialogue(currentDialogue);
 
                 // Disable interactions during camera transition
-    
+
                 cameraTransitionSystem.TransitionToInteraction(
                     pathologist.CameraInteractionPosition,
                     pathologist.CameraInteractionLookAt,
                     1.0f);
+
+                // Set state machine for transcript recording
+                dialogueSystem.SetActiveCharacter(pathologistStateMachine);
 
                 // Start dialogue immediately - don't wait for camera
                 dialogueSystem.StartDialogue(currentDialogue);

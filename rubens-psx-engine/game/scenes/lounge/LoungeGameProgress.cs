@@ -18,11 +18,23 @@ namespace rubens_psx_engine
         // Interrogation tracking
         public bool HasInterrogatedCommanderVon { get; set; } = false;
         public bool HasInterrogatedDrThorne { get; set; } = false;
+        public bool HasInterrogatedLtWebb { get; set; } = false;
+        public bool HasInterrogatedEnsignTork { get; set; } = false;
+        public bool HasInterrogatedMavenKilroth { get; set; } = false;
+        public bool HasInterrogatedChiefSolis { get; set; } = false;
+        public bool HasInterrogatedTvora { get; set; } = false;
+        public bool HasInterrogatedLuckyChen { get; set; } = false;
 
         // Game state
         public int InterrogationsCompleted =>
             (HasInterrogatedCommanderVon ? 1 : 0) +
-            (HasInterrogatedDrThorne ? 1 : 0);
+            (HasInterrogatedDrThorne ? 1 : 0) +
+            (HasInterrogatedLtWebb ? 1 : 0) +
+            (HasInterrogatedEnsignTork ? 1 : 0) +
+            (HasInterrogatedMavenKilroth ? 1 : 0) +
+            (HasInterrogatedChiefSolis ? 1 : 0) +
+            (HasInterrogatedTvora ? 1 : 0) +
+            (HasInterrogatedLuckyChen ? 1 : 0);
 
         public bool CanMakeAccusation => InterrogationsCompleted >= 2;
 
@@ -38,6 +50,12 @@ namespace rubens_psx_engine
             CanInterrogate = false;
             HasInterrogatedCommanderVon = false;
             HasInterrogatedDrThorne = false;
+            HasInterrogatedLtWebb = false;
+            HasInterrogatedEnsignTork = false;
+            HasInterrogatedMavenKilroth = false;
+            HasInterrogatedChiefSolis = false;
+            HasInterrogatedTvora = false;
+            HasInterrogatedLuckyChen = false;
         }
 
         /// <summary>

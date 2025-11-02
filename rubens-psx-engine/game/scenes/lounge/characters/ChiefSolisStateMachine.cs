@@ -24,7 +24,7 @@ namespace anakinsoft.game.scenes.lounge.characters
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("ChiefSolisFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("ChiefSolisDefault");
 
                 default:
                     Console.WriteLine($"[ChiefSolisStateMachine] Unknown state: {currentState}");
@@ -134,21 +134,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             return null;
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "ChiefSolisDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Chief Solis",
-                        text = "I've told you everything, Detective. My job is to find the killer, not defend myself from baseless accusations."
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }

@@ -297,14 +297,14 @@
 
 ---
 
-### 8. T'VORA (Vulcan, Female, 120s)
-**Role:** Federation Diplomatic Attaché  
+### 8. T'VORA (Kulluran, Female, 120s)
+**Role:** Federation Diplomatic Attaché
 **Personality:** Logical, precise, subtly condescending
 
 **Public Story:** Meditating in quarters during murder
 
 **Secret/Motivation:**
-- Undercover Vulcan intelligence operative
+- Undercover Kulluran intelligence operative
 - Monitoring illegal breturium trade network
 - KNEW about murder in advance but let it happen
 - "Needs of the many outweigh needs of the few"

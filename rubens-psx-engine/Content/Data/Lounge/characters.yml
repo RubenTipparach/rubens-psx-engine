@@ -43,29 +43,29 @@ bartender:
   dialogue:
     - sequence_name: "BartenderIntro"
       lines:
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "Welcome to the Lounge, detective."
 
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "The Telirian ambassador is dead. This is no accident."
 
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "You need to question the suspects and determine motive, means, and opportunity."
 
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war."
 
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "I've called the pathologist. They should be arriving at the table shortly with preliminary findings."
 
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "Time is running out, detective. Good luck."
 
       on_complete: "spawn_pathologist"
 
     - sequence_name: "BartenderPostIntro"
       lines:
-        - speaker: "Bartender"
+        - speaker: "Zix"
           text: "Go talk to Dr. Kerrigan, the ship's pathologist."
 
 pathologist:
@@ -431,6 +431,12 @@ commander_von:
         - speaker: "Commander Sylara Von"
           text: "More questions? Make them count, Detective. I won't be here forever."
 
+    # Default fallback dialogue
+    - sequence_name: "CommanderVonDefault"
+      lines:
+        - speaker: "Commander Sylara Von"
+          text: "I've told you everything about that night, Detective. My duty was to protect him, and I failed."
+
 dr_thorne:
   name: "Dr. Lyssa Thorne"
   species: "Human"
@@ -658,6 +664,12 @@ dr_thorne:
         - speaker: "Dr. Lyssa Thorne"
           text: "Is there... is there anything else? I really should get back to my research."
 
+    # Default fallback dialogue
+    - sequence_name: "DrThorneDefault"
+      lines:
+        - speaker: "Dr. Lyssa Thorne"
+          text: "I've told you everything I know, Detective. The Ambassador was a good man. I... I miss our conversations."
+
 lt_webb:
   name: "Lieutenant Marcus Webb"
   species: "Human"
@@ -741,6 +753,14 @@ lt_webb:
       lines:
         - speaker: "Lieutenant Marcus Webb"
           text: "I've already told you - I was on the bridge all night. Check the duty logs if you don't believe me."
+
+      on_complete: ""
+
+    # Default fallback dialogue
+    - sequence_name: "LtWebbDefault"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I've already answered your questions, Detective. I was on the bridge. Check the logs."
 
       on_complete: ""
 
@@ -931,6 +951,44 @@ lt_webb:
 
       on_complete: ""
 
+    # Alibi - ask about where he was
+    - sequence_name: "LtWebbAlibi"
+      action: "alibi"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "My alibi? I already told you - I was on the bridge monitoring sensors during alpha shift."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "2300 to 0700 hours. Alone. Standard skeleton crew protocol during diplomatic functions."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I heard about the murder around 0430 when Chief Solis contacted the bridge. Before that, I had no idea anything was wrong."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Check the bridge logs if you don't believe me. Every command I entered is timestamped."
+
+      stress_increase: 10.0
+      on_complete: ""
+
+    # Relationship - ask about connection to victim
+    - sequence_name: "LtWebbRelationship"
+      action: "relationship"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "My relationship with Ambassador Thel? Purely professional. We met a few times at diplomatic receptions."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Honestly? I didn't like the man. He was a warmonger, pushing both sides toward conflict when we should be seeking peace."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But disliking someone's politics doesn't mean I'd MURDER them, Detective."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I believe in working through proper channels. Diplomacy, negotiation... not assassination."
+
+      stress_increase: 5.0
+      on_complete: ""
+
 ensign_tork:
   name: "Ensign Tork"
   species: "Fregoilli"
@@ -977,6 +1035,238 @@ ensign_tork:
   is_killer: false
   red_herring: true
 
+  # Stress thresholds
+  stress_thresholds:
+    doubt_effective: 25.0    # Tork is very nervous - cracks easily
+    accuse_effective: 50.0   # Breaks down quickly under pressure
+
+  # Dialogue sequences
+  dialogue:
+    # Initial interrogation
+    - sequence_name: "EnsignTorkInterrogation"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*nervously fidgeting* D-Detective. I... I was expecting someone would want to talk to me."
+
+        - speaker: "Ensign Tork"
+          text: "I'm just a junior engineer, sir. I don't know anything about diplomatic matters or... or murders."
+
+        - speaker: "Ensign Tork"
+          text: "That night? I was in Engineering. We had power fluctuations in the port nacelle. I was running diagnostics."
+
+        - speaker: "Ensign Tork"
+          text: "I heard about the Ambassador the next morning. It's... it's terrible. The Fregoilli people will be devastated."
+
+        - speaker: "Ensign Tork"
+          text: "*sweating* I know how this looks. I'm Fregoilli. But I had nothing to do with this! I swear!"
+
+      on_complete: ""
+
+    # Follow-up dialogue
+    - sequence_name: "EnsignTorkFollowUp"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*wringing hands* More questions? I... I've told you everything I know, Detective."
+
+      on_complete: ""
+
+    # Default fallback dialogue
+    - sequence_name: "EnsignTorkDefault"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "I already told you about the power fluctuations that night, sir. Is there something else you need?"
+
+      on_complete: ""
+
+    # Alibi - ask about where he was
+    - sequence_name: "EnsignTorkAlibi"
+      action: "alibi"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*speaking rapidly* My alibi? I was in Engineering! Main Engineering, port side, monitoring the plasma flow regulators!"
+
+        - speaker: "Ensign Tork"
+          text: "We had cascading power fluctuations starting around 0230. I was alone - everyone else was at the diplomatic reception."
+
+        - speaker: "Ensign Tork"
+          text: "I... I didn't leave Engineering until my shift ended at 0600. I can show you the diagnostic logs!"
+
+        - speaker: "Ensign Tork"
+          text: "*nervously* I know being alone isn't a great alibi, but... but it's the truth! I was working!"
+
+      stress_increase: 15.0
+      on_complete: ""
+
+    # Relationship - ask about connection to victim
+    - sequence_name: "EnsignTorkRelationship"
+      action: "relationship"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*stammering* The Ambassador? I... I never met him personally. He was way above my rank."
+
+        - speaker: "Ensign Tork"
+          text: "But in the Fregoilli Collective, we all knew of him. He was... he was working toward peace between our peoples."
+
+        - speaker: "Ensign Tork"
+          text: "*voice cracking* His death is a tragedy for everyone who wanted to end the conflict."
+
+        - speaker: "Ensign Tork"
+          text: "I had no reason to want him dead! If anything, I... I wanted him to succeed!"
+
+      stress_increase: 10.0
+      on_complete: ""
+
+    # Doubt - Low stress (defensive stammering)
+    - sequence_name: "EnsignTorkDoubtLowStress"
+      action: "doubt"
+      requires_stress_below: 25.0
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*voice rising* You... you doubt me? But I'm telling the truth! Every word!"
+
+        - speaker: "Ensign Tork"
+          text: "I know I'm young, and I know I'm Fregoilli, but that doesn't make me a killer!"
+
+        - speaker: "Ensign Tork"
+          text: "*defensive* Check the Engineering logs! Check the power consumption data! It'll prove I was there!"
+
+      stress_increase: 20.0
+      on_complete: ""
+
+    # Doubt - High stress (reveals protective mission)
+    - sequence_name: "EnsignTorkDoubtHighStress"
+      action: "doubt"
+      requires_stress_above: 25.0
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*breaking down* FINE! You want the truth?! I was ASSIGNED to protect him!"
+
+        - speaker: "Ensign Tork"
+          text: "*crying* The Fregoilli Collective... they sent me here undercover. My mission was to keep the Ambassador safe!"
+
+        - speaker: "Ensign Tork"
+          text: "I was supposed to watch for threats, report anything suspicious... I FAILED! He died on my watch!"
+
+        - speaker: "Ensign Tork"
+          text: "*sobbing* I never wanted this assignment! I'm just an engineer! And now he's dead and it's... it's my fault!"
+
+        - speaker: "Ensign Tork"
+          text: "But I didn't KILL him! I was trying to SAVE him! You have to believe me!"
+
+      stress_increase: 25.0
+      on_complete: ""
+
+    # Accuse - Wrong (he's innocent, just failed his mission)
+    - sequence_name: "EnsignTorkAccuseWrong"
+      action: "accuse"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*panicking* WHAT?! No! NO! I didn't kill him! I was trying to PROTECT him!"
+
+        - speaker: "Ensign Tork"
+          text: "*hyperventilating* I'm not a murderer! I'm just... I'm just a failed bodyguard!"
+
+        - speaker: "Ensign Tork"
+          text: "Please, Detective... I know I look guilty, but I swear on my honor, I didn't do this!"
+
+      stress_increase: 35.0
+      on_complete: ""
+
+    # Evidence: Power Fluctuation Logs (supports his alibi)
+    - sequence_name: "EnsignTorkPowerLogs"
+      action: "present_evidence"
+      evidence_id: "power_logs"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*relieved* Yes! YES! Those are the logs I mentioned! See? Port nacelle, plasma flow irregularities!"
+
+        - speaker: "Ensign Tork"
+          text: "Every diagnostic command I entered is timestamped. I was in Engineering the entire time!"
+
+        - speaker: "Ensign Tork"
+          text: "*hopeful* This... this proves I couldn't have been in the Ambassador's quarters, right?"
+
+      on_complete: ""
+
+    # Evidence: Breturium Sample (Low stress - doesn't recognize it)
+    - sequence_name: "EnsignTorkBreturiumLowStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_below: 50.0
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*confused* Breturium? That's... that's a Fregoilli compound. It's highly toxic to most species."
+
+        - speaker: "Ensign Tork"
+          text: "We don't use it on starships. Too dangerous. Where did you find this?"
+
+        - speaker: "Ensign Tork"
+          text: "*worried* You're not suggesting I had access to this, are you? I work with plasma conduits, not xenobiology!"
+
+      stress_increase: 15.0
+      on_complete: ""
+
+    # Evidence: Breturium Sample (High stress - MAJOR REVEAL)
+    - sequence_name: "EnsignTorkBreturiumHighStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_above: 50.0
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*goes pale* Oh no... oh no no no... that's not... it can't be..."
+
+        - speaker: "Ensign Tork"
+          text: "*voice trembling* I... I got that from Lucky Chen. But it wasn't supposed to be BRETURIUM!"
+
+        - speaker: "Ensign Tork"
+          text: "*frantic* It was supposed to be a temporary paralytic! Just enough to fake a medical emergency! Commander Von's sister... she asked me to help stage it!"
+
+        - speaker: "Ensign Tork"
+          text: "The Ambassador wanted to disappear for a while - political reasons! We were going to make it look like he collapsed, evacuate him to safety!"
+
+        - speaker: "Ensign Tork"
+          text: "*sobbing* But Chen gave me the WRONG compound! I... I killed him by ACCIDENT! I was trying to SAVE him!"
+
+        - speaker: "Ensign Tork"
+          text: "I didn't know it was real poison! I swear I didn't know! *collapses in tears* Oh gods, what have I done..."
+
+      stress_increase: 40.0
+      on_complete: ""
+
+    # Evidence: DNA Sample (nervous about being implicated)
+    - sequence_name: "EnsignTorkDNAReaction"
+      action: "present_evidence"
+      evidence_id: "dna_sample"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*nervous* DNA evidence? I... I've never been to the Ambassador's quarters!"
+
+        - speaker: "Ensign Tork"
+          text: "If you found Fregoilli DNA, it could be from any of us. There are three Fregoilli crew members on this ship."
+
+        - speaker: "Ensign Tork"
+          text: "*defensive* Just because I'm Fregoilli doesn't mean every Fregoilli sample points to me!"
+
+      stress_increase: 10.0
+      on_complete: ""
+
+    # Evidence: Commander Von's Access (points to her sister)
+    - sequence_name: "EnsignTorkCommanderVonAccess"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      lines:
+        - speaker: "Ensign Tork"
+          text: "*nervously* Commander Von? She's... she's a hero. Everyone respects her."
+
+        - speaker: "Ensign Tork"
+          text: "I've worked with her a few times on engineering projects. She's brilliant, dedicated..."
+
+        - speaker: "Ensign Tork"
+          text: "*quietly* And she has family connections to the Fregoilli peace movement. Her sister is... well, that's not my place to say."
+
+      stress_increase: 5.0
+      on_complete: ""
+
 maven_kilroth:
   name: "Maven Kilroth"
   species: "Telirian"
@@ -1022,6 +1312,231 @@ maven_kilroth:
   secret: "Peace treaty would make him wealthy; Ambassador about to expose his breturium smuggling operation; sells to both sides of conflict; secret passion: competitive zero-G ballroom dancing"
   is_killer: false
   red_herring: true
+
+  # Interrogation stress thresholds
+  doubt_effective: 30.0  # Smooth operator cracks at 30%
+  accuse_effective: 55.0  # Needs heavy pressure to break composure
+
+  # Dialogue sequences
+  dialogue:
+    # Initial interrogation
+    - sequence_name: "MavenKilrothInterrogation"
+      action: "interrogate"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*leans back with easy smile* Detective. I've been expecting you. Please, sit. Can I offer you a drink?"
+
+        - speaker: "Maven Kilroth"
+          text: "I understand you need to ask questions. I'm a businessman - transparency is good for business."
+
+        - speaker: "Maven Kilroth"
+          text: "Yes, I knew Ambassador Lorath. We were in preliminary discussions about establishing trade routes through Fregoilli space."
+
+        - speaker: "Maven Kilroth"
+          text: "His death is... unfortunate. Bad for business. Very bad for business."
+
+    # Follow-up dialogue after interrogation
+    - sequence_name: "MavenKilrothFollowUp"
+      action: "talk"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*checks datapad casually* Still here, Detective? I thought we covered everything."
+
+    # Default fallback dialogue
+    - sequence_name: "MavenKilrothDefault"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "Look, Detective, I've been straight with you. I run contraband, not murder. We done here?"
+
+    # Alibi inquiry - claims he was in his quarters
+    - sequence_name: "MavenKilrothAlibi"
+      action: "alibi"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*spreads hands* My whereabouts? Simple. I was in my guest quarters all evening."
+
+        - speaker: "Maven Kilroth"
+          text: "I'd had a long day of negotiations. Poured myself a Telirian brandy, reviewed some contracts."
+
+        - speaker: "Maven Kilroth"
+          text: "Fell asleep around 23:00. Woke up to security pounding on my door at 02:00."
+
+        - speaker: "Maven Kilroth"
+          text: "No witnesses, unfortunately. When you're as successful as I am, you learn to enjoy your own company."
+
+    # Relationship with victim - business relationship
+    - sequence_name: "MavenKilrothRelationship"
+      action: "relationship"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*steeples fingers* Ambassador Lorath and I were business associates. Nothing more, nothing less."
+
+        - speaker: "Maven Kilroth"
+          text: "He was negotiating on behalf of the Fregoilli Collective. I represent several shipping consortiums."
+
+        - speaker: "Maven Kilroth"
+          text: "If this peace treaty goes through, there will be ENORMOUS opportunities for legitimate trade."
+
+        - speaker: "Maven Kilroth"
+          text: "*smooth smile* And I, Detective, am always positioned to capitalize on opportunity."
+
+    # Doubt at low stress - maintains composure
+    - sequence_name: "MavenKilrothDoubtLowStress"
+      action: "doubt"
+      requires_stress_below: 30.0
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*raises eyebrow* You doubt me? That's your prerogative, Detective."
+
+        - speaker: "Maven Kilroth"
+          text: "I've built my career on trust and discretion. Ask anyone in the trade circuits about Maven Kilroth."
+
+        - speaker: "Maven Kilroth"
+          text: "My reputation is IMPECCABLE. Well... mostly impeccable."
+
+        - speaker: "Maven Kilroth"
+          text: "*knowing smile* I may operate in grey areas, but murder? That's bad for business. Very bad."
+
+    # Doubt at high stress - cracks appear
+    - sequence_name: "MavenKilrothDoubtHighStress"
+      action: "doubt"
+      requires_stress_above: 30.0
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*smile fades slightly* You're persistent. I respect that. But you're looking in the wrong direction."
+
+        - speaker: "Maven Kilroth"
+          text: "*sighs* Fine. You want the truth? I DO run contraband. Medical supplies, luxury goods, some tech."
+
+        - speaker: "Maven Kilroth"
+          text: "*defensive* But it's SUPPLY AND DEMAND! Both sides need these goods. I'm just the middleman!"
+
+        - speaker: "Maven Kilroth"
+          text: "*quietly* Yes, that includes breturium compounds. But I'm not the only supplier on this ship."
+
+        - speaker: "Maven Kilroth"
+          text: "*intense* The Ambassador knew about my operation. But killing him would only EXPOSE me further! Think about it!"
+
+    # Accuse - wrong suspect, but nervous
+    - sequence_name: "MavenKilrothAccuseWrong"
+      action: "accuse"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*stands up sharply* You're accusing ME? Of MURDER?"
+
+        - speaker: "Maven Kilroth"
+          text: "*angry* I've cooperated fully! I've answered your questions! And this is how you treat a respected businessman?"
+
+        - speaker: "Maven Kilroth"
+          text: "*leans forward, dangerous* You have NO proof. Because I DIDN'T DO IT."
+
+        - speaker: "Maven Kilroth"
+          text: "*sits back down, cold* I suggest you look elsewhere, Detective. Before you make a mistake you'll regret."
+
+    # Evidence: Power Logs - has no technical knowledge
+    - sequence_name: "MavenKilrothPowerLogs"
+      action: "present_evidence"
+      evidence_id: "power_logs"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*glances at evidence* Power fluctuations in Engineering? What does this have to do with me?"
+
+        - speaker: "Maven Kilroth"
+          text: "I'm a TRADER, Detective, not an engineer. I couldn't tell you the difference between a plasma conduit and a coffee machine."
+
+        - speaker: "Maven Kilroth"
+          text: "If someone was messing with the ship's power, that's well outside my expertise."
+
+    # Evidence: Breturium - LOW stress, plays dumb
+    - sequence_name: "MavenKilrothBreturiumLowStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_below: 30.0
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*examines evidence casually* Breturium compound. Nasty stuff. Banned in most sectors."
+
+        - speaker: "Maven Kilroth"
+          text: "Are you asking if I've HEARD of it? Of course. It's notorious in trade circles."
+
+        - speaker: "Maven Kilroth"
+          text: "*hands it back* But I deal in legitimate goods, Detective. Medical supplies, consumer tech."
+
+        - speaker: "Maven Kilroth"
+          text: "*smooth smile* You're barking up the wrong tree."
+
+    # Evidence: Breturium - HIGH stress, admits smuggling
+    - sequence_name: "MavenKilrothBreturiumHighStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_above: 30.0
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*goes very still* ...Where did you get that?"
+
+        - speaker: "Maven Kilroth"
+          text: "*runs hand through hair* Alright. ALRIGHT. Yes. I've moved breturium compounds before."
+
+        - speaker: "Maven Kilroth"
+          text: "*defensive* But I'm a MIDDLEMAN! I source it, I sell it, I don't use it!"
+
+        - speaker: "Maven Kilroth"
+          text: "*voice drops* I sold a batch to Lucky Chen three weeks ago. Small shipment. He said it was for 'medical research.'"
+
+        - speaker: "Maven Kilroth"
+          text: "*bitter laugh* Medical research. Right. I knew he was lying, but his credits were good."
+
+        - speaker: "Maven Kilroth"
+          text: "*leans forward intensely* But here's the thing, Detective - if I'd wanted the Ambassador dead, I wouldn't have used MY OWN PRODUCT!"
+
+        - speaker: "Maven Kilroth"
+          text: "*quietly* Ambassador Lorath knew about my operation. He was going to expose me as part of the treaty negotiations."
+
+        - speaker: "Maven Kilroth"
+          text: "*shakes head* But killing him just makes everything worse. Now there's an investigation. Now people are LOOKING."
+
+        - speaker: "Maven Kilroth"
+          text: "I'm a businessman, not an idiot. Murder is the WORST business decision I could possibly make."
+
+    # Evidence: DNA Sample - nervous about connections
+    - sequence_name: "MavenKilrothDNAReaction"
+      action: "present_evidence"
+      evidence_id: "dna_sample"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*eyes the evidence* Fregoilli DNA. From the crime scene, I presume."
+
+        - speaker: "Maven Kilroth"
+          text: "*carefully neutral* Well, there IS a Fregoilli engineer on this ship. Ensign Tork, I believe."
+
+        - speaker: "Maven Kilroth"
+          text: "*slight smile* Though I imagine half the ship has been in those quarters at some point. Diplomatic hospitality and all."
+
+        - speaker: "Maven Kilroth"
+          text: "If you're looking for Fregoilli connections, Detective, I'd look at the people who actually KNEW him."
+
+    # Evidence: Security Logs - points to Chief Solis
+    - sequence_name: "MavenKilrothSecurityLogs"
+      action: "present_evidence"
+      evidence_id: "security_logs"
+      lines:
+        - speaker: "Maven Kilroth"
+          text: "*studies the logs with interest* Security override at 23:47. Interesting."
+
+        - speaker: "Maven Kilroth"
+          text: "That's Chief Solis's authorization code, isn't it? I recognize the prefix."
+
+        - speaker: "Maven Kilroth"
+          text: "*knowing look* She's been investigating me for months. Watching my shipments, monitoring my contacts."
+
+        - speaker: "Maven Kilroth"
+          text: "*leans back* Did you know she broke into the Ambassador's quarters two weeks ago? I have sources."
+
+        - speaker: "Maven Kilroth"
+          text: "*quiet* She was planting surveillance devices. Looking for evidence of my smuggling operation."
+
+        - speaker: "Maven Kilroth"
+          text: "*raises eyebrow* So the question becomes: what was Chief Solis doing in those quarters the night of the murder?"
 
 chief_solis:
   name: "Chief Petty Officer Raina Solis"
@@ -1251,9 +1766,15 @@ chief_solis:
         - speaker: "Chief Raina Solis"
           text: "What else do you need, Detective? I've told you everything I know."
 
+    # Default fallback dialogue
+    - sequence_name: "ChiefSolisDefault"
+      lines:
+        - speaker: "Chief Raina Solis"
+          text: "I've told you everything, Detective. My job is to find the killer, not defend myself from baseless accusations."
+
 tvora:
   name: "T'Vora"
-  species: "Vulcan"
+  species: "Kulluran"
   gender: "Female"
   age: "120"
   role: "Federation Diplomatic Attache"
@@ -1293,9 +1814,257 @@ tvora:
 
   # Investigation details
   public_story: "Meditating in quarters during murder"
-  secret: "Undercover Vulcan intelligence operative; monitoring illegal breturium trade network; knew about murder in advance but let it happen (needs of many outweigh needs of few); manipulating investigation to protect her operation"
+  secret: "Undercover Kulluran intelligence operative; monitoring illegal breturium trade network; knew about murder in advance but let it happen (needs of many outweigh needs of few); manipulating investigation to protect her operation"
   is_killer: false
   red_herring: true
+
+  # Interrogation stress thresholds
+  doubt_effective: 40.0  # Kulluran emotional control - very difficult to crack
+  accuse_effective: 70.0  # Extremely defensive when logic fails
+
+  # Dialogue sequences
+  dialogue:
+    # Initial interrogation
+    - sequence_name: "TVoraInterrogation"
+      action: "interrogate"
+      lines:
+        - speaker: "T'Vora"
+          text: "*raises eyebrow* Detective. I anticipated your arrival. Please, be seated."
+
+        - speaker: "T'Vora"
+          text: "I am T'Vora, Federation Diplomatic Attaché. I serve as liaison between Starfleet Command and the Fregoilli Collective."
+
+        - speaker: "T'Vora"
+          text: "Ambassador Lorath's death is... unfortunate. He was a skilled negotiator. His loss will delay the peace process significantly."
+
+        - speaker: "T'Vora"
+          text: "*steeples fingers* However, emotion serves no purpose in this investigation. Logic will reveal the perpetrator."
+
+    # Follow-up dialogue after interrogation
+    - sequence_name: "TVoraFollowUp"
+      action: "talk"
+      lines:
+        - speaker: "T'Vora"
+          text: "*inclines head* You have returned. I presume you require additional information."
+
+    # Default fallback dialogue
+    - sequence_name: "TehvoraDefault"
+      lines:
+        - speaker: "T'Vora"
+          text: "I have shared all relevant information with you, Detective. Further inquiries must be submitted through proper diplomatic channels."
+
+    # Alibi inquiry - claims meditation in quarters
+    - sequence_name: "TVoraAlibi"
+      action: "alibi"
+      lines:
+        - speaker: "T'Vora"
+          text: "*calmly* My whereabouts are a matter of record. I was in my assigned quarters from 22:00 to 07:00 hours."
+
+        - speaker: "T'Vora"
+          text: "I was engaged in meditation. The Kolinahr disciplines require four hours of deep contemplation daily."
+
+        - speaker: "T'Vora"
+          text: "I did not leave my quarters. I did not receive visitors. I had no knowledge of the Ambassador's death until security informed me at 06:47."
+
+        - speaker: "T'Vora"
+          text: "*raises eyebrow* Is there a logical reason to doubt this account?"
+
+    # Relationship with victim - professional diplomatic relationship
+    - sequence_name: "TVoraRelationship"
+      action: "relationship"
+      lines:
+        - speaker: "T'Vora"
+          text: "*neutral tone* Ambassador Lorath and I maintained a professional diplomatic relationship."
+
+        - speaker: "T'Vora"
+          text: "We collaborated on the Fregoilli peace treaty negotiations. His insights into Collective politics were... valuable."
+
+        - speaker: "T'Vora"
+          text: "However, he was prone to emotional decision-making. A common trait among non-Kulluran species."
+
+        - speaker: "T'Vora"
+          text: "*coolly* I respected his position, but I did not share his optimism regarding the treaty timeline."
+
+    # Doubt at low stress - maintains perfect composure
+    - sequence_name: "TVoraDoubtLowStress"
+      action: "doubt"
+      requires_stress_below: 40.0
+      lines:
+        - speaker: "T'Vora"
+          text: "*raises eyebrow* You doubt my account. Fascinating."
+
+        - speaker: "T'Vora"
+          text: "Kullurans do not lie, Detective. We find deception... inefficient."
+
+        - speaker: "T'Vora"
+          text: "If you believe I am withholding information, present your evidence. Logic will resolve this disagreement."
+
+        - speaker: "T'Vora"
+          text: "*calmly* However, I suggest you apply your investigative resources more productively."
+
+    # Doubt at high stress - cracks appear in logic
+    - sequence_name: "TVoraDoubtHighStress"
+      action: "doubt"
+      requires_stress_above: 40.0
+      lines:
+        - speaker: "T'Vora"
+          text: "*slight tension in jaw* Your persistence is... admirable. And problematic."
+
+        - speaker: "T'Vora"
+          text: "*carefully* Very well. There are aspects of my assignment I have not disclosed."
+
+        - speaker: "T'Vora"
+          text: "I am not merely a diplomatic attaché. I am Kulluran Intelligence. My mission involves monitoring... activities aboard this vessel."
+
+        - speaker: "T'Vora"
+          text: "*coldly* The breturium smuggling network. Maven Kilroth. Lucky Chen. Dr. Kerrigan's gambling debts. I have been tracking all of it."
+
+        - speaker: "T'Vora"
+          text: "*quiet* The Ambassador's death was... anticipated. An unfortunate probability given the number of hostile actors aboard."
+
+        - speaker: "T'Vora"
+          text: "*meets your eyes* But I did not cause it. I merely... failed to prevent it."
+
+    # Accuse - wrong suspect, loses composure
+    - sequence_name: "TVoraAccuseWrong"
+      action: "accuse"
+      lines:
+        - speaker: "T'Vora"
+          text: "*stands abruptly* You accuse ME? A Federation diplomatic officer?"
+
+        - speaker: "T'Vora"
+          text: "*voice tight* Your logic is fundamentally flawed. I have no motive. I NEED the peace treaty to succeed!"
+
+        - speaker: "T'Vora"
+          text: "*controlled anger* My entire mission depends on Fregoilli-Federation relations. This accusation is illogical and OFFENSIVE."
+
+        - speaker: "T'Vora"
+          text: "*sits back down stiffly* I suggest you reconsider your conclusions, Detective. Before you make an error you cannot unmake."
+
+    # Evidence: Power Logs - technical analysis
+    - sequence_name: "TVoraPowerLogs"
+      action: "present_evidence"
+      evidence_id: "power_logs"
+      lines:
+        - speaker: "T'Vora"
+          text: "*examines evidence carefully* Engineering power fluctuations at 23:42, 23:51, and 00:03."
+
+        - speaker: "T'Vora"
+          text: "*analytical* The pattern suggests deliberate sabotage rather than system malfunction. Someone with engineering knowledge."
+
+        - speaker: "T'Vora"
+          text: "Ensign Tork was on duty during these timeframes. However, Commander Von also has the technical expertise."
+
+        - speaker: "T'Vora"
+          text: "*raises eyebrow* Curious that you present this to me. I am a diplomat, not an engineer."
+
+    # Evidence: Breturium - LOW stress, deflects
+    - sequence_name: "TVoraBreturiumLowStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_below: 40.0
+      lines:
+        - speaker: "T'Vora"
+          text: "*examines sample with detached interest* Breturium-7. A Class-A restricted compound."
+
+        - speaker: "T'Vora"
+          text: "Banned under Federation law due to its use in neural weapons. Highly lethal to most humanoid species."
+
+        - speaker: "T'Vora"
+          text: "*returns sample* I am familiar with its chemical properties. My diplomatic duties require knowledge of banned substances."
+
+        - speaker: "T'Vora"
+          text: "If you are asking whether I have access to such compounds, the answer is no."
+
+    # Evidence: Breturium - HIGH stress, reveals knowledge
+    - sequence_name: "TVoraBreturiumHighStress"
+      action: "present_evidence"
+      evidence_id: "breturium_sample"
+      requires_stress_above: 40.0
+      lines:
+        - speaker: "T'Vora"
+          text: "*goes very still* ...I recognize this specific isotope signature."
+
+        - speaker: "T'Vora"
+          text: "*quietly* This batch came through Maven Kilroth's network. Purchased from an Orion syndicate contact three months ago."
+
+        - speaker: "T'Vora"
+          text: "*meets your eyes* I know this because I have been TRACKING it. As part of my intelligence mission."
+
+        - speaker: "T'Vora"
+          text: "*controlled* Kilroth sold it to Lucky Chen. Chen sold it to... someone. I lost the trail after that."
+
+        - speaker: "T'Vora"
+          text: "*tense* I attempted to warn the Ambassador two weeks ago. He dismissed my concerns. Called them 'Kulluran paranoia.'"
+
+        - speaker: "T'Vora"
+          text: "*bitter* And now he is dead. Killed by the very substance I warned him about."
+
+        - speaker: "T'Vora"
+          text: "*quiet admission* I knew someone aboard this ship possessed lethal breturium. I knew the Ambassador was a target."
+
+        - speaker: "T'Vora"
+          text: "*looks away* And I failed to prevent his death. The needs of the many... outweigh the needs of the few."
+
+    # Evidence: DNA Sample - points to Fregoilli connection
+    - sequence_name: "TVoraDNAReaction"
+      action: "present_evidence"
+      evidence_id: "dna_sample"
+      lines:
+        - speaker: "T'Vora"
+          text: "*analyzes evidence* Fregoilli DNA. From the crime scene, I presume."
+
+        - speaker: "T'Vora"
+          text: "Ensign Tork is the only Fregoilli aboard. However, contamination is probable - he maintained regular contact with the Ambassador."
+
+        - speaker: "T'Vora"
+          text: "*logical tone* Fregoilli DNA at the scene proves proximity, not culpability."
+
+        - speaker: "T'Vora"
+          text: "Though I find it curious that Tork was assigned to this vessel mere weeks before the Ambassador's arrival. Coincidence is... improbable."
+
+    # Evidence: Security Logs - reveals Chief Solis's actions
+    - sequence_name: "TVoraSecurityLogs"
+      action: "present_evidence"
+      evidence_id: "security_logs"
+      lines:
+        - speaker: "T'Vora"
+          text: "*studies logs with interest* Chief Solis. Override code at 23:47."
+
+        - speaker: "T'Vora"
+          text: "*analytical* She was not conducting routine patrols. She was planting surveillance equipment."
+
+        - speaker: "T'Vora"
+          text: "I became aware of her unsanctioned investigation two months ago. She is... persistent. But clumsy."
+
+        - speaker: "T'Vora"
+          text: "*raises eyebrow* Solis believes she is hunting a smuggling ring. She does not realize she is interfering with a Kulluran Intelligence operation."
+
+        - speaker: "T'Vora"
+          text: "*coolly* Her presence in the Ambassador's quarters that night complicates the investigation. But she did not kill him."
+
+        - speaker: "T'Vora"
+          text: "The Ambassador was already deceased when she arrived. Her biometric data shows elevated heart rate consistent with discovering a body."
+
+    # Special: Commander Von connection
+    - sequence_name: "TVoraCommanderVonConnection"
+      action: "present_evidence"
+      evidence_id: "commander_von_access"
+      lines:
+        - speaker: "T'Vora"
+          text: "*examines evidence carefully* Commander Von's access records. Interesting."
+
+        - speaker: "T'Vora"
+          text: "*thoughtful* She requisitioned specialized medical supplies from Lucky Chen. Supplies that could synthesize breturium compounds."
+
+        - speaker: "T'Vora"
+          text: "Her sister was involved with Ensign Tork's... failed operation. A logical connection."
+
+        - speaker: "T'Vora"
+          text: "*meets your eyes* Commander Von is intelligent. Methodical. If she intended murder, she would not leave evidence."
+
+        - speaker: "T'Vora"
+          text: "*quiet* Unless... the murder was never the intention. Consider the possibility of a medical operation gone catastrophically wrong."
 
 lucky_chen:
   name: "Lucky Chen"
@@ -1342,6 +2111,14 @@ lucky_chen:
   secret: "Dr. Kerrigan's bookie and breturium fence; runs black market side business; supplied the breturium that killed Ambassador (unknowingly); trying to figure out who he sold it to; also selling fake 'authentic Earth antiques'"
   is_killer: false
   red_herring: true
+
+  # Dialogue sequences
+  dialogue:
+    # Default fallback dialogue
+    - sequence_name: "LuckyChenDefault"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "I told you what I know, Detective. I keep track of supplies, not diplomatic scandals."
 
 # Game configuration
 game_settings:

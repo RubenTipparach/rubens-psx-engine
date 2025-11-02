@@ -159,7 +159,7 @@ Zix leans in conspiratorially.
 
 ---
 
-### 8. T'VORA (Vulcan, Female, 120s)
+### 8. T'VORA (Kulluran, Female, 120s)
 
 **Role:** Federation Diplomatic Attaché
 
@@ -167,7 +167,7 @@ Zix leans in conspiratorially.
 
 **Public Story:** She was meditating in her quarters during the murder
 
-**Comically Convoluted Motivation:** She is actually an undercover Vulcan intelligence operative monitoring illegal breturium trade. She knew about the murder in advance but let it happen because "the needs of the many outweigh the needs of the few"—stopping the breturium network was more important than one ambassador. She didn't kill him but has been manipulating the investigation to protect her operation. She's been leaving cryptic clues to the real killer.
+**Comically Convoluted Motivation:** She is actually an undercover Kulluran intelligence operative monitoring illegal breturium trade. She knew about the murder in advance but let it happen because "the needs of the many outweigh the needs of the few"—stopping the breturium network was more important than one ambassador. She didn't kill him but has been manipulating the investigation to protect her operation. She's been leaving cryptic clues to the real killer.
 
 **Key Evidence:** She has access to everything. Her intelligence network means she knows things she shouldn't. She's too calm.
 
@@ -338,7 +338,7 @@ Players can:
 - **Potential reveal:** She's hiding something but may not be the killer
 
 **4. To T'Vora:** *"From a security standpoint, how many people on this ship could bypass a Telirian diplomatic lockbox?"*
-- **Why this advances plot:** Her Vulcan precision will narrow the suspect list and she'll mention "biometric override requires either medical database access or personal knowledge"
+- **Why this advances plot:** Her Kulluran precision will narrow the suspect list and she'll mention "biometric override requires either medical database access or personal knowledge"
 - **Time cost:** 2 minutes
 - **Potential reveal:** Points toward someone with both security clearance AND intimate connection
 
@@ -433,7 +433,7 @@ Players can:
 - **Time cost:** 4 minutes (nervous confession)
 - **Potential reveal:** Red herring—he tried something similar previously but failed
 
-**4. To T'Vora:** *"Vulcan analysis: What does the injection precision tell us about the killer's state of mind?"*
+**4. To T'Vora:** *"Kulluran analysis: What does the injection precision tell us about the killer's state of mind?"*
 - **Why this advances plot:** She'll note "controlled, calculated, emotionally steady during execution—contradicting crime of passion"
 - **Time cost:** 2 minutes
 - **Potential reveal:** This was premeditated, not impulsive

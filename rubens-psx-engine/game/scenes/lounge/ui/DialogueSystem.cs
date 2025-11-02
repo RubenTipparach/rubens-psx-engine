@@ -68,18 +68,12 @@ namespace anakinsoft.game.scenes.lounge.ui
 
         // Display settings
         private const float BoxPadding = 20f;
-        private const float LineHeight = 30f;
         private const float SpeakerOffset = 40f;
         private const float FixedBoxWidth = 800f; // Fixed width for consistency
-        private const float StressBarWidth = 200f;
-        private const float StressBarHeight = 20f;
         private readonly Color BoxColor = Color.Black * 0.85f;
         private readonly Color SpeakerColor = Color.Yellow;
         private readonly Color TextColor = Color.White;
         private readonly Color PromptColor = Color.Gray;
-        private readonly Color LowStressColor = new Color(50, 200, 50); // Green
-        private readonly Color MediumStressColor = new Color(200, 200, 50); // Yellow
-        private readonly Color HighStressColor = new Color(200, 50, 50); // Red
 
         // Events
         public event Action OnDialogueStart;
@@ -97,17 +91,18 @@ namespace anakinsoft.game.scenes.lounge.ui
         }
 
         /// <summary>
-        /// Sets the state machine to display during dialogue (for interrogations with stress)
+        /// Sets the active character state machine for this dialogue
+        /// Used for stress display during interrogations AND transcript recording for all dialogues
         /// </summary>
-        public void SetStressMeter(CharacterStateMachine stateMachine)
+        public void SetActiveCharacter(CharacterStateMachine stateMachine)
         {
             activeCharacterStateMachine = stateMachine;
         }
 
         /// <summary>
-        /// Clears the state machine display
+        /// Clears the active character state machine
         /// </summary>
-        public void ClearStressMeter()
+        public void ClearActiveCharacter()
         {
             activeCharacterStateMachine = null;
         }
@@ -128,11 +123,23 @@ namespace anakinsoft.game.scenes.lounge.ui
             isActive = true;
             acceptInput = false; // Don't accept input on first frame
 
+            // Begin transcript recording for this sequence
+            if (activeCharacterStateMachine != null)
+            {
+                activeCharacterStateMachine.BeginSequence(sequence.SequenceName);
+            }
+
             // Reset teletype effect for first line
             ResetTeletype();
 
             OnDialogueStart?.Invoke();
             OnLineChanged?.Invoke(CurrentLine);
+
+            // Record the first line in transcript
+            if (activeCharacterStateMachine != null && CurrentLine != null)
+            {
+                activeCharacterStateMachine.RecordDialogueLine(CurrentLine.Speaker, CurrentLine.Text);
+            }
 
             Console.WriteLine($"DialogueSystem: Started dialogue '{sequence.SequenceName}' with {sequence.Lines.Count} lines");
         }
@@ -181,6 +188,13 @@ namespace anakinsoft.game.scenes.lounge.ui
                 ResetTeletype();
                 acceptInput = false; // Don't accept input on first frame of new line
                 OnLineChanged?.Invoke(CurrentLine);
+
+                // Record the new line in transcript
+                if (activeCharacterStateMachine != null && CurrentLine != null)
+                {
+                    activeCharacterStateMachine.RecordDialogueLine(CurrentLine.Speaker, CurrentLine.Text);
+                }
+
                 Console.WriteLine($"DialogueSystem: Line {currentLineIndex + 1}/{currentSequence.Lines.Count}");
             }
         }
@@ -296,13 +310,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             spriteBatch.DrawString(font, speakerText, speakerPos + Vector2.One, Color.Black); // Shadow
             spriteBatch.DrawString(font, speakerText, speakerPos, SpeakerColor);
 
-            // Draw stress bar next to speaker name (if in interrogation mode)
-            if (activeCharacterStateMachine != null)
-            {
-                float stressBarX = boxX + boxWidth - StressBarWidth - BoxPadding;
-                float stressBarY = boxY + BoxPadding;
-                DrawStressBar(spriteBatch, stressBarX, stressBarY, StressBarWidth, StressBarHeight);
-            }
+            // Note: Stress meter is drawn by LoungeUIManager, not in the dialogue box
 
             // Draw dialogue text
             Vector2 dialoguePos = new Vector2(boxX + BoxPadding, boxY + BoxPadding + speakerSize.Y + SpeakerOffset);
@@ -312,50 +320,6 @@ namespace anakinsoft.game.scenes.lounge.ui
             // Draw prompt
             Vector2 promptPos = new Vector2(boxX + BoxPadding, boxY + boxHeight - promptSize.Y - BoxPadding);
             spriteBatch.DrawString(font, promptText, promptPos, PromptColor);
-        }
-
-        /// <summary>
-        /// Draw the stress progress bar (for interrogations)
-        /// </summary>
-        private void DrawStressBar(SpriteBatch spriteBatch, float x, float y, float width, float height)
-        {
-            if (activeCharacterStateMachine == null)
-                return;
-
-            // Draw outer bar background (black)
-            Rectangle outerRect = new Rectangle((int)x, (int)y, (int)width, (int)height);
-            DrawFilledRectangle(spriteBatch, outerRect, Color.Black * 0.9f);
-            DrawRectangleBorder(spriteBatch, outerRect, Color.White * 0.6f, 2);
-
-            // Calculate inner fill
-            float stressPercentage = activeCharacterStateMachine.StressPercentage;
-            float fillWidth = (width - 6) * (stressPercentage / 100f); // 3px padding on each side
-
-            if (fillWidth > 0)
-            {
-                Rectangle innerRect = new Rectangle(
-                    (int)(x + 3),
-                    (int)(y + 3),
-                    (int)fillWidth,
-                    (int)(height - 6)
-                );
-
-                Color fillColor = GetStressColor(stressPercentage);
-                DrawFilledRectangle(spriteBatch, innerRect, fillColor);
-            }
-        }
-
-        /// <summary>
-        /// Get color based on stress level
-        /// </summary>
-        private Color GetStressColor(float stressPercentage)
-        {
-            if (stressPercentage < 33f)
-                return LowStressColor;
-            else if (stressPercentage < 66f)
-                return MediumStressColor;
-            else
-                return HighStressColor;
         }
 
         /// <summary>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using anakinsoft.system;
 using anakinsoft.game.scenes.lounge.ui;
+using rubens_psx_engine;
 
 namespace anakinsoft.game.scenes.lounge
 {
@@ -15,6 +16,7 @@ namespace anakinsoft.game.scenes.lounge
         private int hoursRemaining = 3;
         private bool isInterrogating = false;
         private bool allCharactersDismissed = false; // True when both characters dismissed, waiting for player to continue
+        private LoungeGameProgress gameProgress; // Reference to game progress for tracking interrogations
 
         // Track which characters are currently being interrogated
         private List<SelectableCharacter> currentInterrogationPair;
@@ -33,9 +35,10 @@ namespace anakinsoft.game.scenes.lounge
         public event Action OnAllRoundsComplete;
         public event Action<List<SelectableCharacter>> OnCharactersSpawned; // Request to spawn characters
 
-        public InterrogationRoundManager()
+        public InterrogationRoundManager(LoungeGameProgress progress = null)
         {
             hoursRemaining = totalRounds;
+            gameProgress = progress;
         }
 
         /// <summary>
@@ -77,7 +80,44 @@ namespace anakinsoft.game.scenes.lounge
             if (character != null)
             {
                 character.IsDismissed = true;
-                Console.WriteLine($"[InterrogationRoundManager] Marked {characterName} as dismissed");
+                character.IsInterrogated = true; // Mark as interrogated
+                Console.WriteLine($"[InterrogationRoundManager] Marked {characterName} as dismissed and interrogated");
+
+                // Update game progress flags
+                if (gameProgress != null)
+                {
+                    switch (characterName)
+                    {
+                        case "Commander Sylara Von":
+                            gameProgress.HasInterrogatedCommanderVon = true;
+                            break;
+                        case "Dr. Lyssa Thorne":
+                            gameProgress.HasInterrogatedDrThorne = true;
+                            break;
+                        case "Lieutenant Marcus Webb":
+                        case "Lt. Marcus Webb":
+                            gameProgress.HasInterrogatedLtWebb = true;
+                            break;
+                        case "Ensign Tork":
+                            gameProgress.HasInterrogatedEnsignTork = true;
+                            break;
+                        case "Maven Kilroth":
+                            gameProgress.HasInterrogatedMavenKilroth = true;
+                            break;
+                        case "Chief Petty Officer Raina Solis":
+                        case "Chief Kala Solis":
+                            gameProgress.HasInterrogatedChiefSolis = true;
+                            break;
+                        case "T'Vora":
+                        case "Tehvora":
+                            gameProgress.HasInterrogatedTvora = true;
+                            break;
+                        case "Lucky Chen":
+                            gameProgress.HasInterrogatedLuckyChen = true;
+                            break;
+                    }
+                    Console.WriteLine($"[InterrogationRoundManager] Progress updated - {gameProgress.InterrogationsCompleted} total interrogations");
+                }
             }
 
             Console.WriteLine($"[InterrogationRoundManager] Dismissed {characterName} ({dismissedCharacters.Count}/{currentInterrogationPair.Count})");

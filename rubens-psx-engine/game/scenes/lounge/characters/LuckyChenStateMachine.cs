@@ -20,11 +20,11 @@ namespace anakinsoft.game.scenes.lounge.characters
             {
                 case "initial":
                     var initialDialogue = GetDialogueSequence("LuckyChenInterrogation");
-                    return initialDialogue ?? CreateDefaultFollowUp();
+                    return initialDialogue ?? GetDialogueSequence("LuckyChenDefault");
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("LuckyChenFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("LuckyChenDefault");
 
                 default:
                     Console.WriteLine($"[LuckyChenStateMachine] Unknown state: {currentState}");
@@ -64,21 +64,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             }
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "LuckyChenDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Lucky Chen",
-                        text = "I told you what I know, Detective. I keep track of supplies, not diplomatic scandals."
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }

@@ -24,7 +24,7 @@ namespace anakinsoft.game.scenes.lounge.characters
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("DrThorneFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("DrThorneDefault");
 
                 default:
                     Console.WriteLine($"[DrThorneStateMachine] Unknown state: {currentState}");
@@ -121,21 +121,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             return null;
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "DrThorneDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Dr. Thorne",
-                        text = "I've told you everything I know, Detective. The Ambassador was a good man. I... I miss our conversations."
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }

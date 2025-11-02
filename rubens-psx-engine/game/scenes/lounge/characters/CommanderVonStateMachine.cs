@@ -23,7 +23,7 @@ namespace anakinsoft.game.scenes.lounge.characters
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("CommanderVonFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("CommanderVonDefault");
 
                 default:
                     Console.WriteLine($"[CommanderVonStateMachine] Unknown state: {currentState}");
@@ -81,21 +81,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             return dialogue;
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "CommanderVonDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Commander Von",
-                        text = "I've told you everything about that night, Detective. My duty was to protect him, and I failed."
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }

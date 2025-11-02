@@ -24,7 +24,7 @@ namespace anakinsoft.game.scenes.lounge.characters
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("LtWebbFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("LtWebbDefault");
 
                 default:
                     Console.WriteLine($"[LtWebbStateMachine] Unknown state: {currentState}");
@@ -140,21 +140,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             return null;
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "LtWebbDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Lieutenant Webb",
-                        text = "I've already answered your questions, Detective. I was on the bridge. Check the logs."
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }

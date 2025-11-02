@@ -17,9 +17,11 @@ namespace anakinsoft.game.scenes.lounge.characters
         protected Dictionary<string, bool> flags;  // Track game state flags
         protected List<string> dialogueHistory;   // Track what's been said
 
-        // Transcript tracking: Each subject (sequence name) maps to list of character's lines
-        protected Dictionary<string, List<string>> transcriptSubjects;
-        protected List<string> subjectOrder; // Track order subjects were discussed
+        // Transcript tracking: Dictionary<sequence_name, List<string>>
+        // Records ALL lines spoken by this character in chronological order within each sequence
+        protected Dictionary<string, List<string>> transcript;
+        protected List<string> sequenceOrder; // Track order sequences were first encountered
+        private string currentSequenceName; // Track which sequence is currently being spoken
 
         // Stress tracking
         private float currentStress = 0f;
@@ -39,8 +41,9 @@ namespace anakinsoft.game.scenes.lounge.characters
             currentState = "initial";
             flags = new Dictionary<string, bool>();
             dialogueHistory = new List<string>();
-            transcriptSubjects = new Dictionary<string, List<string>>();
-            subjectOrder = new List<string>();
+            transcript = new Dictionary<string, List<string>>();
+            sequenceOrder = new List<string>();
+            currentSequenceName = null;
             currentStress = 0f;
 
             // Load stress thresholds from config if available
@@ -109,19 +112,14 @@ namespace anakinsoft.game.scenes.lounge.characters
 
         /// <summary>
         /// Handle dialogue completion and state transitions (sealed - calls OnDialogueCompleteInternal)
-        /// Automatically records transcript and calls derived class implementation
         /// </summary>
         public void OnDialogueComplete(string sequenceName)
         {
             // Mark as seen in history
             MarkDialogueSeen(sequenceName);
 
-            // Automatically record transcript subject
-            var dialogue = GetDialogueSequence(sequenceName);
-            if (dialogue != null)
-            {
-                RecordTranscriptSubject(dialogue);
-            }
+            // End the current sequence tracking (lines are recorded as they're spoken via RecordDialogueLine)
+            EndSequence();
 
             // Call derived class implementation for state transitions
             OnDialogueCompleteInternal(sequenceName);
@@ -256,60 +254,83 @@ namespace anakinsoft.game.scenes.lounge.characters
         }
 
         /// <summary>
-        /// Record a dialogue sequence as a transcript subject
-        /// Extracts only this character's lines and stores them under the sequence name
+        /// Begin recording a new sequence of dialogue
         /// </summary>
-        protected void RecordTranscriptSubject(CharacterDialogueSequence yamlDialogue)
+        public void BeginSequence(string sequenceName)
         {
-            if (yamlDialogue == null) return;
+            currentSequenceName = sequenceName;
 
-            string subject = yamlDialogue.sequence_name;
-
-            // Skip if we've already recorded this subject
-            if (transcriptSubjects.ContainsKey(subject))
-                return;
-
-            // Extract only this character's lines
-            List<string> characterLines = new List<string>();
-            foreach (var line in yamlDialogue.lines)
+            // Initialize sequence in transcript if first time
+            if (!transcript.ContainsKey(sequenceName))
             {
-                if (line.speaker == config.name)
-                {
-                    characterLines.Add(line.text);
-                }
+                transcript[sequenceName] = new List<string>();
+                sequenceOrder.Add(sequenceName);
+                Console.WriteLine($"[{config.name}] Started recording transcript for: {sequenceName}");
             }
-
-            // Record subject
-            transcriptSubjects[subject] = characterLines;
-            subjectOrder.Add(subject);
-
-            Console.WriteLine($"[{config.name}] Recorded transcript subject: {subject} ({characterLines.Count} lines)");
         }
 
         /// <summary>
-        /// Get all transcript subjects in the order they were discussed
+        /// Record a single dialogue line as it's spoken (called by DialogueSystem)
+        /// Only records lines spoken by this character
+        /// </summary>
+        public void RecordDialogueLine(string speaker, string text)
+        {
+            // Only record lines spoken by this character
+            if (speaker != config.name)
+                return;
+
+            // If no sequence is active, use "Unknown" as fallback
+            string sequence = currentSequenceName ?? "Unknown";
+
+            // Ensure sequence exists in transcript
+            if (!transcript.ContainsKey(sequence))
+            {
+                transcript[sequence] = new List<string>();
+                sequenceOrder.Add(sequence);
+            }
+
+            // Add line to transcript (allow duplicates since user wants ALL lines in chronological order)
+            transcript[sequence].Add(text);
+            Console.WriteLine($"[{config.name}] Recorded line in '{sequence}': {text.Substring(0, Math.Min(50, text.Length))}...");
+        }
+
+        /// <summary>
+        /// End the current sequence
+        /// </summary>
+        public void EndSequence()
+        {
+            if (currentSequenceName != null)
+            {
+                int lineCount = transcript.ContainsKey(currentSequenceName) ? transcript[currentSequenceName].Count : 0;
+                Console.WriteLine($"[{config.name}] Finished recording '{currentSequenceName}' ({lineCount} lines)");
+                currentSequenceName = null;
+            }
+        }
+
+        /// <summary>
+        /// Get all transcript sequences in the order they were discussed
         /// </summary>
         public List<string> GetTranscriptSubjects()
         {
-            return new List<string>(subjectOrder);
+            return new List<string>(sequenceOrder);
         }
 
         /// <summary>
-        /// Get lines for a specific subject
+        /// Get lines for a specific sequence
         /// </summary>
-        public List<string> GetSubjectLines(string subject)
+        public List<string> GetSubjectLines(string sequenceName)
         {
-            if (transcriptSubjects.ContainsKey(subject))
-                return new List<string>(transcriptSubjects[subject]);
+            if (transcript.ContainsKey(sequenceName))
+                return new List<string>(transcript[sequenceName]);
             return new List<string>();
         }
 
         /// <summary>
-        /// Check if character has been interviewed (has any transcript subjects)
+        /// Check if character has been interviewed (has any transcript sequences)
         /// </summary>
         public bool HasBeenInterviewed()
         {
-            return subjectOrder.Count > 0;
+            return sequenceOrder.Count > 0;
         }
 
         /// <summary>

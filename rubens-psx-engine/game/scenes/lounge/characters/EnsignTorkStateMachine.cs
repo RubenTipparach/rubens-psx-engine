@@ -20,11 +20,11 @@ namespace anakinsoft.game.scenes.lounge.characters
             {
                 case "initial":
                     var initialDialogue = GetDialogueSequence("EnsignTorkInterrogation");
-                    return initialDialogue ?? CreateDefaultFollowUp();
+                    return initialDialogue ?? GetDialogueSequence("EnsignTorkDefault");
 
                 case "interrogated":
                     var followUp = GetDialogueSequence("EnsignTorkFollowUp");
-                    return followUp ?? CreateDefaultFollowUp();
+                    return followUp ?? GetDialogueSequence("EnsignTorkDefault");
 
                 default:
                     Console.WriteLine($"[EnsignTorkStateMachine] Unknown state: {currentState}");
@@ -64,21 +64,5 @@ namespace anakinsoft.game.scenes.lounge.characters
             }
         }
 
-        private CharacterDialogueSequence CreateDefaultFollowUp()
-        {
-            return new CharacterDialogueSequence
-            {
-                sequence_name = "EnsignTorkDefault",
-                lines = new System.Collections.Generic.List<DialogueLine>
-                {
-                    new DialogueLine
-                    {
-                        speaker = config?.name ?? "Ensign Tork",
-                        text = "I already told you about the power fluctuations that night, sir. Is there something else you need?"
-                    }
-                },
-                on_complete = ""
-            };
-        }
     }
 }
