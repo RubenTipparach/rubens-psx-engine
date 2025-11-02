@@ -2,6 +2,7 @@ using anakinsoft.entities;
 using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
+using anakinsoft.game.scenes.lounge.finale;
 using anakinsoft.game.scenes.lounge.ui;
 using anakinsoft.system;
 using anakinsoft.system.character;
@@ -82,6 +83,13 @@ namespace anakinsoft.game.scenes
         private LoungeStarfield starfield;
         private LoungeStarfieldSphere starfieldSphere;
 
+        // Finale system
+        private FinaleIntroSequence finaleIntro;
+        private FinaleManager finaleManager;
+        private FinaleUI finaleUI;
+        private FinaleEndingScreen finaleEndingScreen;
+        private RenderingEntity odysseusShip;
+
         // Mesh loader
         private LoungeSceneMeshLoader meshLoader;
 
@@ -138,6 +146,12 @@ namespace anakinsoft.game.scenes
             starfield = new LoungeStarfield();
             starfieldSphere = new LoungeStarfieldSphere();
 
+            // Initialize finale system
+            finaleIntro = new FinaleIntroSequence();
+            finaleManager = new FinaleManager();
+            finaleUI = new FinaleUI();
+            finaleEndingScreen = new FinaleEndingScreen();
+
             // Initialize mesh loader
             meshLoader = new LoungeSceneMeshLoader(LevelScale, physicsSystem, entity => AddRenderingEntity(entity));
 
@@ -163,12 +177,26 @@ namespace anakinsoft.game.scenes
             // Initialize UI Manager (loads portraits)
             uiManager.Initialize();
 
+            // Initialize finale system
+            finaleIntro.Initialize();
+            finaleUI.Initialize();
+            finaleEndingScreen.Initialize();
+
+            // Wire up finale event handlers
+            finaleIntro.OnSequenceComplete += OnFinaleIntroComplete;
+            finaleUI.OnAnswerSelected += OnFinaleAnswerSelected;
+            finaleEndingScreen.OnRestartRequested += OnFinaleRestartRequested;
+            finaleEndingScreen.OnQuitRequested += OnFinaleQuitRequested;
+
             // Create first person character at starting position
             CreateCharacter(new Vector3(0, 5f, 0), Quaternion.Identity);
 
             // Load all lounge geometry and furniture via mesh loader
             meshLoader.LoadAllLoungeGeometry();
             meshLoader.LoadFurniture();
+
+            // Initialize Odysseus ship for finale intro sequence
+            InitializeOdysseusShip();
 
             // Create point light at center of scene, 20 units from ground
             centerLight = new PointLight("CenterLight")
@@ -767,6 +795,50 @@ namespace anakinsoft.game.scenes
             }
         }
 
+        /// <summary>
+        /// Initialize Odysseus ship model for finale intro sequence
+        /// Ship starts far away and moves to window during finale
+        /// </summary>
+        private void InitializeOdysseusShip()
+        {
+            Console.WriteLine("\n========================================");
+            Console.WriteLine("CREATING ODYSSEUS SHIP");
+            Console.WriteLine("========================================");
+
+            // Create ship entity with emissive shader for glowing windows
+            odysseusShip = new RenderingEntity(
+                "models/odysseus_ship",
+                "textures/odysseus/odysseus_ship",
+                "shaders/surface/EmissiveLit" // Use emissive shader for glowing windows
+            );
+            odysseusShip.Scale = Vector3.One * 2.0f; // Scale up the ship
+            odysseusShip.IsVisible = false; // Hidden until finale intro starts
+
+            // Load and apply emissive texture for glowing windows
+            var emissiveTexture = Globals.screenManager.Content.Load<Texture2D>("textures/odysseus/odysseus_ship-expor_emt");
+
+            // Apply emissive map to the ship's model
+            foreach (var mesh in odysseusShip.Model.Meshes)
+            {
+                foreach (var part in mesh.MeshParts)
+                {
+                    if (part.Effect != null && part.Effect.Parameters["EmissiveMap"] != null)
+                    {
+                        part.Effect.Parameters["EmissiveMap"].SetValue(emissiveTexture);
+                        part.Effect.Parameters["UseEmissiveMap"]?.SetValue(true);
+                    }
+                }
+            }
+
+            // Start at far position (will be moved during intro sequence)
+            odysseusShip.Position = finaleIntro.ShipPosition;
+
+            AddRenderingEntity(odysseusShip);
+
+            Console.WriteLine("[TheLoungeScene] Odysseus ship created with emissive glow");
+            Console.WriteLine("========================================\n");
+        }
+
         void CreateCharacter(Vector3 position, Quaternion rotation)
         {
             characterActive = true;
@@ -879,8 +951,34 @@ namespace anakinsoft.game.scenes
                 }
             }
 
-            // Update starfield
-            starfield.Update(gameTime);
+            // Update finale intro sequence
+            if (finaleIntro.IsActive)
+            {
+                finaleIntro.Update(gameTime);
+
+                // Update ship position and visibility during finale intro
+                if (odysseusShip != null)
+                {
+                    odysseusShip.Position = finaleIntro.ShipPosition;
+                    odysseusShip.IsVisible = finaleIntro.IsShipVisible;
+                }
+            }
+
+            // Update finale UI (question buttons)
+            if (finaleUI.IsActive)
+            {
+                finaleUI.Update(gameTime);
+            }
+
+            // Update finale ending screen (restart/quit buttons)
+            if (finaleEndingScreen.IsActive)
+            {
+                finaleEndingScreen.Update(gameTime);
+            }
+
+            // Update starfield with speed multiplier from finale intro
+            float starfieldSpeed = finaleIntro.IsActive ? finaleIntro.StarfieldSpeedMultiplier : 1.0f;
+            starfield.Update(gameTime, starfieldSpeed);
             starfieldSphere.Update(gameTime);
         }
 
@@ -999,6 +1097,24 @@ namespace anakinsoft.game.scenes
         {
             var font = Globals.fontNTR;
             uiManager.DrawUI(gameTime, spriteBatch, font, interactionSystem, isDialogueActive);
+
+            // Draw finale intro overlay (fade, text) on top of everything
+            if (finaleIntro.IsActive)
+            {
+                finaleIntro.DrawUI(spriteBatch);
+            }
+
+            // Draw finale question UI
+            if (finaleUI.IsActive)
+            {
+                finaleUI.Draw(spriteBatch, finaleManager.CurrentQuestionNumber, finaleManager.TotalQuestions);
+            }
+
+            // Draw finale ending screen
+            if (finaleEndingScreen.IsActive)
+            {
+                finaleEndingScreen.Draw(spriteBatch);
+            }
         }
 
 
@@ -1030,6 +1146,59 @@ namespace anakinsoft.game.scenes
         public void SetActiveDialogueCharacter(string characterKey)
         {
             uiManager.SetActiveDialogueCharacter(characterKey);
+        }
+
+        /// <summary>
+        /// Start the finale intro sequence (fade, text, ship arrival, starfield slowdown)
+        /// Call this when investigation time reaches 0 hours
+        /// </summary>
+        public void StartFinaleIntro()
+        {
+            finaleIntro.Start();
+            Console.WriteLine("[TheLoungeScene] Finale intro sequence started");
+        }
+
+        // Finale event handlers
+        private void OnFinaleIntroComplete()
+        {
+            Console.WriteLine("[TheLoungeScene] Finale intro complete, starting questions");
+            finaleManager.StartFinale();
+            finaleUI.Show(finaleManager.CurrentQuestion);
+        }
+
+        private void OnFinaleAnswerSelected(int answerIndex)
+        {
+            Console.WriteLine("[TheLoungeScene] Answer selected: {0}", answerIndex);
+            bool continueQuestions = finaleManager.SubmitAnswer(answerIndex);
+
+            if (continueQuestions && !finaleManager.IsFinaleCompleted)
+            {
+                // Show next question
+                finaleUI.Show(finaleManager.CurrentQuestion);
+            }
+            else
+            {
+                // Show ending screen (success or failure)
+                finaleUI.Hide();
+                finaleEndingScreen.Show(finaleManager.Results);
+            }
+        }
+
+        private void OnFinaleRestartRequested()
+        {
+            Console.WriteLine("[TheLoungeScene] Finale restart requested");
+            // Reset finale state
+            finaleEndingScreen.Hide();
+            finaleManager.Reset();
+            finaleIntro.Reset();
+            // Could reload scene or return to investigation
+        }
+
+        private void OnFinaleQuitRequested()
+        {
+            Console.WriteLine("[TheLoungeScene] Finale quit requested");
+            // Return to main menu or quit game
+            finaleEndingScreen.Hide();
         }
 
         public void HideAutopsyReportVisual()

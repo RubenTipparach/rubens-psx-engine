@@ -43,31 +43,94 @@ namespace rubens_psx_engine.entities
 
         protected virtual void LoadAssets(string modelPath, string texturePath, string effectPath)
         {
+            // Load model
             try
             {
-                // Load model
+                Console.WriteLine($"[RenderingEntity] Loading model: {modelPath}");
                 string modelName = modelPath.Contains(".") ? modelPath.Substring(0, modelPath.LastIndexOf(".")) : modelPath;
                 model = Globals.screenManager.Content.Load<Model>(modelName);
                 transforms = new Matrix[model.Bones.Count];
-
-                // Load texture if provided
-                if (!string.IsNullOrEmpty(texturePath))
-                {
-                    texture = Globals.screenManager.Content.Load<Texture2D>(texturePath);
-                }
-
-                // Load effect
-                if (!string.IsNullOrEmpty(effectPath))
-                {
-                    effect = Globals.screenManager.Content.Load<Effect>(effectPath);
-                }
-
-                // Apply texture and effect to model
-                SetupModelEffects();
+                Console.WriteLine($"[RenderingEntity] ✓ Model loaded successfully: {modelPath}");
             }
             catch (Exception e)
             {
-                string errorMessage = $"Failed to load assets:\nModel: {modelPath}\nTexture: {texturePath}\nEffect: {effectPath}\n\nError: {e.Message} {e.StackTrace}";
+                string errorMessage = $"[RENDERING ENTITY ERROR]\n\n" +
+                                    $"Failed to load MODEL:\n" +
+                                    $"Path: {modelPath}\n\n" +
+                                    $"Error: {e.Message}\n\n" +
+                                    $"Full path attempted: Content/{modelPath}.xnb\n\n" +
+                                    $"{e.StackTrace}";
+                Console.WriteLine(errorMessage);
+                Helpers.FatalPopup(errorMessage);
+                return;
+            }
+
+            // Load texture if provided
+            if (!string.IsNullOrEmpty(texturePath))
+            {
+                try
+                {
+                    Console.WriteLine($"[RenderingEntity] Loading texture: {texturePath}");
+                    texture = Globals.screenManager.Content.Load<Texture2D>(texturePath);
+                    Console.WriteLine($"[RenderingEntity] ✓ Texture loaded successfully: {texturePath}");
+                }
+                catch (Exception e)
+                {
+                    string errorMessage = $"[RENDERING ENTITY ERROR]\n\n" +
+                                        $"Failed to load TEXTURE:\n" +
+                                        $"Path: {texturePath}\n\n" +
+                                        $"Model loaded OK: {modelPath}\n\n" +
+                                        $"Error: {e.Message}\n\n" +
+                                        $"Full path attempted: Content/{texturePath}.xnb\n\n" +
+                                        $"{e.StackTrace}";
+                    Console.WriteLine(errorMessage);
+                    Helpers.FatalPopup(errorMessage);
+                    return;
+                }
+            }
+
+            // Load effect
+            if (!string.IsNullOrEmpty(effectPath))
+            {
+                try
+                {
+                    Console.WriteLine($"[RenderingEntity] Loading effect: {effectPath}");
+                    effect = Globals.screenManager.Content.Load<Effect>(effectPath);
+                    Console.WriteLine($"[RenderingEntity] ✓ Effect loaded successfully: {effectPath}");
+                }
+                catch (Exception e)
+                {
+                    string errorMessage = $"[RENDERING ENTITY ERROR]\n\n" +
+                                        $"Failed to load EFFECT/SHADER:\n" +
+                                        $"Path: {effectPath}\n\n" +
+                                        $"Model loaded OK: {modelPath}\n" +
+                                        $"Texture loaded OK: {texturePath}\n\n" +
+                                        $"Error: {e.Message}\n\n" +
+                                        $"Full path attempted: Content/{effectPath}.xnb\n\n" +
+                                        $"{e.StackTrace}";
+                    Console.WriteLine(errorMessage);
+                    Helpers.FatalPopup(errorMessage);
+                    return;
+                }
+            }
+
+            // Apply texture and effect to model
+            try
+            {
+                Console.WriteLine($"[RenderingEntity] Setting up model effects");
+                SetupModelEffects();
+                Console.WriteLine($"[RenderingEntity] ✓ Model effects setup complete");
+            }
+            catch (Exception e)
+            {
+                string errorMessage = $"[RENDERING ENTITY ERROR]\n\n" +
+                                    $"Failed to SETUP MODEL EFFECTS:\n\n" +
+                                    $"Model: {modelPath} (loaded OK)\n" +
+                                    $"Texture: {texturePath} (loaded OK)\n" +
+                                    $"Effect: {effectPath} (loaded OK)\n\n" +
+                                    $"Error applying to model parts: {e.Message}\n\n" +
+                                    $"{e.StackTrace}";
+                Console.WriteLine(errorMessage);
                 Helpers.FatalPopup(errorMessage);
             }
         }

@@ -85,6 +85,9 @@ namespace anakinsoft.game.scenes
         InterrogationRoundManager interrogationManager;
         ScreenFadeTransition fadeTransition;
 
+        // Finale trigger
+        bool hasTriggeredFinale = false;
+
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
@@ -1834,6 +1837,12 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
+            // Check if finale should be triggered (when time reaches 0)
+            if (interrogationManager != null && interrogationManager.HoursRemaining <= 0 && !hasTriggeredFinale)
+            {
+                TriggerFinale();
+            }
+
             // Update evidence selection UI (highest priority)
             if (evidenceSelectionUI.IsVisible)
             {
@@ -1923,6 +1932,22 @@ namespace anakinsoft.game.scenes
                 var lookOffsetInWorldSpace = Vector3.Transform(CameraLookOffset, Matrix.CreateFromQuaternion(characterOrientation));
                 // Note: FPS camera handles its own look direction via mouse input
             }
+        }
+
+        /// <summary>
+        /// Trigger the finale sequence when investigation time reaches 0
+        /// </summary>
+        private void TriggerFinale()
+        {
+            hasTriggeredFinale = true;
+            Console.WriteLine("[TheLoungeScreen] Triggering finale - investigation time has expired!");
+
+            // Start the finale intro sequence (fade, text, ship arrival)
+            // The finale system will take control of the screen
+            loungeScene.StartFinaleIntro();
+
+            // TODO: May want to close active UI elements before finale
+            // For now, the finale UI will overlay everything
         }
 
         public override void UpdateInput(GameTime gameTime)

@@ -115,7 +115,7 @@ namespace anakinsoft.game.scenes
             }
         }
 
-        public void Update(GameTime gameTime)
+        public void Update(GameTime gameTime, float speedMultiplier = 1.0f)
         {
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -124,7 +124,8 @@ namespace anakinsoft.game.scenes
                 var star = stars[i];
 
                 // Move star backward along -Z axis (away from camera)
-                star.Position.Z -= star.Speed * deltaTime;
+                // speedMultiplier allows slowing down/stopping (0.0 = stopped, 1.0 = full speed)
+                star.Position.Z -= star.Speed * deltaTime * speedMultiplier;
 
                 // If star passed the end point, respawn at start
                 if (star.Position.Z < StarfieldZEnd)

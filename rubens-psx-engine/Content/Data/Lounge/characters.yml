@@ -68,6 +68,166 @@ bartender:
         - speaker: "Zix"
           text: "Go talk to Dr. Kerrigan, the ship's pathologist."
 
+    - sequence_name: "BartenderRound1Hint"
+      lines:
+        - speaker: "Zix"
+          text: "Word around the bar is that Commander Von was very close to the Ambassador. Too close, some might say."
+
+        - speaker: "Zix"
+          text: "I also heard Dr. Thorne had a private meeting with him the night he died. Something about cultural research."
+
+        - speaker: "Zix"
+          text: "Keep your eyes open, detective. People talk when they think no one's listening."
+
+    - sequence_name: "BartenderRound2Hint"
+      lines:
+        - speaker: "Zix"
+          text: "I've been thinking about the timeline. The Ambassador had ceremonial wine around 2100 hours, right before he went to bed."
+
+        - speaker: "Zix"
+          text: "Strange thing is, Commander Von took 'emergency personal leave' during her own security shift. Middle of the night. Who does that?"
+
+        - speaker: "Zix"
+          text: "And here's the kicker - access logs show two different diplomatic codes used that night. Two people visited him."
+
+    - sequence_name: "BartenderRound3Hint"
+      lines:
+        - speaker: "Zix"
+          text: "I've been around a long time, detective. Seen a lot of murders. They're never about what people say they're about."
+
+        - speaker: "Zix"
+          text: "Commander Von... she always struck me as someone who believed in something. Maybe too much."
+
+        - speaker: "Zix"
+          text: "And Dr. Thorne? Career academics don't risk everything for nothing. The Ambassador must have threatened something she couldn't afford to lose."
+
+    - sequence_name: "FinaleReady"
+      lines:
+        - speaker: "Zix"
+          text: "Time's up, detective. The Telirian delegation is demanding answers."
+
+        - speaker: "Zix"
+          text: "You think you've got it figured out? Once you make your accusation, there's no taking it back."
+
+        - speaker: "Zix"
+          text: "They need to know WHO killed Ambassador Lorath, HOW they did it, and WHY. Get it wrong... and we're all dead."
+
+        - speaker: "Zix"
+          text: "Are you ready to solve this case?"
+
+      choices:
+        - text: "Yes, I'm ready."
+          next_sequence: "FinaleQuestions"
+
+        - text: "No, I need more time."
+          next_sequence: "FinaleNotReady"
+
+    - sequence_name: "FinaleNotReady"
+      lines:
+        - speaker: "Zix"
+          text: "Understood. Review your evidence, check the transcripts. But don't take too long - the clock is ticking."
+
+    - sequence_name: "FinaleQuestions"
+      lines:
+        - speaker: "Zix"
+          text: "Alright, detective. The Telirian delegation is waiting. Let's do this."
+
+        - speaker: "Zix"
+          text: "First question: WHO killed Ambassador Lorath?"
+
+      finale_question: 1
+      question_text: "WHO KILLED AMBASSADOR LORATH?"
+      answers:
+        - "Dr. Harmon Kerrigan"
+        - "Commander Sylara Von"
+        - "Dr. Lyssa Thorne"
+        - "Lieutenant Marcus Webb"
+      correct_answer: 1
+
+    - sequence_name: "FinaleQuestion2"
+      lines:
+        - speaker: "Zix"
+          text: "Next question: WHO was the accomplice?"
+
+      finale_question: 2
+      question_text: "WHO WAS THE ACCOMPLICE?"
+      answers:
+        - "Dr. Harmon Kerrigan"
+        - "Dr. Lyssa Thorne"
+        - "Lieutenant Marcus Webb"
+        - "The killer acted alone"
+      correct_answer: 1
+
+    - sequence_name: "FinaleQuestion3"
+      lines:
+        - speaker: "Zix"
+          text: "What was the murder weapon?"
+
+      finale_question: 3
+      question_text: "WHAT WAS THE MURDER WEAPON?"
+      answers:
+        - "Poison in the ceremonial wine"
+        - "Breturium injection causing radiation poisoning"
+        - "Phaser set to lethal"
+        - "Manual strangulation"
+      correct_answer: 1
+
+    - sequence_name: "FinaleQuestion4"
+      lines:
+        - speaker: "Zix"
+          text: "How was the Ambassador incapacitated before the killing blow?"
+
+      finale_question: 4
+      question_text: "HOW WAS THE AMBASSADOR INCAPACITATED BEFORE THE KILLING BLOW?"
+      answers:
+        - "He wasn't incapacitated - killed while awake"
+        - "Stunned with a phaser first"
+        - "Sedated via drugged ceremonial wine"
+        - "Physically restrained by force"
+      correct_answer: 2
+
+    - sequence_name: "FinaleQuestion5"
+      lines:
+        - speaker: "Zix"
+          text: "Who administered the sedative?"
+
+      finale_question: 5
+      question_text: "WHO ADMINISTERED THE SEDATIVE?"
+      answers:
+        - "Commander Sylara Von"
+        - "Dr. Lyssa Thorne"
+        - "Lucky Chen (unknowingly)"
+        - "The Ambassador sedated himself"
+      correct_answer: 1
+
+    - sequence_name: "FinaleQuestion6"
+      lines:
+        - speaker: "Zix"
+          text: "Who performed the lethal injection?"
+
+      finale_question: 6
+      question_text: "WHO PERFORMED THE LETHAL INJECTION?"
+      answers:
+        - "Dr. Lyssa Thorne"
+        - "Commander Sylara Von"
+        - "They both administered partial doses"
+        - "An automated medical device"
+      correct_answer: 1
+
+    - sequence_name: "FinaleQuestion7"
+      lines:
+        - speaker: "Zix"
+          text: "Final question, detective. What was Commander Von's primary motive?"
+
+      finale_question: 7
+      question_text: "WHAT WAS COMMANDER VON'S PRIMARY MOTIVE?"
+      answers:
+        - "Financial gain from treaty sabotage"
+        - "Secret warmonger opposing peace"
+        - "Romantic obsession with the Ambassador"
+        - "Revenge for a family betrayal"
+      correct_answer: 1
+
 pathologist:
   name: "Dr. Harmon Kerrigan"
   species: "Human"
@@ -1832,7 +1992,7 @@ tvora:
           text: "*raises eyebrow* Detective. I anticipated your arrival. Please, be seated."
 
         - speaker: "T'Vora"
-          text: "I am T'Vora, Federation Diplomatic Attaché. I serve as liaison between Starfleet Command and the Fregoilli Collective."
+          text: "I am T'Vora, Federation Diplomatic Attache. I serve as liaison between Starfleet Command and the Fregoilli Collective."
 
         - speaker: "T'Vora"
           text: "Ambassador Lorath's death is... unfortunate. He was a skilled negotiator. His loss will delay the peace process significantly."
@@ -1914,7 +2074,7 @@ tvora:
           text: "*carefully* Very well. There are aspects of my assignment I have not disclosed."
 
         - speaker: "T'Vora"
-          text: "I am not merely a diplomatic attaché. I am Kulluran Intelligence. My mission involves monitoring... activities aboard this vessel."
+          text: "I am not merely a diplomatic attache. I am Kulluran Intelligence. My mission involves monitoring... activities aboard this vessel."
 
         - speaker: "T'Vora"
           text: "*coldly* The breturium smuggling network. Maven Kilroth. Lucky Chen. Dr. Kerrigan's gambling debts. I have been tracking all of it."

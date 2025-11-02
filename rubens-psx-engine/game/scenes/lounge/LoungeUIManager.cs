@@ -179,6 +179,7 @@ namespace anakinsoft.game.scenes
             Console.WriteLine($"[LoungeUIManager] Clearing active dialogue character (was: {activeDialogueCharacter})");
             activeDialogueCharacter = null;
             activeCharacterStateMachine = null; // Also clear state machine when portrait is cleared
+            hoveredCharacter = null; // Also clear hover state to prevent stale portraits
         }
 
         public void SetActiveStressMeter(CharacterStateMachine stateMachine)
