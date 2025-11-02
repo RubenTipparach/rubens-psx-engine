@@ -3,9 +3,11 @@
 // This is the final step in applying a bloom postprocess.
 
 sampler BloomSampler : register(s0);
+
+Texture2D BaseTexture;
 sampler BaseSampler : register(s1)
 {
-	Texture = (BaseTexture); // <--- must use SetValue for BaseTexture
+	Texture = (BaseTexture);
 	Filter = Linear;
 	AddressU = clamp;
 	AddressV = clamp;
@@ -15,8 +17,9 @@ float BloomIntensity;
 float BaseIntensity;
 float BloomSaturation;
 float BaseSaturation;
+float3 LuminanceWeights;
 
-struct VSOutput 
+struct VSOutput
 {
 	float4 position		: SV_Position;
 	float4 color		: COLOR0;
@@ -27,9 +30,9 @@ struct VSOutput
 // Helper for modifying the saturation of a color.
 float4 AdjustSaturation(float4 color, float saturation)
 {
-    // The constants 0.3, 0.59, and 0.11 are chosen because the
+    // The constants are chosen because the
     // human eye is more sensitive to green light, and less to blue.
-    float grey = dot(color, float3(0.3, 0.59, 0.11));
+    float grey = dot(color, LuminanceWeights);
     return lerp(grey, color, saturation);
 }
 

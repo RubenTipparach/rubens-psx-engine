@@ -34,10 +34,10 @@ namespace anakinsoft.game.scenes
         // Star color table
         private static readonly Color[] StarColors = new Color[]
         {
-            ColorExtensions.FromHex("#492d38"), // Farthest - dark purple
-            ColorExtensions.FromHex("#ab5236"), // Medium-far - tan
-            ColorExtensions.FromHex("#ffccaa"), // Medium-close - peach
-            ColorExtensions.FromHex("#fff1e8")  // Closest - light peach
+            ColorExtensions.FromHex("#4a5462"), // Farthest - dark purple
+            ColorExtensions.FromHex("#b3b9d1"), // Medium-far - tan
+            ColorExtensions.FromHex("#e3e6ff"), // Medium-close - peach
+            ColorExtensions.FromHex("#ffffff")  // Closest - light peach
         };
 
         // Calculate max distance based on farthest possible spawn point

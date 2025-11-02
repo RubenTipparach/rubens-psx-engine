@@ -34,8 +34,8 @@ bloom:
 
 # Tint Effect Settings
 tint:
-  enabled: false
-  color: [1.0, 1.0, 1.0, 1.0]  # RGBA
+  enabled: true
+  color: [0.6, 0.6, 0.6, 1.0]  # RGBA
   intensity: 1.0
 
 # Rendering Pipeline Settings

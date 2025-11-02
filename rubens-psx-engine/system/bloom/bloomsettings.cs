@@ -7,6 +7,8 @@
 //-----------------------------------------------------------------------------
 #endregion
 
+using Microsoft.Xna.Framework;
+
 namespace rubens_psx_engine
 {
     /// <summary>
@@ -44,6 +46,10 @@ namespace rubens_psx_engine
         public readonly float BloomSaturation;
         public readonly float BaseSaturation;
 
+        // Luminance calculation weights for RGB channels.
+        // Default values are based on human eye sensitivity to different colors.
+        public readonly Vector3 LuminanceWeights;
+
 
         #endregion
 
@@ -53,7 +59,8 @@ namespace rubens_psx_engine
         /// </summary>
         public BloomSettings(string name, float bloomThreshold, float blurAmount,
                              float bloomIntensity, float baseIntensity,
-                             float bloomSaturation, float baseSaturation)
+                             float bloomSaturation, float baseSaturation,
+                             Vector3? luminanceWeights = null)
         {
             Name = name;
             BloomThreshold = bloomThreshold;
@@ -62,6 +69,7 @@ namespace rubens_psx_engine
             BaseIntensity = baseIntensity;
             BloomSaturation = bloomSaturation;
             BaseSaturation = baseSaturation;
+            LuminanceWeights = luminanceWeights ?? new Vector3(0.3f, 0.59f, 0.11f);
         }
 
 
@@ -77,7 +85,7 @@ namespace rubens_psx_engine
             new BloomSettings("Saturated",   0.25f,  4,   2,     1,    2,       0),
             new BloomSettings("Blurry",      0,      2,   1,     0.1f, 1,       1),
             new BloomSettings("Subtle",      0.5f,   2,   1,     1,    1,       1),
-            new BloomSettings("Blendo",      0.3f,   6,   1,     1,    1,       1), //BC this is the one we use.
+            new BloomSettings("Blendo",      0.4f,   5,   1.5f,  1,  1.2f,   1.4f), //BC this is the one we use.
             new BloomSettings("off",         0.6f,   2,   0.4f,   1,    1,       1),
         };
     }

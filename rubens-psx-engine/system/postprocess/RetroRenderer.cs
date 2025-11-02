@@ -46,29 +46,26 @@ namespace rubens_psx_engine.system.postprocess
             
             if (config.Rendering.EnablePostProcessing)
             {
-                // Add tint effect if enabled
-                if (config.Tint.Enabled)
-                {
-                    var tintEffect = new TintEffect
-                    {
-                        TintColor = config.Tint.GetColor(),
-                        Intensity = config.Tint.Intensity
-                    };
-                    postProcessStack.AddEffect(tintEffect);
-                }
-
-                // Add bloom effect
+                // Add bloom effect with integrated tint and dither
                 var bloomEffect = new BloomEffect();
                 if (config.Bloom.Preset >= 0 && config.Bloom.Preset < BloomSettings.PresetSettings.Length)
                 {
                     bloomEffect.Settings = BloomSettings.PresetSettings[config.Bloom.Preset];
                 }
-                postProcessStack.AddEffect(bloomEffect);
 
-                // Add dither effect (this handles the pixelation)
-                var ditherEffect = new DitherEffect();
-                ditherEffect.LoadFromConfig(); // Load config values
-                postProcessStack.AddEffect(ditherEffect);
+                // Configure integrated tint
+                bloomEffect.EnableTint = config.Tint.Enabled;
+                bloomEffect.TintColor = config.Tint.GetColor();
+                bloomEffect.TintIntensity = config.Tint.Intensity;
+
+                // Configure integrated dither
+                var ditherConfig = RenderingConfigManager.Config.Dither;
+                bloomEffect.EnableDither = true; // Always enabled when bloom is enabled
+                bloomEffect.DitherStrength = ditherConfig.Strength;
+                bloomEffect.ColorLevels = ditherConfig.ColorLevels;
+                bloomEffect.ScreenResolution = new Vector2(ditherConfig.RenderWidth, ditherConfig.RenderHeight);
+
+                postProcessStack.AddEffect(bloomEffect);
             }
 
             postProcessStack.Initialize();

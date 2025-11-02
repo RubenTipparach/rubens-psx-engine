@@ -164,30 +164,26 @@ namespace rubens_psx_engine.system.postprocess
             {
                 var effect = enabledEffects[i];
                 var isLastEffect = (i == enabledEffects.Count - 1);
-                
-                RenderTarget2D outputTarget = null;
-                if (!isLastEffect)
-                {
-                    outputTarget = targetIndex == 0 ? lowResProcessTarget1 : lowResProcessTarget2;
-                    targetIndex = 1 - targetIndex; // Ping-pong between targets
-                }
+
+                // Always use a render target at render resolution, even for last effect
+                RenderTarget2D outputTarget = targetIndex == 0 ? lowResProcessTarget1 : lowResProcessTarget2;
+                targetIndex = 1 - targetIndex; // Ping-pong between targets
 
                 try
                 {
                     // Set viewport for effect processing at render resolution
                     graphicsDevice.Viewport = new Viewport(0, 0, renderResolution.X, renderResolution.Y);
-                    
+
                     effect.Apply(currentTexture, outputTarget, spriteBatch);
-                    
-                    if (!isLastEffect)
-                    {
-                        currentTexture = outputTarget;
-                    }
+
+                    // Update current texture for next iteration or final scaling
+                    currentTexture = outputTarget;
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error applying post-process effect '{effect.Name}': {ex.Message}");
-                    
+                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+
                     if (isLastEffect)
                     {
                         ScaleToDisplay(currentTexture);

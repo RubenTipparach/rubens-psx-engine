@@ -14,7 +14,7 @@ namespace rubens_psx_engine.system.postprocess
         
         public string Name => "Dither";
         public bool Enabled { get; set; } = true;
-        public int Priority => 200; // Higher priority = later in chain
+        public int Priority => 200; // Run after bloom to dither final output
 
         public float DitherStrength { get; set; } = 1.0f;
         public Vector2 ScreenResolution { get; set; } = Vector2.One;
