@@ -827,7 +827,7 @@ namespace anakinsoft.game.scenes
             }
         }
 
-        public void UpdateWithCamera(GameTime gameTime, Camera camera, bool isDialogueActive = false)
+        public void UpdateWithCamera(GameTime gameTime, Camera camera, bool isDialogueActive = false, bool isCameraTransitionActive = false)
         {
             // Update the scene normally first
             Update(gameTime);
@@ -838,8 +838,8 @@ namespace anakinsoft.game.scenes
             // Only update character movement and interactions if not in menu
             if (!Globals.IsInMenuState())
             {
-                // Update interaction system with camera for raycasting (skip during dialogue)
-                if (!isDialogueActive)
+                // Update interaction system with camera for raycasting (skip during dialogue OR camera transition)
+                if (!isDialogueActive && !isCameraTransitionActive)
                 {
                     interactionSystem?.Update(gameTime, camera);
 
@@ -851,6 +851,10 @@ namespace anakinsoft.game.scenes
                             uiManager.SetHoveredCharacter("NPC_Bartender");
                         else if (pathologist.IsSpawned && hoveredChar == pathologist.Interaction)
                             uiManager.SetHoveredCharacter("DrHarmon");
+                        else if (interrogationCharacter1 != null && interrogationCharacter1.IsSpawned && hoveredChar == interrogationCharacter1.Interaction)
+                            uiManager.SetHoveredCharacter(interrogationCharacter1.PortraitKey);
+                        else if (interrogationCharacter2 != null && interrogationCharacter2.IsSpawned && hoveredChar == interrogationCharacter2.Interaction)
+                            uiManager.SetHoveredCharacter(interrogationCharacter2.PortraitKey);
                         else
                             uiManager.SetHoveredCharacter(null);
                     }
@@ -1109,6 +1113,7 @@ namespace anakinsoft.game.scenes
                 ColliderDepth = 15f * LevelScale
             };
             interrogationCharacter1 = SpawnCharacter(config1);
+            interrogationCharacter1.PortraitKey = characters[0].PortraitKey; // Store portrait key for hover display
 
             // Spawn character 2 using generic spawner
             var config2 = new CharacterSpawnConfig
@@ -1122,6 +1127,7 @@ namespace anakinsoft.game.scenes
                 ColliderDepth = 15f * LevelScale
             };
             interrogationCharacter2 = SpawnCharacter(config2);
+            interrogationCharacter2.PortraitKey = characters[1].PortraitKey; // Store portrait key for hover display
 
             Console.WriteLine($"[TheLoungeScene] Spawned {characters[0].Name} and {characters[1].Name} for interrogation");
         }

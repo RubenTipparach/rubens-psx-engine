@@ -11,6 +11,7 @@ using anakinsoft.game.scenes.lounge;
 using anakinsoft.game.scenes.lounge.characters;
 using anakinsoft.game.scenes.lounge.evidence;
 using anakinsoft.game.scenes.lounge.ui;
+using anakinsoft.entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -253,11 +254,13 @@ namespace anakinsoft.game.scenes
             cameraTransitionSystem.OnTransitionToInteractionComplete += () =>
             {
                 Console.WriteLine("Camera reached interaction position, ready for dialogue");
+                // Camera transition state is now checked automatically via cameraTransitionSystem.IsTransitioning
             };
 
             cameraTransitionSystem.OnTransitionToPlayerComplete += () =>
             {
                 Console.WriteLine("Camera returned to player control");
+                // Camera transition state is now checked automatically via cameraTransitionSystem.IsTransitioning
             };
 
             // Set up dialogue events
@@ -268,13 +271,13 @@ namespace anakinsoft.game.scenes
 
             dialogueSystem.OnDialogueEnd += () =>
             {
-                Console.WriteLine("Dialogue ended");
+                Console.WriteLine($"Dialogue ended - IsInterrogating: {interrogationManager.IsInterrogating}, activeChar: {activeInterrogationCharacter}");
 
                 // Show interrogation action UI ONLY if we're interrogating a suspect character (not bartender/pathologist)
                 // AND the character is not dismissed or at 100% stress
                 // DO NOT transition camera back - stay in dialogue mode!
                 // Keep portrait and stress meter visible during action selection
-                if (interrogationManager.IsInterrogating && !string.IsNullOrEmpty(activeInterrogationCharacter))
+                if (!string.IsNullOrEmpty(activeInterrogationCharacter))
                 {
                     // Check if the active character is dismissed or at 100% stress
                     var activeChar = interrogationManager.CurrentPair?.Find(c => c.Name == activeInterrogationCharacter);
@@ -595,7 +598,7 @@ namespace anakinsoft.game.scenes
                         }
 
                         // Start camera transition and begin dialogue after transition completes
-                        cameraTransitionSystem.TransitionToInteraction(char1.Interaction.CameraInteractionPosition,
+                            cameraTransitionSystem.TransitionToInteraction(char1.Interaction.CameraInteractionPosition,
                             char1.Interaction.CameraInteractionLookAt, 1.0f);
 
                         // Subscribe to transition complete event to start dialogue
@@ -693,7 +696,7 @@ namespace anakinsoft.game.scenes
                         }
 
                         // Start camera transition and begin dialogue after transition completes
-                        cameraTransitionSystem.TransitionToInteraction(char2.Interaction.CameraInteractionPosition,
+                            cameraTransitionSystem.TransitionToInteraction(char2.Interaction.CameraInteractionPosition,
                             char2.Interaction.CameraInteractionLookAt, 1.0f);
 
                         // Subscribe to transition complete event to start dialogue
@@ -1735,6 +1738,13 @@ namespace anakinsoft.game.scenes
         {
             Console.WriteLine($"Bartender dialogue triggered");
 
+            // CRITICAL: Do not start bartender interaction if dialogue is already active
+            if (dialogueSystem.IsActive)
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: Cannot start bartender interaction - dialogue is already active. Aborting.");
+                return;
+            }
+
             // Get current dialogue from state machine
             var currentDialogue = GetBartenderDialogue();
             if (currentDialogue == null)
@@ -1745,6 +1755,9 @@ namespace anakinsoft.game.scenes
 
             Console.WriteLine($"[TheLoungeScreen] Retrieved dialogue: {currentDialogue.SequenceName} from state: {bartenderStateMachine.CurrentState}");
 
+            // SIMPLIFIED: Set portrait immediately when E is pressed
+            loungeScene.SetActiveDialogueCharacter("NPC_Bartender");
+
             // Transition camera to bartender
             var bartender = loungeScene.GetBartender();
             if (bartender != null)
@@ -1752,19 +1765,28 @@ namespace anakinsoft.game.scenes
                 // Update the character's dialogue to the current state machine dialogue
                 bartender.SetDialogue(currentDialogue);
 
+                // Disable interactions during camera transition
+    
                 cameraTransitionSystem.TransitionToInteraction(
                     bartender.CameraInteractionPosition,
                     bartender.CameraInteractionLookAt,
                     1.0f);
 
-                // Start dialogue when transition is complete
-                cameraTransitionSystem.OnTransitionToInteractionComplete += StartBartenderDialogueAfterTransition;
+                // Start dialogue immediately - don't wait for camera
+                dialogueSystem.StartDialogue(currentDialogue);
             }
         }
 
         private void OnPathologistDialogueTriggered(DialogueSequence sequence)
         {
             Console.WriteLine($"Pathologist dialogue triggered");
+
+            // CRITICAL: Do not start pathologist interaction if dialogue is already active
+            if (dialogueSystem.IsActive)
+            {
+                Console.WriteLine("[TheLoungeScreen] ERROR: Cannot start pathologist interaction - dialogue is already active. Aborting.");
+                return;
+            }
 
             // Get current dialogue from state machine
             var currentDialogue = GetPathologistDialogue();
@@ -1776,6 +1798,9 @@ namespace anakinsoft.game.scenes
 
             Console.WriteLine($"[TheLoungeScreen] Retrieved dialogue: {currentDialogue.SequenceName} from state: {pathologistStateMachine.CurrentState}");
 
+            // SIMPLIFIED: Set portrait immediately when E is pressed
+            loungeScene.SetActiveDialogueCharacter("DrHarmon");
+
             // Transition camera to pathologist
             var pathologist = loungeScene.GetPathologist();
             if (pathologist != null)
@@ -1783,43 +1808,21 @@ namespace anakinsoft.game.scenes
                 // Update the character's dialogue to the current state machine dialogue
                 pathologist.SetDialogue(currentDialogue);
 
+                // Disable interactions during camera transition
+    
                 cameraTransitionSystem.TransitionToInteraction(
                     pathologist.CameraInteractionPosition,
                     pathologist.CameraInteractionLookAt,
                     1.0f);
 
-                // Start dialogue when transition is complete
-                cameraTransitionSystem.OnTransitionToInteractionComplete += StartPathologistDialogueAfterTransition;
+                // Start dialogue immediately - don't wait for camera
+                dialogueSystem.StartDialogue(currentDialogue);
             }
         }
 
-        private void StartBartenderDialogueAfterTransition()
-        {
-            // Unsubscribe from this event to avoid multiple triggers
-            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartBartenderDialogueAfterTransition;
-
-            var bartender = loungeScene.GetBartender();
-            if (bartender?.DialogueSequence != null)
-            {
-                // Set active dialogue character to show portrait during conversation
-                loungeScene.SetActiveDialogueCharacter("NPC_Bartender");
-                dialogueSystem.StartDialogue(bartender.DialogueSequence);
-            }
-        }
-
-        private void StartPathologistDialogueAfterTransition()
-        {
-            // Unsubscribe from this event to avoid multiple triggers
-            cameraTransitionSystem.OnTransitionToInteractionComplete -= StartPathologistDialogueAfterTransition;
-
-            var pathologist = loungeScene.GetPathologist();
-            if (pathologist?.DialogueSequence != null)
-            {
-                // Set active dialogue character to show portrait during conversation
-                loungeScene.SetActiveDialogueCharacter("DrHarmon");
-                dialogueSystem.StartDialogue(pathologist.DialogueSequence);
-            }
-        }
+        // NOTE: Removed StartBartenderDialogueAfterTransition and StartPathologistDialogueAfterTransition
+        // These callbacks were causing portrait override bugs because they subscribed to the same global event
+        // Now we set portrait and start dialogue immediately when E is pressed (no waiting for camera)
 
         public override void Update(GameTime gameTime)
         {
@@ -1864,8 +1867,8 @@ namespace anakinsoft.game.scenes
                 return; // Don't update other systems while making a choice
             }
 
-            // Update dialogue system
-            if (dialogueSystem.IsActive)
+            // Update dialogue system (but not while camera is transitioning to prevent race conditions)
+            if (dialogueSystem.IsActive && !cameraTransitionSystem.IsTransitioning)
             {
                 dialogueSystem.Update(gameTime);
             }
@@ -1873,7 +1876,7 @@ namespace anakinsoft.game.scenes
             // Update scene with camera for character movement (pass dialogue active state to disable interactions)
             // Include interrogation action UI as "dialogue active" to prevent movement but allow animations
             bool isDialogueActive = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive;
-            loungeScene.UpdateWithCamera(gameTime, fpsCamera, isDialogueActive);
+            loungeScene.UpdateWithCamera(gameTime, fpsCamera, isDialogueActive, cameraTransitionSystem.IsTransitioning);
 
             // Update camera transition system
             cameraTransitionSystem.Update(gameTime);
@@ -1980,8 +1983,8 @@ namespace anakinsoft.game.scenes
             var spriteBatch = Globals.screenManager.getSpriteBatch;
             var font = Globals.fontNTR;
 
-            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue AND interrogation actions)
-            bool isInDialogueMode = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || interrogationActionUI.IsActive;
+            // Draw UI (pass dialogue active state to hide interaction prompts during dialogue AND interrogation actions AND camera transitions)
+            bool isInDialogueMode = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || interrogationActionUI.IsActive || cameraTransitionSystem.IsTransitioning;
             loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, isInDialogueMode);
 
             // Draw dialogue UI on top

@@ -15,6 +15,7 @@ namespace anakinsoft.game.scenes.lounge.characters
     public class LoungeCharacterData
     {
         public string Name { get; set; }
+        public string PortraitKey { get; set; } // Key to look up portrait texture
         public InteractableCharacter Interaction { get; set; }
         public SkinnedRenderingEntity Model { get; set; }
 

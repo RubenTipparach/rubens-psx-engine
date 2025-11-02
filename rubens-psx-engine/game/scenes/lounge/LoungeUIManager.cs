@@ -163,6 +163,13 @@ namespace anakinsoft.game.scenes
 
         public void SetActiveDialogueCharacter(string characterKey)
         {
+            // CRITICAL: Never override active dialogue character if dialogue is already running
+            if (activeDialogueCharacter != null && activeDialogueCharacter != characterKey)
+            {
+                Console.WriteLine($"[LoungeUIManager] WARNING: Attempted to set active dialogue character to '{characterKey}' but '{activeDialogueCharacter}' is already active. Ignoring request.");
+                return;
+            }
+
             activeDialogueCharacter = characterKey;
             Console.WriteLine($"[LoungeUIManager] Active dialogue character set to: {characterKey}");
         }
