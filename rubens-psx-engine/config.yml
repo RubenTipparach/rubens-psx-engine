@@ -17,7 +17,7 @@ dither:
   strength: 1.0
   
   # Color quantization levels (lower = fewer colors, more retro)
-  colorLevels: 20.0
+  colorLevels: 10.0
   
   # Whether to use point sampling (pixelated) or linear sampling
   usePointSampling: true
@@ -26,11 +26,11 @@ dither:
 bloom:
   # Which preset to use (0-7: Default, Soft, Desaturated, Saturated, Blurry, Subtle, Blendo, off)
   preset: 6  # Blendo
-  
-  # Override individual bloom settings (optional)
-  # threshold: 0.3
-  # intensity: 1.0
-  # blurAmount: 6.0
+
+  # Override bloom settings for dithered look
+  threshold: 0.1    # Lower threshold to extract more bright areas after dithering
+  intensity: 1.5    # Higher intensity to make bloom visible
+  blurAmount: 4.0   # Moderate blur
 
 # Tint Effect Settings
 tint:

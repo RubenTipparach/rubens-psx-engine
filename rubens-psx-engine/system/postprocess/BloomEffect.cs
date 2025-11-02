@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using rubens_psx_engine.system.config;
 
 namespace rubens_psx_engine.system.postprocess
 {
@@ -12,7 +13,6 @@ namespace rubens_psx_engine.system.postprocess
         private Effect bloomExtractEffect;
         private Effect bloomCombineEffect;
         private Effect gaussianBlurEffect;
-        private Effect tintEffect;
         private Effect ditherEffect;
 
         private RenderTarget2D renderTarget1;
@@ -24,6 +24,12 @@ namespace rubens_psx_engine.system.postprocess
         public string Name => "Bloom";
         public bool Enabled { get; set; } = true;
         public int Priority => 100; // Higher priority = later in chain
+
+        /// <summary>
+        /// If true, bloom is added on top of the input image (for use after dithering).
+        /// If false, bloom combines with original scene (standalone mode).
+        /// </summary>
+        public bool AdditiveMode { get; set; } = false;
 
         public BloomSettings Settings
         {
@@ -55,7 +61,6 @@ namespace rubens_psx_engine.system.postprocess
             bloomCombineEffect = game.Content.Load<Effect>("shaders/postprocess/BloomCombine");
             gaussianBlurEffect = game.Content.Load<Effect>("shaders/postprocess/GaussianBlur");
             ditherEffect = game.Content.Load<Effect>("shaders/postprocess/Dither");
-            tintEffect = game.Content.Load<Effect>("shaders/postprocess/Tint");
 
             // Create render targets at half resolution for performance
             var pp = graphicsDevice.PresentationParameters;
@@ -75,35 +80,87 @@ namespace rubens_psx_engine.system.postprocess
             var graphicsDevice = spriteBatch.GraphicsDevice;
             graphicsDevice.SamplerStates[1] = SamplerState.LinearClamp;
 
+            Console.WriteLine($"[BloomEffect] Apply called - AdditiveMode: {AdditiveMode}, DitherEffect loaded: {ditherEffect != null}");
+
             // Pass 1: Extract bright parts of the scene
             bloomExtractEffect.Parameters["BloomThreshold"].SetValue(Settings.BloomThreshold);
             DrawFullscreenQuad(inputTexture, renderTarget1, bloomExtractEffect, 
                               IntermediateBuffer.PreBloom, spriteBatch);
 
-            // Pass 2: Horizontal blur with tint
+            // Pass 2: Horizontal blur
             SetBlurEffectParameters(1.0f / renderTarget1.Width, 0);
-            DrawFullscreenQuad(renderTarget1, renderTarget2, tintEffect,
+            DrawFullscreenQuad(renderTarget1, renderTarget2, gaussianBlurEffect,
                               IntermediateBuffer.BlurredHorizontally, spriteBatch);
 
-            // Pass 3: Vertical blur with dither
+            // Pass 3: Vertical blur
             SetBlurEffectParameters(0, 1.0f / renderTarget1.Height);
-            DrawFullscreenQuad(renderTarget2, renderTarget1, ditherEffect,
+            DrawFullscreenQuad(renderTarget2, renderTarget1, gaussianBlurEffect,
                               IntermediateBuffer.BlurredBothWays, spriteBatch);
 
-            // Pass 4: Combine with original scene
+            // Pass 4: Combine bloom with input
             graphicsDevice.SetRenderTarget(outputTarget);
 
-            var parameters = bloomCombineEffect.Parameters;
-            parameters["BloomIntensity"].SetValue(Settings.BloomIntensity);
-            parameters["BaseIntensity"].SetValue(Settings.BaseIntensity);
-            parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
-            parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
+            if (AdditiveMode)
+            {
+                // Additive mode: Combine bloom with input first, THEN apply dither
+                // renderTarget1 contains blurred bloom extracted from original input
+                var bounds = outputTarget?.Bounds ?? graphicsDevice.Viewport.Bounds;
 
-            graphicsDevice.Textures[1] = inputTexture; // Original scene
+                if (ditherEffect != null)
+                {
+                    // First, combine bloom and base image into renderTarget2
+                    graphicsDevice.SetRenderTarget(renderTarget2);
 
-            var bounds = outputTarget?.Bounds ?? graphicsDevice.Viewport.Bounds;
-            DrawFullscreenQuad(renderTarget1, bounds.Width, bounds.Height, 
-                              bloomCombineEffect, IntermediateBuffer.FinalResult, spriteBatch);
+                    // Draw base image
+                    spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp, null, null, null);
+                    spriteBatch.Draw(inputTexture, new Rectangle(0, 0, renderTarget2.Width, renderTarget2.Height), Color.White);
+                    spriteBatch.End();
+
+                    // Add bloom on top
+                    spriteBatch.Begin(0, BlendState.Additive, SamplerState.LinearClamp, null, null, null);
+                    spriteBatch.Draw(renderTarget1, new Rectangle(0, 0, renderTarget2.Width, renderTarget2.Height), Color.White * Settings.BloomIntensity);
+                    spriteBatch.End();
+
+                    // Now apply dither shader to the combined bloom+base result
+                    graphicsDevice.SetRenderTarget(outputTarget);
+
+                    // Set dither shader parameters
+                    var ditherConfig = RenderingConfigManager.Config.Dither;
+                    ditherEffect.Parameters["DitherStrength"]?.SetValue(ditherConfig.Strength);
+                    ditherEffect.Parameters["ScreenSize"]?.SetValue(new Vector2(ditherConfig.RenderWidth, ditherConfig.RenderHeight));
+                    ditherEffect.Parameters["ColorLevels"]?.SetValue(ditherConfig.ColorLevels);
+
+                    spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp, null, null, ditherEffect);
+                    spriteBatch.Draw(renderTarget2, bounds, Color.White);
+                    spriteBatch.End();
+                }
+                else
+                {
+                    // No dither shader - fallback to simple additive bloom
+                    spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp, null, null, null);
+                    spriteBatch.Draw(inputTexture, bounds, Color.White);
+                    spriteBatch.End();
+
+                    spriteBatch.Begin(0, BlendState.Additive, SamplerState.LinearClamp, null, null, null);
+                    spriteBatch.Draw(renderTarget1, bounds, Color.White * Settings.BloomIntensity);
+                    spriteBatch.End();
+                }
+            }
+            else
+            {
+                // Standard mode: Use bloom combine shader
+                var parameters = bloomCombineEffect.Parameters;
+                parameters["BloomIntensity"].SetValue(Settings.BloomIntensity);
+                parameters["BaseIntensity"].SetValue(Settings.BaseIntensity);
+                parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
+                parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
+
+                graphicsDevice.Textures[1] = inputTexture; // Original scene
+
+                var bounds = outputTarget?.Bounds ?? graphicsDevice.Viewport.Bounds;
+                DrawFullscreenQuad(renderTarget1, bounds.Width, bounds.Height,
+                                  bloomCombineEffect, IntermediateBuffer.FinalResult, spriteBatch);
+            }
         }
 
         private void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget,

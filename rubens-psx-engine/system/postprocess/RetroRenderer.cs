@@ -57,21 +57,37 @@ namespace rubens_psx_engine.system.postprocess
                     postProcessStack.AddEffect(tintEffect);
                 }
 
-                // Add bloom effect
-                var bloomEffect = new BloomEffect();
+                // Bloom effect handles dithering internally when in additive mode
+                // Flow: 1) Extract bloom from original, 2) Dither original, 3) Add bloom on top
+                var bloomEffect = new BloomEffect
+                {
+                    AdditiveMode = true // Bloom adds on top of dithered image
+                };
                 if (config.Bloom.Preset >= 0 && config.Bloom.Preset < BloomSettings.PresetSettings.Length)
                 {
-                    bloomEffect.Settings = BloomSettings.PresetSettings[config.Bloom.Preset];
+                    var baseSettings = BloomSettings.PresetSettings[config.Bloom.Preset];
+
+                    // Apply overrides from config
+                    var threshold = config.Bloom.Threshold ?? baseSettings.BloomThreshold;
+                    var intensity = config.Bloom.Intensity ?? baseSettings.BloomIntensity;
+                    var blurAmount = config.Bloom.BlurAmount ?? baseSettings.BlurAmount;
+
+                    bloomEffect.Settings = new BloomSettings(
+                        baseSettings.Name,
+                        threshold,
+                        blurAmount,
+                        intensity,
+                        baseSettings.BaseIntensity,
+                        baseSettings.BloomSaturation,
+                        baseSettings.BaseSaturation
+                    );
                 }
                 postProcessStack.AddEffect(bloomEffect);
-
-                // Add dither effect (this handles the pixelation)
-                var ditherEffect = new DitherEffect();
-                ditherEffect.LoadFromConfig(); // Load config values
-                postProcessStack.AddEffect(ditherEffect);
+                Console.WriteLine($"[RetroRenderer] Added BloomEffect with AdditiveMode={bloomEffect.AdditiveMode}");
             }
 
             postProcessStack.Initialize();
+            Console.WriteLine($"[RetroRenderer] Post-process stack initialized with {postProcessStack.Effects.Count} effects");
             
             // Initialize UI rendering components
             InitializeUIRendering();

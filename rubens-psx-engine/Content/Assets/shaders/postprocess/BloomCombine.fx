@@ -43,12 +43,11 @@ float4 PixelShaderFunction(VSOutput input) : COLOR
     // Adjust color saturation and intensity.
     bloom = AdjustSaturation(bloom, BloomSaturation) * BloomIntensity;
     base = AdjustSaturation(base, BaseSaturation) * BaseIntensity;
-    
-    // Darken down the base image in areas where there is a lot of bloom,
-    // to prevent things looking excessively burned-out.
-    base *= (1 - saturate(bloom));
-    
-    // Combine the two images.
+
+    // NOTE: Removed darkening of base to preserve dithering when bloom is applied after
+    // Original code: base *= (1 - saturate(bloom));
+
+    // Combine the two images with simple additive blending.
     return base + bloom;
 }
 
