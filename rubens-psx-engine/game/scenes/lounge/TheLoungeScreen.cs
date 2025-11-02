@@ -2088,6 +2088,17 @@ namespace anakinsoft.game.scenes
         /// </summary>
         public bool EnableColorQuantizationDithering { get; set; } = true;
 
+        public override bool? OverridePostProcessing()
+        {
+            // If dithering is disabled, turn off all post-processing
+            // (since dithering is the main PSX-style effect)
+            if (!EnableColorQuantizationDithering)
+            {
+                return false;
+            }
+            return null; // Use global config default
+        }
+
         public override void ExitScreen()
         {
             // PhysicsScreen base class will automatically dispose physics resources
