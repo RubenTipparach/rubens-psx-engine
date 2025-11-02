@@ -5,7 +5,7 @@ namespace anakinsoft.game.scenes.lounge.characters
 {
     /// <summary>
     /// State machine for Dr. Lyssa Thorne
-    /// Xenoanthropologist and cultural liaison - nervous, breaks under pressure
+    /// Xenobiologist and research liaison - nervous, breaks under pressure
     /// Accomplice who drugged the Ambassador
     /// </summary>
     public class DrThorneStateMachine : CharacterStateMachine

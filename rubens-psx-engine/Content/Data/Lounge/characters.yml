@@ -345,6 +345,7 @@ commander_von:
     - sequence_name: "CommanderVonDNALowStress"
       action: "present_evidence"
       evidence_id: "dna_evidence"
+      is_correct: true
       requires_stress_below: 30.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -357,6 +358,7 @@ commander_von:
     - sequence_name: "CommanderVonDNAHighStress"
       action: "present_evidence"
       evidence_id: "dna_evidence"
+      is_correct: true
       requires_stress_above: 30.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -369,6 +371,7 @@ commander_von:
     - sequence_name: "CommanderVonAccessCodesLowStress"
       action: "present_evidence"
       evidence_id: "access_codes"
+      is_correct: true
       requires_stress_below: 30.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -381,6 +384,7 @@ commander_von:
     - sequence_name: "CommanderVonAccessCodesHighStress"
       action: "present_evidence"
       evidence_id: "access_codes"
+      is_correct: true
       requires_stress_above: 30.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -393,6 +397,7 @@ commander_von:
     - sequence_name: "CommanderVonMedicalTrainingStressed"
       action: "present_evidence"
       evidence_id: "medical_training"
+      is_correct: true
       requires_stress_above: 50.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -411,6 +416,7 @@ commander_von:
     - sequence_name: "CommanderVonMedicalTrainingLowStress"
       action: "present_evidence"
       evidence_id: "medical_training"
+      is_correct: true
       requires_stress_below: 50.0
       lines:
         - speaker: "Commander Sylara Von"
@@ -430,9 +436,9 @@ dr_thorne:
   species: "Human"
   gender: "Female"
   age: "40s"
-  role: "Xenoanthropologist & Cultural Liaison"
+  role: "Xenobiologist & Cultural Liaison"
   personality: "Awkward, over-explains, nervous laughter"
-  portrait: "textures/chars/(NPC) Dr thorne - xenopathologist"
+  portrait: "textures/chars/(NPC) Dr thorne - xenobiologist"
   model: "models/characters/alien-2"
 
   # Position in the lounge (sitting at table)
@@ -466,7 +472,7 @@ dr_thorne:
     depth: 15.0
 
   # Investigation details
-  public_story: "Mediating cultural protocols for peace talks"
+  public_story: "Studying Telirian biochemistry for peace talks"
   secret: "Ambassador planned to recommend against peace (found humans 'boring'); would destroy her life's work; killed him to write 'definitive tragic romance' for tenure; ghost-writing Sylara's romance novels"
   is_killer: true
   killer_type: "accomplice"
@@ -488,13 +494,13 @@ dr_thorne:
     - sequence_name: "DrThorneInterrogation"
       lines:
         - speaker: "Dr. Lyssa Thorne"
-          text: "Oh, Detective, this is just - it's devastating! The Ambassador and I were collaborating on a cultural exchange paper."
+          text: "Oh, Detective, this is just - it's devastating! The Ambassador and I were collaborating on xenobiological compatibility studies."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "He was so vital to my research on Telirian-human relations. I can't believe - I mean, who would - *nervous laugh* - this is just terrible for everyone involved."
+          text: "He was so vital to my research on Telirian physiology and biochemistry. I can't believe - I mean, who would - *nervous laugh* - this is just terrible for everyone involved."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "Do you need me to explain Telirian death rituals? I can explain those."
+          text: "Do you need me to explain Telirian metabolic processes? I can explain those."
 
     # Alibi - Where were you at the time of the murder?
     - sequence_name: "DrThorneAlibi"
@@ -505,7 +511,7 @@ dr_thorne:
           text: "Me? I was in my quarters. Right next door actually - we're on the same deck for diplomatic protocol reasons."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "I was reviewing my notes. Cross-referencing Telirian spiritual customs with human psychology. Fascinating stuff, really."
+          text: "I was reviewing my notes. Cross-referencing Telirian biological markers with comparative xenobiology. Fascinating stuff, really."
 
         - speaker: "Dr. Lyssa Thorne"
           text: "I didn't hear anything unusual. The walls are quite thick - soundproofed for privacy."
@@ -516,13 +522,13 @@ dr_thorne:
       is_correct: true
       lines:
         - speaker: "Dr. Lyssa Thorne"
-          text: "Professional! Purely professional. I was his cultural liaison for the peace talks."
+          text: "Professional! Purely professional. I was his xenobiological research subject for the peace talks."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "He was... he was brilliant, actually. His understanding of cross-species diplomacy was unparalleled."
+          text: "He was... he was fascinating, actually. His physiology was unlike anything I'd studied before."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "We spent hours discussing Telirian philosophy. He taught me so much about their concept of spiritual bonds and... *trails off*"
+          text: "We spent hours discussing Telirian biochemistry. He taught me so much about their metabolic systems and... *trails off*"
 
     # Doubt (low stress < 25%) - She's lying about not hearing anything
     - sequence_name: "DrThorneDoubtLowStress"
@@ -537,7 +543,7 @@ dr_thorne:
           text: "It sounded like... Commander Von. And the Ambassador. They were speaking in Telirian - I only caught fragments."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "Something about duty and forbidden feelings. I didn't want to pry - cultural sensitivity and all that."
+          text: "Something about duty and forbidden feelings. I didn't want to pry - ethical research protocols and all that."
 
     # Doubt (high stress >= 25%) - She starts cracking
     - sequence_name: "DrThorneDoubtHighStress"
@@ -560,10 +566,10 @@ dr_thorne:
       is_correct: false
       lines:
         - speaker: "Dr. Lyssa Thorne"
-          text: "WHAT?! You think I - no! No no no! I study cultures, I don't kill people!"
+          text: "WHAT?! You think I - no! No no no! I study alien biology, I don't kill people!"
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "This is absurd! I'm a SCHOLAR! Do you have any idea how this accusation could destroy my career?!"
+          text: "This is absurd! I'm a SCIENTIST! Do you have any idea how this accusation could destroy my career?!"
 
     # Evidence: DNA Analysis (low stress)
     - sequence_name: "DrThorneDNALowStress"
@@ -599,7 +605,7 @@ dr_thorne:
           text: "T.B. on his calendar? That's me - Thorne Briefing. We had a scheduled meeting at 2100 hours."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "I have Diplomatic Access #1 as his cultural liaison. It's all perfectly legitimate."
+          text: "I have Diplomatic Access #1 as his xenobiological research liaison. It's all perfectly legitimate."
 
     # Evidence: Access Codes (high stress)
     - sequence_name: "DrThorneAccessCodesHighStress"
@@ -702,6 +708,228 @@ lt_webb:
     - "Has security override codes"
     - "Alone on night bridge shift"
     - "Requisitioned exotic materials for tactical research"
+
+  # Stress thresholds
+  stress_thresholds:
+    doubt_effective: 40.0    # Webb is confident but cracks when pressured
+    accuse_effective: 65.0   # Very high threshold - he's good at deflecting
+
+  # Dialogue sequences
+  dialogue:
+    # Initial interrogation
+    - sequence_name: "LtWebbInterrogation"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Detective. I've been expecting you. I assume you want to know where I was when the Ambassador died?"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I was on the bridge. Alpha shift - 2300 to 0700 hours. Alone, monitoring long-range sensors."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "The Captain prefers a skeleton crew during diplomatic functions. Someone needs to watch for Fregoilli incursions."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I heard about the Ambassador around 0430 when Chief Solis contacted the bridge. Terrible business."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I know how this looks, Detective. Young officer, alone during the murder... but I have nothing to hide."
+
+      on_complete: ""
+
+    # Follow-up dialogue
+    - sequence_name: "LtWebbFollowUp"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I've already told you - I was on the bridge all night. Check the duty logs if you don't believe me."
+
+      on_complete: ""
+
+    # Doubt - Low stress (confident deflection)
+    - sequence_name: "LtWebbDoubtLowStress"
+      action: "doubt"
+      requires_stress_below: 40.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "You doubt me? Detective, I'm a Starfleet officer. I don't appreciate the implication."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I was doing my duty. If you have specific evidence, present it. Otherwise, this is just conjecture."
+
+      stress_increase: 15.0
+      on_complete: ""
+
+    # Doubt - High stress (reveals political ambition)
+    - sequence_name: "LtWebbDoubtHighStress"
+      action: "doubt"
+      requires_stress_above: 40.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "*slams table* Fine! You want the truth? I WANTED him dead, alright?!"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "The Ambassador was a warmonger. He was pushing the Fregoilli toward conflict when we should be negotiating peace!"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But wanting someone dead and KILLING them are very different things, Detective."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I was on the bridge. I couldn't have done it even if I'd wanted to."
+
+      stress_increase: 20.0
+      on_complete: ""
+
+    # Evidence: Access Codes (Low stress - has alibi)
+    - sequence_name: "LtWebbAccessCodesLowStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_below: 40.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Yes, I have override codes. I'm a bridge officer. It's standard protocol for anyone who might need emergency access."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Half the senior staff has those codes, Detective. That doesn't make me a killer."
+
+      on_complete: ""
+
+    # Evidence: Access Codes (High stress - admits to attempted framing)
+    - sequence_name: "LtWebbAccessCodesHighStress"
+      action: "present_evidence"
+      evidence_id: "access_codes"
+      requires_stress_above: 65.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "*laughs bitterly* Alright. You got me. I DID use those codes that night."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I remotely accessed the security logs from the bridge terminal. I... I altered them to make Chief Solis look suspicious."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I thought if someone took the fall - someone who was ALREADY tampering with evidence - it would unite the Federation against a common enemy."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But I didn't kill him! I just wanted to frame the right scapegoat. Someone guilty of SOMETHING."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I'm a patriot, Detective. I did what I thought was necessary for peace."
+
+      on_complete: ""
+
+    # Evidence: DNA Sample (irrelevant - has alibi)
+    - sequence_name: "LtWebbDNAReaction"
+      action: "present_evidence"
+      evidence_id: "dna_sample"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "DNA evidence? From the crime scene? Well, I wasn't there, so good luck matching it to me."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Unless someone is trying to PLANT evidence... which wouldn't surprise me given what I've seen on this ship."
+
+      on_complete: ""
+
+    # Evidence: Medical Training (deflects to Commander Von)
+    - sequence_name: "LtWebbMedicalTraining"
+      action: "present_evidence"
+      evidence_id: "medical_training"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Combat medic certification? I have basic first aid, Detective, like everyone in Starfleet."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But if you're looking for someone with ADVANCED medical knowledge... you should talk to Commander Von."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I've heard stories about her field surgery skills. Impressive... and a little frightening, honestly."
+
+      on_complete: ""
+
+    # Evidence: Security Log (Low stress - deflects)
+    - sequence_name: "LtWebbSecurityLogLowStress"
+      action: "present_evidence"
+      evidence_id: "security_log"
+      requires_stress_below: 40.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "The security logs? I'm sure they show I was on the bridge all night. Feel free to verify."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Bridge duty is logged automatically. Every command, every sensor sweep. It's all there."
+
+      on_complete: ""
+
+    # Evidence: Security Log (High stress - admits tampering)
+    - sequence_name: "LtWebbSecurityLogHighStress"
+      action: "present_evidence"
+      evidence_id: "security_log"
+      requires_stress_above: 65.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "*nervous laugh* Those logs... they might have some... inconsistencies."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I may have edited a few entries. Timestamps, access records... nothing major."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I was trying to redirect suspicion toward Chief Solis. She was ALREADY guilty of tampering!"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But I didn't kill anyone. I was manipulating the investigation, not committing murder."
+
+      on_complete: ""
+
+    # Evidence: Datapad (Dr. Thorne's involvement)
+    - sequence_name: "LtWebbDatapadReaction"
+      action: "present_evidence"
+      evidence_id: "datapad"
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Dr. Thorne's datapad? What does that have to do with me?"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "We've spoken a few times - she's brilliant, if a bit neurotic. But I don't know anything about her personal files."
+
+      on_complete: ""
+
+    # Evidence: Breturium (deflects but hints at knowledge)
+    - sequence_name: "LtWebbBreturiumReaction"
+      action: "present_evidence"
+      evidence_id: "breturium"
+      requires_stress_below: 65.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Breturium? That's... that's a Fregoilli compound. Highly regulated."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I requisitioned some exotic materials for tactical research, but nothing like THAT. Check the manifests."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "If someone smuggled breturium aboard this ship... that's a serious security breach."
+
+      on_complete: ""
+
+    # Evidence: Breturium (High stress - reveals smuggling knowledge)
+    - sequence_name: "LtWebbBreturiumHighStress"
+      action: "present_evidence"
+      evidence_id: "breturium"
+      requires_stress_above: 65.0
+      lines:
+        - speaker: "Lieutenant Marcus Webb"
+          text: "*goes pale* Breturium... you found breturium?"
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "Okay. Fine. I KNEW there was smuggling happening. I turned a blind eye because... because I have contacts in the Fregoilli underground."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "I'm a peace advocate, Detective! I've been working back-channels to prevent war. The smugglers were my information network."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "But I had NO IDEA they were bringing in lethal compounds! I thought it was just cultural artifacts, minor contraband..."
+
+        - speaker: "Lieutenant Marcus Webb"
+          text: "If someone used Fregoilli poison to kill the Ambassador... my contacts might have unknowingly supplied it."
+
+      on_complete: ""
 
 ensign_tork:
   name: "Ensign Tork"

@@ -50,13 +50,14 @@ namespace anakinsoft.game.scenes.lounge.characters
 
         // Interrogation-specific fields
         public string action { get; set; }  // "alibi", "relationship", "doubt", "accuse", "present_evidence"
-        public bool is_correct { get; set; }  // true = correct action (no stress), false = wrong (increase stress)
+        public bool is_correct { get; set; }  // true = correct action/evidence (increases stress), false = wrong (max stress)
         public bool requires_evidence { get; set; }  // true = needs evidence to select this option
 
         // Evidence presentation fields
         public string evidence_id { get; set; }  // ID of evidence this dialogue is for
         public float requires_stress_above { get; set; }  // Minimum stress % required (0 if not set)
         public float requires_stress_below { get; set; }  // Maximum stress % required (100 if not set)
+        public float stress_increase { get; set; }  // Amount of stress to add (0 if not set, defaults based on is_correct)
     }
 
     public class CharacterConfig

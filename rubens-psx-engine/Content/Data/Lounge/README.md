@@ -90,7 +90,7 @@ character_id:
 
 ### Suspects (Primary)
 - **Commander Sylara Von** - Ambassador's Head of Security ⚠️ KILLER
-- **Dr. Lyssa Thorne** - Xenoanthropologist ⚠️ ACCOMPLICE
+- **Dr. Lyssa Thorne** - Xenobiologist ⚠️ ACCOMPLICE
 
 ### Suspects (Red Herrings)
 - **Lieutenant Marcus Webb** - Tactical Officer

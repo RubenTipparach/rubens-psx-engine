@@ -105,13 +105,13 @@ Zix leans in conspiratorially.
 
 ### 4. DR. LYSSA THORNE (Human, Female, 40s)
 
-**Role:** Xenoanthropologist & Cultural Liaison
+**Role:** Xenobiologist & Research Liaison
 
 **Personality:** Awkward, over-explains everything, nervous laugher
 
-**Public Story:** She was mediating cultural protocols for the peace talks
+**Public Story:** She was studying Telirian biochemistry for the peace talks
 
-**Comically Convoluted Motivation:** She discovered the Ambassador was going to recommend against peace because he found human culture "offensively boring." This would've destroyed her life's work proving Telirians and humans are culturally compatible. She killed him so she could write the "definitive tragic romance" of his death, publish it, and finally get tenure. She's been ghost-writing Sylara's romance novels.
+**Comically Convoluted Motivation:** She discovered the Ambassador was going to recommend against peace because he found human culture "offensively boring." This would've destroyed her life's work proving Telirians and humans are biologically compatible. She killed him so she could write the "definitive tragic romance" of his death, publish it, and finally get tenure. She's been ghost-writing Sylara's romance novels.
 
 **Key Evidence:** Has diplomatic access. Knows Telirian physiology intimately. Her quarters are next to the Ambassador's.
 
@@ -455,7 +455,7 @@ Players can:
 #### Four Key Questions:
 
 **1. To Chief Petty Officer Raina Solis:** *"I need to know who these access codes belong to. Can you trace diplomatic codes #1 and #2?"*
-- **Why this advances plot:** She'll reveal Code #1 = Dr. Thorne (cultural liaison), Code #2 = Commander Von (security detail)
+- **Why this advances plot:** She'll reveal Code #1 = Dr. Thorne (xenobiologist), Code #2 = Commander Von (security detail)
 - **Time cost:** 2 minutes
 - **Potential reveal:** Both killers accessed the room at different times
 

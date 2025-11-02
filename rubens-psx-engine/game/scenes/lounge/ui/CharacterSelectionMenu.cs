@@ -83,7 +83,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             characters = new List<SelectableCharacter>
             {
                 new SelectableCharacter("Commander Sylara Von", "CommanderSylar", "Security Chief"),
-                new SelectableCharacter("Dr. Lyssa Thorne", "NPC_DrThorne", "Xenopathologist"),
+                new SelectableCharacter("Dr. Lyssa Thorne", "NPC_DrThorne", "ologist"),
                 new SelectableCharacter("Lieutenant Marcus Webb", "LtWebb", "Navigation Officer"),
                 new SelectableCharacter("Ensign Tork", "EnsignTork", "Junior Engineer"),
                 new SelectableCharacter("Maven Kilroth", "MavenKilroth", "Smuggler"),

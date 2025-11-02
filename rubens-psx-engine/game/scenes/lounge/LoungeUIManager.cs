@@ -42,6 +42,7 @@ namespace anakinsoft.game.scenes
         private string hoveredCharacter = null;
         private string activeDialogueCharacter = null;
         private CharacterStateMachine activeCharacterStateMachine = null; // Optional state machine for interrogations (includes stress)
+        private string lastDrawnPortrait = null; // For debug logging
 
         // Time passage message state
         private bool showTimePassageMessage = false;
@@ -85,7 +86,7 @@ namespace anakinsoft.game.scenes
             // Load character portraits from chars folder
             characterPortraits["NPC_Bartender"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) bartender zix");
             characterPortraits["NPC_Ambassador"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Ambassador Tesh");
-            characterPortraits["NPC_DrThorne"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Dr thorne - xenopathologist");
+            characterPortraits["NPC_DrThorne"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/(NPC) Dr thorne - xenobiologist");
             characterPortraits["DrHarmon"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Dr Harmon - CMO");
             characterPortraits["CommanderSylar"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Commander Sylar Von - Body guard");
             characterPortraits["LtWebb"] = Globals.screenManager.Content.Load<Texture2D>("textures/chars/Lt. Marcus Webb");
@@ -163,10 +164,12 @@ namespace anakinsoft.game.scenes
         public void SetActiveDialogueCharacter(string characterKey)
         {
             activeDialogueCharacter = characterKey;
+            Console.WriteLine($"[LoungeUIManager] Active dialogue character set to: {characterKey}");
         }
 
         public void ClearActiveDialogueCharacter()
         {
+            Console.WriteLine($"[LoungeUIManager] Clearing active dialogue character (was: {activeDialogueCharacter})");
             activeDialogueCharacter = null;
             activeCharacterStateMachine = null; // Also clear state machine when portrait is cleared
         }
@@ -236,7 +239,18 @@ namespace anakinsoft.game.scenes
             string portraitCharacter = isDialogueActive && activeDialogueCharacter != null ? activeDialogueCharacter : hoveredCharacter;
             if (!showIntroText && portraitCharacter != null)
             {
+                // Debug logging to track portrait changes
+                if (portraitCharacter != lastDrawnPortrait)
+                {
+                    Console.WriteLine($"[LoungeUIManager] Drawing portrait: {portraitCharacter} (dialogue active: {isDialogueActive}, activeChar: {activeDialogueCharacter}, hovered: {hoveredCharacter})");
+                    lastDrawnPortrait = portraitCharacter;
+                }
                 DrawCharacterPortrait(spriteBatch, portraitCharacter);
+            }
+            else if (lastDrawnPortrait != null)
+            {
+                Console.WriteLine($"[LoungeUIManager] Stopped drawing portrait");
+                lastDrawnPortrait = null;
             }
 
             // Draw time passage message
@@ -492,7 +506,7 @@ namespace anakinsoft.game.scenes
                 "NPC_Bartender" => ("Zix", "Bartender"),
                 "DrHarmon" => ("Dr. Harmon Kerrigan", "Chief Medical Officer"),
                 "NPC_Ambassador" => ("Ambassador Telir", "Telirian Diplomat"),
-                "NPC_DrThorne" => ("Dr. Lyssa Thorne", "Xenopathologist"),
+                "NPC_DrThorne" => ("Dr. Lyssa Thorne", "Xenobiologist"),
                 "CommanderSylar" => ("Commander Sylara Von", "Security Chief"),
                 "LtWebb" => ("Lt. Marcus Webb", "Navigation Officer"),
                 "EnsignTork" => ("Ensign Tork", "Junior Engineer"),

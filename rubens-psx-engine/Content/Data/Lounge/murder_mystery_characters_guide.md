@@ -141,10 +141,10 @@
 ---
 
 ### 4. DR. LYSSA THORNE (Human, Female, 40s)
-**Role:** Xenoanthropologist & Cultural Liaison  
+**Role:** Xenobiologist & Research Liaison
 **Personality:** Awkward, over-explains, nervous laughter
 
-**Public Story:** Mediating cultural protocols for peace talks
+**Public Story:** Studying Telirian biochemistry for peace talks
 
 **Secret/Motivation:**
 - Ambassador planned to recommend against peace (found humans "boring")

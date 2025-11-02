@@ -1210,7 +1210,7 @@
 /processorParam:TextureFormat=Color
 /build:Assets/textures/chars/(NPC) bartender zix.png;Assets/textures/chars/(NPC) bartender zix
 
-#begin Assets/textures/chars/(NPC) Dr thorne - xenopathologist.png
+#begin Assets/textures/chars/(NPC) Dr thorne - xenobiologist.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -1220,7 +1220,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Assets/textures/chars/(NPC) Dr thorne - xenopathologist.png;Assets/textures/chars/(NPC) Dr thorne - xenopathologist
+/build:Assets/textures/chars/(NPC) Dr thorne - xenobiologist.png;Assets/textures/chars/(NPC) Dr thorne - xenobiologist
 
 #begin Assets/textures/chars/Chief Kala Solis - Sec Cheif.png
 /importer:TextureImporter

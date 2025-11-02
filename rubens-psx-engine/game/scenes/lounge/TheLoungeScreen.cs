@@ -14,6 +14,7 @@ using anakinsoft.game.scenes.lounge.ui;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace anakinsoft.game.scenes
 {
@@ -1186,6 +1187,10 @@ namespace anakinsoft.game.scenes
             {
                 evidenceReaction = chiefSolis.GetEvidenceReaction(evidenceId);
             }
+            else if (stateMachine is LtWebbStateMachine ltWebb)
+            {
+                evidenceReaction = ltWebb.GetEvidenceReaction(evidenceId);
+            }
 
             if (evidenceReaction != null)
             {
@@ -1197,12 +1202,17 @@ namespace anakinsoft.game.scenes
                     // Show the dialogue
                     dialogueSystem.StartDialogue(gameDialogue);
 
-                    // Determine stress impact based on correctness
-                    // TODO: Add stress impact logic based on is_correct field
-                    // For now, presenting evidence increases stress slightly
-                    IncreaseCurrentCharacterStress(5f);
+                    // Determine stress impact
+                    float stressIncrease = 30f; // Default: correct/relevant evidence = 30% stress
 
-                    Console.WriteLine($"[TheLoungeScreen] Showing evidence reaction: {evidenceReaction.sequence_name}");
+                    // Use custom stress increase if specified in YAML
+                    if (evidenceReaction.stress_increase > 0)
+                    {
+                        stressIncrease = evidenceReaction.stress_increase;
+                    }
+
+                    IncreaseCurrentCharacterStress(stressIncrease);
+                    Console.WriteLine($"[TheLoungeScreen] Evidence reaction: {evidenceReaction.sequence_name}, stress +{stressIncrease}%");
                 }
                 else
                 {
@@ -1211,14 +1221,15 @@ namespace anakinsoft.game.scenes
             }
             else
             {
-                // No specific dialogue for this evidence - show default reaction
-                Console.WriteLine($"[TheLoungeScreen] No specific dialogue for evidence '{evidenceId}', showing default");
-                var defaultDialogue = new DialogueSequence("NoReaction");
-                defaultDialogue.AddLine(activeInterrogationCharacter, "I don't see how that's relevant, Detective.");
-                dialogueSystem.StartDialogue(defaultDialogue);
+                // No dialogue for this evidence = wrong/irrelevant = max stress, auto-dismiss
+                Console.WriteLine($"[TheLoungeScreen] WRONG EVIDENCE '{evidenceId}' - no dialogue found, maxing stress!");
 
-                // Wrong evidence = stress increase
-                IncreaseCurrentCharacterStress(10f);
+                var wrongDialogue = new DialogueSequence("WrongEvidence");
+                wrongDialogue.AddLine(activeInterrogationCharacter, "WHAT?! This doesn't prove ANYTHING! I'm done with this interrogation!");
+                dialogueSystem.StartDialogue(wrongDialogue);
+
+                // Max out stress (will trigger auto-dismiss)
+                IncreaseCurrentCharacterStress(100f);
             }
         }
 
@@ -1383,8 +1394,33 @@ namespace anakinsoft.game.scenes
                 return null;
             }
 
-            // Find dialogue sequence matching this action
-            var dialogueSequence = config.dialogue.Find(d => d.action == actionType);
+            // Find dialogue sequence matching this action and current stress level
+            var currentStress = stateMachine.StressPercentage;
+            var actionDialogues = config.dialogue.Where(d => d.action == actionType).ToList();
+
+            CharacterDialogueSequence dialogueSequence = null;
+
+            // Find stress-appropriate dialogue
+            foreach (var dialogue in actionDialogues)
+            {
+                float minStress = dialogue.requires_stress_above;
+                float maxStress = dialogue.requires_stress_below > 0 ? dialogue.requires_stress_below : 100f;
+
+                if (currentStress >= minStress && currentStress < maxStress)
+                {
+                    dialogueSequence = dialogue;
+                    Console.WriteLine($"[TheLoungeScreen] Selected {actionType} dialogue '{dialogue.sequence_name}' for stress {currentStress:F1}% (range {minStress}-{maxStress})");
+                    break;
+                }
+            }
+
+            // Fallback to first matching action if no stress-specific match
+            if (dialogueSequence == null && actionDialogues.Count > 0)
+            {
+                dialogueSequence = actionDialogues[0];
+                Console.WriteLine($"[TheLoungeScreen] Using first {actionType} dialogue '{dialogueSequence.sequence_name}' (no stress match)");
+            }
+
             if (dialogueSequence == null)
             {
                 Console.WriteLine($"[TheLoungeScreen] WARNING: No {actionType} dialogue for {characterKey}, using fallback");
@@ -1402,8 +1438,13 @@ namespace anakinsoft.game.scenes
             }
             else if (actionType == "doubt")
             {
-                Console.WriteLine($"[TheLoungeScreen] Doubt action - increasing stress");
-                IncreaseCurrentCharacterStress(15f); // Moderate stress on doubt
+                float stressIncrease = 15f; // Default stress for doubt
+                if (dialogueSequence.stress_increase > 0)
+                {
+                    stressIncrease = dialogueSequence.stress_increase;
+                }
+                Console.WriteLine($"[TheLoungeScreen] Doubt action - increasing stress by {stressIncrease}%");
+                IncreaseCurrentCharacterStress(stressIncrease);
             }
 
             // Convert to DialogueSequence
@@ -2040,6 +2081,12 @@ namespace anakinsoft.game.scenes
             // Return the lounge scene's background color
             return loungeScene.BackgroundColor;
         }
+
+        /// <summary>
+        /// Disable color quantization and dithering for The Lounge scene
+        /// Set to false to disable PSX-style post-processing effects
+        /// </summary>
+        public bool EnableColorQuantizationDithering { get; set; } = true;
 
         public override void ExitScreen()
         {
