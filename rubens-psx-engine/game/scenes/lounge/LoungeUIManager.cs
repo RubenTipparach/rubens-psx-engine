@@ -247,6 +247,12 @@ namespace anakinsoft.game.scenes
             string portraitCharacter = isDialogueActive && activeDialogueCharacter != null ? activeDialogueCharacter : hoveredCharacter;
             if (!showIntroText && portraitCharacter != null)
             {
+                // Sync activeDialogueCharacter with portraitCharacter if they don't match
+                if (portraitCharacter != activeDialogueCharacter)
+                {
+                    activeDialogueCharacter = portraitCharacter;
+                }
+
                 // Debug logging to track portrait changes
                 if (portraitCharacter != lastDrawnPortrait)
                 {

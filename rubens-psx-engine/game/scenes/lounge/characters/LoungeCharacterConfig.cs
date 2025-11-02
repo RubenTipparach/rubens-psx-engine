@@ -42,11 +42,20 @@ namespace anakinsoft.game.scenes.lounge.characters
         public string text { get; set; }
     }
 
+    public class DialogueChoiceOption
+    {
+        public string text { get; set; }
+        public string next_sequence { get; set; }
+    }
+
     public class CharacterDialogueSequence
     {
         public string sequence_name { get; set; }
         public List<DialogueLine> lines { get; set; }
         public string on_complete { get; set; }
+
+        // Dialogue choices (for branching dialogues like finale)
+        public List<DialogueChoiceOption> choices { get; set; }
 
         // Interrogation-specific fields
         public string action { get; set; }  // "alibi", "relationship", "doubt", "accuse", "present_evidence"

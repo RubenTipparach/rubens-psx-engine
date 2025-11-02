@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using rubens_psx_engine;
+using rubens_psx_engine.system.config;
 using System;
 
 namespace anakinsoft.game.scenes.lounge.finale
@@ -28,11 +29,11 @@ namespace anakinsoft.game.scenes.lounge.finale
         private bool isComplete;
         private SpriteFont font;
 
-        // Ship animation
+        // Ship animation (loaded from config)
         private Vector3 shipStartPosition;
         private Vector3 shipEndPosition;
         private Vector3 currentShipPosition;
-        private float shipApproachDuration = 8.0f; // 8 seconds for ship to arrive
+        private float shipApproachDuration;
 
         // Timing constants
         private const float FadeInDuration = 5.0f;
@@ -54,10 +55,14 @@ namespace anakinsoft.game.scenes.lounge.finale
 
         public FinaleIntroSequence()
         {
-            // Ship starts far away and zooms in
-            shipStartPosition = new Vector3(0, 50, -8000);  // Far in distance
-            shipEndPosition = new Vector3(-100, 30, -400);   // Right outside window
+            // Load ship animation settings from config
+            var config = OdysseusShipConfigManager.Config;
+            shipStartPosition = config.GetStartPosition();
+            shipEndPosition = config.GetEndPosition();
+            shipApproachDuration = config.ApproachDuration;
             currentShipPosition = shipStartPosition;
+
+            Console.WriteLine($"[FinaleIntroSequence] Loaded config - Duration: {shipApproachDuration}s, Start: {shipStartPosition}, End: {shipEndPosition}");
         }
 
         public void Initialize()
@@ -72,7 +77,14 @@ namespace anakinsoft.game.scenes.lounge.finale
             currentState = IntroState.FadeIn;
             stateTimer = 0f;
             fadeAlpha = 1.0f;
+
+            // Reload config in case it changed
+            var config = OdysseusShipConfigManager.Config;
+            shipStartPosition = config.GetStartPosition();
+            shipEndPosition = config.GetEndPosition();
+            shipApproachDuration = config.ApproachDuration;
             currentShipPosition = shipStartPosition;
+
             StarfieldSpeedMultiplier = 1.0f;
             Console.WriteLine("[FinaleIntroSequence] Sequence started");
         }

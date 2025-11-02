@@ -1,0 +1,33 @@
+# Odysseus Ship Finale Animation Configuration
+# Controls the appearance and movement of the Odysseus ship during the finale sequence
+
+# Ship model scale (default: 2.0)
+scale: 2.0
+
+# Ship rotation in degrees [yaw, pitch, roll]
+# yaw: rotation around Y axis (left/right)
+# pitch: rotation around X axis (up/down)
+# roll: rotation around Z axis (barrel roll)
+rotation: [0, 0, 0]
+
+# Duration of ship approach animation in seconds
+approach_duration: 8.0
+
+# Starting position (far away in space)
+# Format: [x, y, z]
+# The ship should start far behind the viewer, moving in the same direction as stars
+# Positive Z = towards camera, Negative Z = away from camera
+start_position: [0, 50, -8000]
+
+# Ending position (near the lounge window)
+# Format: [x, y, z]
+# This is where the ship will stop and park
+end_position: [-100, 30, -400]
+
+# Notes:
+# - The ship moves from start_position to end_position over approach_duration seconds
+# - The animation uses ease-out cubic interpolation for smooth deceleration
+# - Starfield speed decreases proportionally as ship approaches (1.0 to 0.0)
+# - Y axis: positive is up, negative is down
+# - Z axis: negative is away from camera (into screen), positive is toward camera (out of screen)
+# - X axis: negative is left, positive is right

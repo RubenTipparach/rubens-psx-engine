@@ -359,6 +359,14 @@ namespace anakinsoft.game.scenes
                 fadeTransition.FadeOut(1.0f);
             };
 
+            // Handle finale button click
+            characterSelectionMenu.OnFinaleButtonClicked += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Finale button clicked - player acknowledged, directing to bartender");
+                // Button just closes the menu - player must talk to Zix to begin
+                // Zix's dialogue will trigger the finale via FinaleReady sequence
+            };
+
             // Update fade out handler to use pending characters
             fadeTransition.OnFadeOutComplete += () =>
             {
@@ -496,8 +504,14 @@ namespace anakinsoft.game.scenes
                 {
                     Console.WriteLine("Opening suspects file");
 
-                    // Suspects file ALWAYS shows character selection when allowed
-                    if (gameProgress.CanSelectSuspects)
+                    // Check if all rounds are complete
+                    if (interrogationManager.CurrentRound >= 3 && !gameProgress.CanSelectSuspects)
+                    {
+                        Console.WriteLine("[TheLoungeScreen] All rounds complete - directing player to Begin Finale");
+                        // Show message directing player to use Begin Finale button
+                        // The player should click the "Begin Finale" button instead
+                    }
+                    else if (gameProgress.CanSelectSuspects)
                     {
                         Console.WriteLine("[TheLoungeScreen] Showing character selection menu");
                         characterSelectionMenu.Show();
@@ -739,6 +753,16 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation in progress
                 characterSelectionMenu.SetInterrogationInProgress(true);
 
+                // If round 3, disable character selection and show finale button
+                if (interrogationManager.CurrentRound == 3)
+                {
+                    Console.WriteLine("[TheLoungeScreen] Round 3 started - showing finale button (disabled until both dismissed)");
+                    gameProgress.CanSelectSuspects = false;
+
+                    // Show finale button in the character selection menu (disabled until both dismissed)
+                    characterSelectionMenu.ShowFinaleButton();
+                }
+
                 // On first round, enable all evidence items and prepare for interrogation
                 if (interrogationManager.CurrentRound == 1)
                 {
@@ -778,8 +802,18 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation no longer in progress (allows suspects file interaction)
                 characterSelectionMenu.SetInterrogationInProgress(false);
 
-                // Characters remain seated - player can walk around and select next round
-                Console.WriteLine("[TheLoungeScreen] Player can now select next round via suspects file");
+                // If round 3, enable finale button and show it automatically
+                if (interrogationManager.CurrentRound == 3)
+                {
+                    Console.WriteLine("[TheLoungeScreen] Round 3 complete - enabling and showing finale button");
+                    characterSelectionMenu.EnableFinaleButton();
+                    characterSelectionMenu.Show(); // Automatically show the finale button menu
+                }
+                else
+                {
+                    // Characters remain seated - player can walk around and select next round
+                    Console.WriteLine("[TheLoungeScreen] Player can now select next round via suspects file");
+                }
             };
 
             interrogationManager.OnRoundEnded += (hoursRemaining) =>
@@ -803,8 +837,11 @@ namespace anakinsoft.game.scenes
 
             interrogationManager.OnAllRoundsComplete += () =>
             {
-                Console.WriteLine("[TheLoungeScreen] All interrogation rounds complete - time to deduce the killer");
-                // TODO: Transition to deduction phase
+                Console.WriteLine("[TheLoungeScreen] All interrogation rounds complete - disabling suspect selection");
+                gameProgress.CanSelectSuspects = false; // Disable character selection after round 3
+
+                // Player must now use the "Begin Finale" button instead of selecting more suspects
+                Console.WriteLine("[TheLoungeScreen] Player must now click 'Begin Finale' to proceed");
             };
 
             interrogationManager.OnCharactersSpawned += (characters) =>
@@ -1611,6 +1648,24 @@ namespace anakinsoft.game.scenes
 
             // Get current dialogue from state machine
             var yamlDialogue = bartenderStateMachine.GetCurrentDialogue();
+
+            // Check if all rounds are complete - if so, override with FinaleReady dialogue
+            if (interrogationManager.CurrentRound >= 3 && !gameProgress.CanSelectSuspects)
+            {
+                Console.WriteLine("[TheLoungeScreen] All rounds complete - checking for FinaleReady dialogue");
+
+                // Try to get FinaleReady dialogue from loaded character data
+                var finaleDialogue = charactersData?.bartender?.dialogue?.FirstOrDefault(d => d.sequence_name == "FinaleReady");
+                if (finaleDialogue != null)
+                {
+                    Console.WriteLine("[TheLoungeScreen] Found FinaleReady dialogue, using it");
+                    yamlDialogue = finaleDialogue;
+                }
+                else
+                {
+                    Console.WriteLine("[TheLoungeScreen] ERROR: Could not find FinaleReady dialogue, using current state dialogue");
+                }
+            }
             if (yamlDialogue == null)
             {
                 Console.WriteLine("[TheLoungeScreen] No dialogue available from bartender state machine");
@@ -1622,6 +1677,20 @@ namespace anakinsoft.game.scenes
             foreach (var line in yamlDialogue.lines)
             {
                 sequence.AddLine(line.speaker, line.text);
+            }
+
+            // Special handling for FinaleReady dialogue - auto-trigger finale on completion
+            if (yamlDialogue.sequence_name == "FinaleReady")
+            {
+                sequence.OnSequenceComplete = () =>
+                {
+                    Console.WriteLine($"[TheLoungeScreen] FinaleReady dialogue complete - starting finale");
+                    bartenderStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
+
+                    // Auto-start the finale (player can review transcripts before talking to bartender again if not ready)
+                    loungeScene.StartFinaleIntro();
+                };
+                return sequence;
             }
 
             // Wire up completion callback to state machine

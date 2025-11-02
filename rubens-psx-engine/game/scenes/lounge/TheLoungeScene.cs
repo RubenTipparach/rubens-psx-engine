@@ -805,14 +805,25 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("CREATING ODYSSEUS SHIP");
             Console.WriteLine("========================================");
 
+            // Load ship configuration
+            var shipConfig = rubens_psx_engine.system.config.OdysseusShipConfigManager.Config;
+
             // Create ship entity with emissive shader for glowing windows
             odysseusShip = new RenderingEntity(
                 "models/odysseus_ship",
                 "textures/odysseus/odysseus_ship",
                 "shaders/surface/EmissiveLit" // Use emissive shader for glowing windows
             );
-            odysseusShip.Scale = Vector3.One * 2.0f; // Scale up the ship
+
+            // Apply scale and rotation from config
+            odysseusShip.Scale = Vector3.One * shipConfig.Scale;
+
+            // Convert Euler angles (yaw, pitch, roll) to Quaternion
+            var eulerRotation = shipConfig.GetRotation();
+            odysseusShip.Rotation = Quaternion.CreateFromYawPitchRoll(eulerRotation.X, eulerRotation.Y, eulerRotation.Z);
             odysseusShip.IsVisible = false; // Hidden until finale intro starts
+
+            Console.WriteLine($"[TheLoungeScene] Ship scale: {shipConfig.Scale}, rotation: {shipConfig.Rotation[0]}, {shipConfig.Rotation[1]}, {shipConfig.Rotation[2]} degrees");
 
             // Load and apply emissive texture for glowing windows
             var emissiveTexture = Globals.screenManager.Content.Load<Texture2D>("textures/odysseus/odysseus_ship-expor_emt");

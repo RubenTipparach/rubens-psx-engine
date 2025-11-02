@@ -46,6 +46,11 @@ namespace anakinsoft.game.scenes.lounge.ui
         private float warningTimer = 0f;
         private const float WarningDuration = 3f;
 
+        // Finale button state
+        private bool showFinaleButton = false;
+        private bool finaleButtonEnabled = false;
+        private Rectangle finaleButtonRect;
+
         // Track cell rectangles for mouse interaction
         private Dictionary<int, Rectangle> cellRectangles = new Dictionary<int, Rectangle>();
 
@@ -66,6 +71,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         // Events
         public event Action<List<SelectableCharacter>> OnCharactersSelected;
         public event Action OnMenuClosed;
+        public event Action OnFinaleButtonClicked;
 
         public bool IsActive => isActive;
         public SelectableCharacter SelectedCharacter =>
@@ -191,6 +197,35 @@ namespace anakinsoft.game.scenes.lounge.ui
         public bool IsInterrogationInProgress => isInterrogationInProgress;
 
         /// <summary>
+        /// Show the finale button (disabled by default)
+        /// </summary>
+        public void ShowFinaleButton()
+        {
+            showFinaleButton = true;
+            finaleButtonEnabled = false;
+            Console.WriteLine("[CharacterSelectionMenu] Showing finale button (disabled)");
+        }
+
+        /// <summary>
+        /// Enable the finale button (allows clicking)
+        /// </summary>
+        public void EnableFinaleButton()
+        {
+            finaleButtonEnabled = true;
+            Console.WriteLine("[CharacterSelectionMenu] Finale button enabled");
+        }
+
+        /// <summary>
+        /// Hide the finale button
+        /// </summary>
+        public void HideFinaleButton()
+        {
+            showFinaleButton = false;
+            finaleButtonEnabled = false;
+            Console.WriteLine("[CharacterSelectionMenu] Hiding finale button");
+        }
+
+        /// <summary>
         /// Shows a warning message to the player
         /// </summary>
         private void ShowWarning(string message)
@@ -231,6 +266,40 @@ namespace anakinsoft.game.scenes.lounge.ui
 
             var keyboard = Keyboard.GetState();
             var mouse = Mouse.GetState();
+
+            // If showing finale button, handle that instead of character selection
+            if (showFinaleButton)
+            {
+                Point finaleMousePos = new Point(mouse.X, mouse.Y);
+                bool isHoveringButton = finaleButtonRect.Contains(finaleMousePos);
+
+                // Mouse click on finale button
+                if (mouse.LeftButton == ButtonState.Released && previousMouse.LeftButton == ButtonState.Pressed)
+                {
+                    if (isHoveringButton && finaleButtonEnabled)
+                    {
+                        Console.WriteLine("[CharacterSelectionMenu] Finale button clicked!");
+                        OnFinaleButtonClicked?.Invoke();
+                        Hide();
+                    }
+                    else if (isHoveringButton && !finaleButtonEnabled)
+                    {
+                        ShowWarning("Dismiss both suspects first");
+                    }
+                }
+
+                // ESC to close
+                if (keyboard.IsKeyDown(Keys.Escape) && !previousKeyboard.IsKeyDown(Keys.Escape))
+                {
+                    Console.WriteLine("CharacterSelectionMenu: Closed");
+                    OnMenuClosed?.Invoke();
+                    Hide();
+                }
+
+                previousKeyboard = keyboard;
+                previousMouse = mouse;
+                return;
+            }
 
             // Mouse hover detection
             Point mousePosition = new Point(mouse.X, mouse.Y);
@@ -420,6 +489,13 @@ namespace anakinsoft.game.scenes.lounge.ui
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
 
+            // If showing finale button, draw that instead of character grid
+            if (showFinaleButton)
+            {
+                DrawFinaleButton(spriteBatch, font, viewport);
+                return;
+            }
+
             // Calculate grid dimensions
             int rows = (int)Math.Ceiling((float)characters.Count / GridColumns);
             float cellWidth = CellWidth + ItemSpacing;
@@ -573,6 +649,69 @@ namespace anakinsoft.game.scenes.lounge.ui
             var hintSize = font.MeasureString(hint) * 0.6f;
             Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding);
             spriteBatch.DrawString(font, hint, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+        }
+
+        private void DrawFinaleButton(SpriteBatch spriteBatch, SpriteFont font, Viewport viewport)
+        {
+            // Calculate menu dimensions
+            float menuWidth = 600;
+            float menuHeight = 300;
+            float menuX = (viewport.Width - menuWidth) / 2;
+            float menuY = (viewport.Height - menuHeight) / 2;
+
+            // Draw background
+            DrawFilledRectangle(spriteBatch, new Rectangle((int)menuX, (int)menuY, (int)menuWidth, (int)menuHeight), BackgroundColor);
+            DrawRectangleBorder(spriteBatch, new Rectangle((int)menuX, (int)menuY, (int)menuWidth, (int)menuHeight), Color.White, 3);
+
+            // Draw title
+            string title = "ROUND 3 COMPLETE";
+            var titleSize = font.MeasureString(title);
+            Vector2 titlePos = new Vector2(menuX + (menuWidth - titleSize.X) / 2, menuY + 40);
+            spriteBatch.DrawString(font, title, titlePos, SelectedColor, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
+
+            // Draw button
+            float buttonWidth = 400;
+            float buttonHeight = 80;
+            float buttonX = menuX + (menuWidth - buttonWidth) / 2;
+            float buttonY = menuY + (menuHeight - buttonHeight) / 2 + 20;
+
+            finaleButtonRect = new Rectangle((int)buttonX, (int)buttonY, (int)buttonWidth, (int)buttonHeight);
+
+            // Button color based on state
+            Color buttonColor = finaleButtonEnabled ? ConfirmedColor : InterrogatedColor;
+            Color textColor = finaleButtonEnabled ? Color.Black : Color.DarkGray;
+
+            DrawFilledRectangle(spriteBatch, finaleButtonRect, buttonColor);
+            DrawRectangleBorder(spriteBatch, finaleButtonRect, Color.White, 3);
+
+            // Button text
+            string buttonText = "READY FOR FINALE";
+            var buttonTextSize = font.MeasureString(buttonText) * 1.2f;
+            Vector2 buttonTextPos = new Vector2(buttonX + (buttonWidth - buttonTextSize.X) / 2, buttonY + (buttonHeight - buttonTextSize.Y) / 2);
+            spriteBatch.DrawString(font, buttonText, buttonTextPos, textColor, 0f, Vector2.Zero, 1.2f, SpriteEffects.None, 0f);
+
+            // Draw status text
+            string statusText = finaleButtonEnabled ? "Talk to bartender Zix to begin" : "Dismiss both suspects first";
+            var statusTextSize = font.MeasureString(statusText) * 0.7f;
+            Vector2 statusPos = new Vector2(menuX + (menuWidth - statusTextSize.X) / 2, buttonY + buttonHeight + 20);
+            spriteBatch.DrawString(font, statusText, statusPos, Color.White, 0f, Vector2.Zero, 0.7f, SpriteEffects.None, 0f);
+
+            // Draw additional hint if enabled
+            if (finaleButtonEnabled)
+            {
+                string hintText = "Zix will ask you the 7 critical questions";
+                var hintTextSize = font.MeasureString(hintText) * 0.6f;
+                Vector2 hintPos = new Vector2(menuX + (menuWidth - hintTextSize.X) / 2, statusPos.Y + statusTextSize.Y + 10);
+                spriteBatch.DrawString(font, hintText, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+            }
+
+            // Draw warning message if active
+            if (!string.IsNullOrEmpty(warningMessage) && warningTimer > 0f)
+            {
+                var warningSize = font.MeasureString(warningMessage) * 0.8f;
+                Vector2 warningPos = new Vector2(menuX + (menuWidth - warningSize.X) / 2, menuY + menuHeight - 50);
+                spriteBatch.DrawString(font, warningMessage, warningPos, Color.Red, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0f);
+            }
         }
 
         private void DrawFilledRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
