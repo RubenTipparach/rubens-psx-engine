@@ -37,9 +37,6 @@ namespace anakinsoft.game.scenes
         DialogueSystem dialogueSystem;
         CameraTransitionSystem cameraTransitionSystem;
         bool hasPlayedIntro = false;
-        bool hasStartedFade = false;
-        float fadeDelayTimer = 0f;
-        const float FADE_DELAY_SECONDS = 1f; // Wait half a second before starting fade
 
         // Character selection menu
         CharacterSelectionMenu characterSelectionMenu;
@@ -99,9 +96,16 @@ namespace anakinsoft.game.scenes
             fadeTransition = new ScreenFadeTransition(gd);
             fadeTransition.SetBlack();
 
-            fpsCamera = new FPSCamera(gd, new Vector3(0, 16.0f, 0));
+            fpsCamera = new FPSCamera(gd, new Vector3(0, 20.0f, 0));
             loungeScene = new TheLoungeScene();
             SetScene(loungeScene); // Register scene with physics screen for automatic disposal
+
+            // Subscribe to intro text completion event to start fade-in
+            loungeScene.GetUIManager().OnIntroTextComplete += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Intro text complete - starting fade in");
+                fadeTransition.FadeIn(1.0f);
+            };
 
             // Create camera and set its rotation from the character's initial rotation
             fpsCamera.SetRotation(loungeScene.GetCharacterInitialRotation());
@@ -2047,17 +2051,8 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
-            // Wait for delay before starting fade to ensure intro text is visible
-            if (!hasStartedFade)
-            {
-                fadeDelayTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (fadeDelayTimer >= FADE_DELAY_SECONDS)
-                {
-                    Console.WriteLine($"[TheLoungeScreen] Starting fade in after {fadeDelayTimer:F2}s delay");
-                    fadeTransition.FadeIn(1.0f);
-                    hasStartedFade = true;
-                }
-            }
+            // Fade-in now starts when intro text completes (via OnIntroTextComplete event)
+            // No timer-based fade start needed anymore
 
             // Check if finale should be triggered (when time reaches 0)
             if (interrogationManager != null && interrogationManager.HoursRemaining <= 0 && !hasTriggeredFinale)
@@ -2238,6 +2233,9 @@ namespace anakinsoft.game.scenes
             var font = Globals.fontNTR;
             var viewportBounds = Globals.screenManager.GraphicsDevice.Viewport;
 
+            // Draw fade transition FIRST (under everything)
+            fadeTransition.Draw(spriteBatch, new Rectangle(0, 0, viewportBounds.Width, viewportBounds.Height));
+
             // Draw UI (pass dialogue active state to hide interaction prompts during dialogue AND interrogation actions AND camera transitions)
             bool isInDialogueMode = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || interrogationActionUI.IsActive || cameraTransitionSystem.IsTransitioning;
             loungeScene.DrawUI(gameTime, fpsCamera, spriteBatch, isInDialogueMode);
@@ -2317,14 +2315,11 @@ namespace anakinsoft.game.scenes
                 evidenceSelectionUI.Draw(spriteBatch, font);
             }
 
-            // Draw confirmation dialog (on top of everything except fade)
+            // Draw confirmation dialog (on top of everything)
             if (confirmationDialog.IsActive && font != null)
             {
                 confirmationDialog.Draw(spriteBatch, font);
             }
-
-            // Draw fade transition (always last, on top of everything)
-            fadeTransition.Draw(spriteBatch, new Rectangle(0, 0, viewportBounds.Width, viewportBounds.Height));
         }
 
         public override void Draw3D(GameTime gameTime)

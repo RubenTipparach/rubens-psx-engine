@@ -30,7 +30,7 @@ namespace anakinsoft.game.scenes
         // Intro text teletype effect
         private float introTeletypeTimer = 0f;
         private int introVisibleCharacters = 0;
-        private const float IntroCharactersPerSecond = 30f;
+        private const float IntroCharactersPerSecond = 15f; // Slowed down 50%
         private bool introTeletypeComplete = false;
         private KeyboardState previousKeyboardState;
 
@@ -323,10 +323,7 @@ namespace anakinsoft.game.scenes
         {
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
 
-            // Draw black background
-            var blackTexture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
-            blackTexture.SetData(new[] { Color.Black });
-            spriteBatch.Draw(blackTexture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.Black);
+            // No black background - intro text draws on top of fade screen
 
             // Get visible text based on teletype progress
             string visibleText = IntroText.Substring(0, Math.Min(introVisibleCharacters, IntroText.Length));
