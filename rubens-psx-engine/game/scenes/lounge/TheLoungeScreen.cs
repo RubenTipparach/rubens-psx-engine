@@ -164,6 +164,9 @@ namespace anakinsoft.game.scenes
             interrogationManager = new InterrogationRoundManager(gameProgress);
             fadeTransition = new ScreenFadeTransition(gd);
 
+            // Start with black screen to cover loading
+            fadeTransition.SetBlack();
+
             // Load character data from YAML and initialize state machines
             LoadCharacterDataAndStateMachines();
 
@@ -187,6 +190,13 @@ namespace anakinsoft.game.scenes
 
             // Set up finale restart handler
             loungeScene.OnRestartInvestigationRequested += OnRestartInvestigationRequested;
+
+            // Fade in from black after intro text completes
+            loungeScene.GetUIManager().OnIntroTextComplete += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Intro text complete - fading in");
+                fadeTransition.FadeIn(2.0f);
+            };
 
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;

@@ -139,14 +139,11 @@ namespace rubens_psx_engine
                 getGraphicsDevice.PreferredBackBufferHeight = 720;
             }
 
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                //Globals.screenManager.Window.IsBorderlessEXT = Globals.screenManager.GetSettingsManager.GetSettings.fullscreen;
-            }
-            else
-            {
-                getGraphicsDevice.IsFullScreen = Globals.screenManager.GetSettingsManager.GetSettings.fullscreen;
-            }
+            // Apply fullscreen on all platforms
+            getGraphicsDevice.IsFullScreen = Globals.screenManager.GetSettingsManager.GetSettings.fullscreen;
+
+            // Enable true exclusive fullscreen (hardware mode switch) instead of borderless
+            getGraphicsDevice.HardwareModeSwitch = true;
 
             getGraphicsDevice.ApplyChanges();
             Globals.screenManager.ResetBloom();

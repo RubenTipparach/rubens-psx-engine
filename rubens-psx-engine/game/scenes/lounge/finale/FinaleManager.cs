@@ -134,7 +134,7 @@ namespace anakinsoft.game.scenes.lounge.finale
                     "Romantic obsession with the Ambassador",
                     "Revenge for a family betrayal"
                 },
-                CorrectAnswerIndex = 1 // Secret warmonger opposing peace
+                CorrectAnswerIndex = 2 // Romantic obsession with the Ambassador
             });
         }
 

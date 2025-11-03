@@ -51,6 +51,8 @@ namespace anakinsoft.game.scenes
         private const float TimePassageDuration = 3.0f; // Show for 3 seconds
 
         public bool ShowIntroText => showIntroText;
+
+        public event Action OnIntroTextComplete;
         public Dictionary<string, Texture2D> CharacterPortraits => characterPortraits;
 
         public LoungeUIManager()
@@ -140,6 +142,7 @@ namespace anakinsoft.game.scenes
                 {
                     // Skip intro text entirely
                     showIntroText = false;
+                    OnIntroTextComplete?.Invoke();
                 }
             }
 
@@ -152,6 +155,7 @@ namespace anakinsoft.game.scenes
                 if (introTextTimer >= IntroTextDuration)
                 {
                     showIntroText = false;
+                    OnIntroTextComplete?.Invoke();
                 }
             }
         }

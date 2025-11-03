@@ -85,16 +85,12 @@ namespace rubens_psx_engine
             
                 Logger.Info("ScreenManager: Configuring graphics settings");
                 //Settings are now loaded. Hook them into all the game systems.
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    Logger.Info("ScreenManager: Running on Windows platform");
-                    //this.Window.IsBorderlessEXT = settingsManager.GetSettings.fullscreen;
-                }
-                else
-                {
-                    Logger.Info("ScreenManager: Running on non-Windows platform");
-                    graphics.IsFullScreen = settingsManager.GetSettings.fullscreen;
-                }
+                // Apply fullscreen settings on all platforms
+                Logger.Info($"ScreenManager: Setting fullscreen to {settingsManager.GetSettings.fullscreen}");
+                graphics.IsFullScreen = settingsManager.GetSettings.fullscreen;
+
+                // Enable true exclusive fullscreen (hardware mode switch) instead of borderless
+                graphics.HardwareModeSwitch = true;
 
                 graphics.PreferredBackBufferWidth = settingsManager.GetSettings.screenwidth;
                 graphics.PreferredBackBufferHeight = settingsManager.GetSettings.screenheight;

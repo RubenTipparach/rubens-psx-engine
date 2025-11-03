@@ -1162,6 +1162,7 @@ namespace anakinsoft.game.scenes
         public bool IsFinaleUIActive => finaleUI.IsActive;
         public bool IsFinaleEndingScreenActive => finaleEndingScreen.IsActive;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
+        public LoungeUIManager GetUIManager() => uiManager;
         public CharacterProfileManager GetProfileManager() => profileManager;
 
         public void SetActiveDialogueCharacter(string characterKey)
