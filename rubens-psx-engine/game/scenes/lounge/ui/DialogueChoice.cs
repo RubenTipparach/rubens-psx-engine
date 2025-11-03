@@ -31,7 +31,10 @@ namespace anakinsoft.game.scenes.lounge.ui
         private int selectedIndex = 0;
         private bool isActive = false;
         private KeyboardState previousKeyboard;
+        private MouseState previousMouse;
         private string promptText = "";
+        private List<Rectangle> optionBounds = new List<Rectangle>(); // Mouse hit boxes for options
+        private bool mouseOnlyMode = false; // When true, keyboard input is disabled
 
         // Display settings
         private const float BoxPadding = 20f;
@@ -51,7 +54,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         /// <summary>
         /// Show dialogue choices
         /// </summary>
-        public void ShowChoices(string prompt, List<DialogueOption> choices)
+        public void ShowChoices(string prompt, List<DialogueOption> choices, bool mouseOnly = false)
         {
             if (choices == null || choices.Count == 0)
             {
@@ -63,8 +66,9 @@ namespace anakinsoft.game.scenes.lounge.ui
             options = new List<DialogueOption>(choices);
             selectedIndex = 0;
             isActive = true;
+            mouseOnlyMode = mouseOnly;
 
-            Console.WriteLine($"DialogueChoiceSystem: Showing {options.Count} choices");
+            Console.WriteLine($"DialogueChoiceSystem: Showing {options.Count} choices (mouseOnly={mouseOnly})");
         }
 
         /// <summary>
@@ -86,35 +90,70 @@ namespace anakinsoft.game.scenes.lounge.ui
                 return;
 
             var keyboard = Keyboard.GetState();
+            var mouse = Mouse.GetState();
+            var mousePosition = new Point(mouse.X, mouse.Y);
 
-            // Navigate up
-            if (keyboard.IsKeyDown(Keys.Up) && !previousKeyboard.IsKeyDown(Keys.Up))
+            // Mouse hover detection - update selected index based on hover
+            for (int i = 0; i < optionBounds.Count; i++)
             {
-                selectedIndex--;
-                if (selectedIndex < 0)
-                    selectedIndex = options.Count - 1;
-            }
-
-            // Navigate down
-            if (keyboard.IsKeyDown(Keys.Down) && !previousKeyboard.IsKeyDown(Keys.Down))
-            {
-                selectedIndex++;
-                if (selectedIndex >= options.Count)
-                    selectedIndex = 0;
-            }
-
-            // Select option with E or Enter
-            if ((keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)) ||
-                (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter)))
-            {
-                if (selectedIndex >= 0 && selectedIndex < options.Count)
+                if (optionBounds[i].Contains(mousePosition))
                 {
-                    var selectedOption = options[selectedIndex];
-                    Console.WriteLine($"DialogueChoiceSystem: Selected '{selectedOption.Text}'");
+                    selectedIndex = i;
+                    break;
+                }
+            }
 
-                    selectedOption.OnSelected?.Invoke();
-                    OnOptionSelected?.Invoke(selectedOption);
-                    Hide();
+            // Mouse click selection
+            if (mouse.LeftButton == ButtonState.Released && previousMouse.LeftButton == ButtonState.Pressed)
+            {
+                for (int i = 0; i < optionBounds.Count; i++)
+                {
+                    if (optionBounds[i].Contains(mousePosition))
+                    {
+                        var selectedOption = options[i];
+                        Console.WriteLine($"DialogueChoiceSystem: Mouse selected '{selectedOption.Text}'");
+
+                        selectedOption.OnSelected?.Invoke();
+                        OnOptionSelected?.Invoke(selectedOption);
+                        Hide();
+                        previousMouse = mouse;
+                        return;
+                    }
+                }
+            }
+
+            // Keyboard input only if not in mouse-only mode
+            if (!mouseOnlyMode)
+            {
+                // Keyboard: Navigate up
+                if (keyboard.IsKeyDown(Keys.Up) && !previousKeyboard.IsKeyDown(Keys.Up))
+                {
+                    selectedIndex--;
+                    if (selectedIndex < 0)
+                        selectedIndex = options.Count - 1;
+                }
+
+                // Keyboard: Navigate down
+                if (keyboard.IsKeyDown(Keys.Down) && !previousKeyboard.IsKeyDown(Keys.Down))
+                {
+                    selectedIndex++;
+                    if (selectedIndex >= options.Count)
+                        selectedIndex = 0;
+                }
+
+                // Keyboard: Select option with E or Enter
+                if ((keyboard.IsKeyDown(Keys.E) && !previousKeyboard.IsKeyDown(Keys.E)) ||
+                    (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter)))
+                {
+                    if (selectedIndex >= 0 && selectedIndex < options.Count)
+                    {
+                        var selectedOption = options[selectedIndex];
+                        Console.WriteLine($"DialogueChoiceSystem: Keyboard selected '{selectedOption.Text}'");
+
+                        selectedOption.OnSelected?.Invoke();
+                        OnOptionSelected?.Invoke(selectedOption);
+                        Hide();
+                    }
                 }
             }
 
@@ -122,6 +161,7 @@ namespace anakinsoft.game.scenes.lounge.ui
             // Player must make a choice to continue
 
             previousKeyboard = keyboard;
+            previousMouse = mouse;
         }
 
         /// <summary>
@@ -161,18 +201,26 @@ namespace anakinsoft.game.scenes.lounge.ui
                 currentY += font.MeasureString(wrappedPrompt).Y + 20f;
             }
 
-            // Draw options
+            // Draw options and populate mouse hit boxes
+            optionBounds.Clear(); // Clear previous bounds
             for (int i = 0; i < options.Count; i++)
             {
                 bool isSelected = i == selectedIndex;
                 Color optionColor = isSelected ? SelectedColor : NormalColor;
 
+                // Calculate bounds for mouse hit detection
+                Rectangle bounds = new Rectangle(
+                    (int)menuX + 10,
+                    (int)currentY - 5,
+                    (int)menuWidth - 20,
+                    (int)OptionHeight
+                );
+                optionBounds.Add(bounds);
+
                 // Draw selection highlight
                 if (isSelected)
                 {
-                    DrawFilledRectangle(spriteBatch,
-                        new Rectangle((int)menuX + 10, (int)currentY - 5, (int)menuWidth - 20, (int)OptionHeight),
-                        Color.Yellow * 0.2f);
+                    DrawFilledRectangle(spriteBatch, bounds, Color.Yellow * 0.2f);
                 }
 
                 // Draw option text

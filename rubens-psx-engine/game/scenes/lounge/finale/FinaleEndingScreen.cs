@@ -1,3 +1,4 @@
+using anakinsoft.system.cameras;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -46,16 +47,32 @@ namespace anakinsoft.game.scenes.lounge.finale
             whitePixel.SetData(new[] { Color.White });
         }
 
-        public void Show(FinaleResults finaleResults)
+        public void Show(FinaleResults finaleResults, Camera camera)
         {
             isActive = true;
             results = finaleResults;
+
+            // Position camera at (0, 20, 0) looking towards positive Z (0, 20, 10)
+            camera.Position = new Vector3(0, 20, 0);
+            Vector3 lookTarget = new Vector3(0, 20, 10);
+            Vector3 lookDirection = Vector3.Normalize(lookTarget - camera.Position);
+
+            // Create rotation quaternion from look direction
+            Quaternion rotation = Quaternion.CreateFromRotationMatrix(
+                Matrix.CreateLookAt(Vector3.Zero, lookDirection, Vector3.Up)
+            );
+            rotation = Quaternion.Inverse(rotation); // Invert because CreateLookAt gives view space
+
+            camera.SetRotation(rotation);
+
+            // Show mouse cursor
+            Globals.screenManager.IsMouseVisible = true;
 
             int screenWidth = Globals.screenManager.GraphicsDevice.Viewport.Width;
             int screenHeight = Globals.screenManager.GraphicsDevice.Viewport.Height;
 
             // Position buttons at bottom
-            int buttonWidth = 300;
+            int buttonWidth = 330;
             int buttonHeight = 50;
             int buttonY = screenHeight - 100;
             int buttonSpacing = 50;
@@ -74,8 +91,8 @@ namespace anakinsoft.game.scenes.lounge.finale
                 buttonHeight
             );
 
-            Console.WriteLine("[FinaleEndingScreen] Showing ending - Success: {0}, Accuracy: {1:F1}%",
-                results.Success, results.AccuracyPercentage);
+            Console.WriteLine("[FinaleEndingScreen] Showing ending - Success: {0}, Accuracy: {1:F1}%, Camera: {2}",
+                results.Success, results.AccuracyPercentage, camera.Position);
         }
 
         public void Hide()

@@ -18,7 +18,6 @@ namespace anakinsoft.game.scenes.lounge.finale
         private enum IntroState
         {
             FadeIn,
-            PreTextDelay,  // 5 second delay before showing text - let player see approaching ship
             ShowText,
             ShipApproach,
             Complete
@@ -37,8 +36,7 @@ namespace anakinsoft.game.scenes.lounge.finale
         private float shipApproachDuration;
 
         // Timing constants
-        private const float FadeInDuration = 5.0f;
-        private const float PreTextDelayDuration = 5.0f; // Delay before showing text so player can see ship approaching
+        private const float FadeInDuration = 1.0f;
         private const float TextDisplayDuration = 4.0f;
 
         // Fade
@@ -100,12 +98,9 @@ namespace anakinsoft.game.scenes.lounge.finale
                     UpdateFadeIn(deltaTime);
                     break;
 
-                case IntroState.PreTextDelay:
-                    UpdatePreTextDelay(deltaTime);
-                    break;
-
                 case IntroState.ShowText:
                     UpdateShowText(deltaTime);
+                    UpdateShipApproach(deltaTime);
                     break;
 
                 case IntroState.ShipApproach:
@@ -126,20 +121,9 @@ namespace anakinsoft.game.scenes.lounge.finale
             if (stateTimer >= FadeInDuration)
             {
                 fadeAlpha = 0f;
-                currentState = IntroState.PreTextDelay;
-                stateTimer = 0f;
-                Console.WriteLine("[FinaleIntroSequence] Fade complete, starting pre-text delay");
-            }
-        }
-
-        private void UpdatePreTextDelay(float deltaTime)
-        {
-            // Wait 5 seconds before showing text - let player see ship approaching
-            if (stateTimer >= PreTextDelayDuration)
-            {
                 currentState = IntroState.ShowText;
                 stateTimer = 0f;
-                Console.WriteLine("[FinaleIntroSequence] Pre-text delay complete, showing text");
+                Console.WriteLine("[FinaleIntroSequence] Fade complete, showing text");
             }
         }
 

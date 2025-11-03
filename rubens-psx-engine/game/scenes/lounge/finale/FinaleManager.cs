@@ -84,7 +84,7 @@ namespace anakinsoft.game.scenes.lounge.finale
                 Category = "Method - Incapacitation",
                 AnswerOptions = new List<string>
                 {
-                    "He wasn't incapacitated—killed while awake",
+                    "He wasn't incapacitated - killed while awake",
                     "Stunned with a phaser first",
                     "Sedated via drugged ceremonial wine",
                     "Physically restrained by force"

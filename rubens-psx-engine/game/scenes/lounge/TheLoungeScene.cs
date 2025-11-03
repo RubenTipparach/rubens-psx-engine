@@ -89,6 +89,7 @@ namespace anakinsoft.game.scenes
         private FinaleUI finaleUI;
         private FinaleEndingScreen finaleEndingScreen;
         private RenderingEntity odysseusShip;
+        private Camera currentCamera; // Store camera reference for finale ending screen
 
         // Mesh loader
         private LoungeSceneMeshLoader meshLoader;
@@ -921,6 +922,9 @@ namespace anakinsoft.game.scenes
 
         public void UpdateWithCamera(GameTime gameTime, Camera camera, bool isDialogueActive = false, bool isCameraTransitionActive = false)
         {
+            // Store camera reference for finale ending screen
+            currentCamera = camera;
+
             // Update the scene normally first
             Update(gameTime);
 
@@ -1156,6 +1160,7 @@ namespace anakinsoft.game.scenes
         public EvidenceInventory GetEvidenceInventory() => evidenceInventory;
         public bool IsShowingIntroText() => uiManager.ShowIntroText;
         public bool IsFinaleUIActive => finaleUI.IsActive;
+        public bool IsFinaleEndingScreenActive => finaleEndingScreen.IsActive;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
         public CharacterProfileManager GetProfileManager() => profileManager;
 
@@ -1204,19 +1209,18 @@ namespace anakinsoft.game.scenes
             {
                 // Show ending screen (success or failure)
                 finaleUI.Hide();
-                finaleEndingScreen.Show(finaleManager.Results);
+                finaleEndingScreen.Show(finaleManager.Results, currentCamera);
             }
         }
 
         private void OnFinaleRestartRequested()
         {
-            Console.WriteLine("[TheLoungeScene] Finale restart requested");
-            // Reset finale state
-            finaleEndingScreen.Hide();
-            finaleManager.Reset();
-            finaleIntro.Reset();
-            // Could reload scene or return to investigation
+            Console.WriteLine("[TheLoungeScene] Finale restart requested - restarting investigation");
+            // Signal the screen to restart the investigation
+            OnRestartInvestigationRequested?.Invoke();
         }
+
+        public event Action OnRestartInvestigationRequested;
 
         private void OnFinaleQuitRequested()
         {

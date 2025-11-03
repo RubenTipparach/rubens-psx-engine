@@ -185,8 +185,19 @@ namespace anakinsoft.game.scenes
             // Set up interrogation system
             SetupInterrogationSystem();
 
+            // Set up finale restart handler
+            loungeScene.OnRestartInvestigationRequested += OnRestartInvestigationRequested;
+
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
+        }
+
+        private void OnRestartInvestigationRequested()
+        {
+            Console.WriteLine("[TheLoungeScreen] Restarting investigation - loading new scene");
+            // Exit current screen and load a fresh TheLoungeScreen
+            ExitScreen();
+            Globals.screenManager.AddScreen(new TheLoungeScreen());
         }
 
         private void LoadCharacterDataAndStateMachines()
@@ -1809,7 +1820,7 @@ namespace anakinsoft.game.scenes
                             dialogueOptions.Add(option);
                         }
 
-                        dialogueChoiceSystem.ShowChoices("", dialogueOptions);
+                        dialogueChoiceSystem.ShowChoices("", dialogueOptions, mouseOnly: true);
                     }
                 };
                 return sequence;
@@ -2144,8 +2155,8 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            // Show mouse cursor when character selection menu, transcript review, interrogation actions, evidence selection, confirmation dialog, or finale UI are active
-            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive || evidenceSelectionUI.IsVisible || loungeScene.IsFinaleUIActive)
+            // Show mouse cursor when character selection menu, transcript review, interrogation actions, evidence selection, confirmation dialog, dialogue choices, finale UI, or finale ending screen are active
+            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive || evidenceSelectionUI.IsVisible || dialogueChoiceSystem.IsActive || loungeScene.IsFinaleUIActive || loungeScene.IsFinaleEndingScreenActive)
             {
                 Globals.screenManager.IsMouseVisible = true;
             }
@@ -2154,11 +2165,11 @@ namespace anakinsoft.game.scenes
                 Globals.screenManager.IsMouseVisible = false;
             }
 
-            // Only update FPS camera when not showing intro, not in dialogue, not in menus, not in finale UI, and not transitioning
+            // Only update FPS camera when not showing intro, not in dialogue, not in menus, not in finale UI/ending screen, and not transitioning
             if (!loungeScene.IsShowingIntroText() && !dialogueSystem.IsActive &&
                 !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning &&
                 !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive && !interrogationActionUI.IsActive &&
-                !loungeScene.IsFinaleUIActive)
+                !loungeScene.IsFinaleUIActive && !loungeScene.IsFinaleEndingScreenActive)
             {
                 fpsCamera.Update(gameTime);
             }
@@ -2270,16 +2281,8 @@ namespace anakinsoft.game.scenes
                 transcriptReviewUI.Draw(spriteBatch, font);
             }
 
-            // Draw stress meters for both characters during interrogation
-            var stressPortraits = loungeScene.GetCharacterPortraits();
-            if (char1StressUI.IsVisible && font != null)
-            {
-                char1StressUI.Draw(spriteBatch, font, stressPortraits);
-            }
-            if (char2StressUI.IsVisible && font != null)
-            {
-                char2StressUI.Draw(spriteBatch, font, stressPortraits);
-            }
+            // NOTE: Stress meters are drawn by LoungeUIManager.DrawStressBar (integrated with portrait)
+            // No separate stress meter drawing needed here
 
             // Draw interrogation action UI
             if (interrogationActionUI.IsActive && font != null)

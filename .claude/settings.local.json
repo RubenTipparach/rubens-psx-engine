@@ -35,7 +35,8 @@
       "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")",
       "Bash(del:*)",
       "Bash(Select-String \"error\")",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(\"'''' | Select-Object -First 10)\")"
     ],
     "deny": [],
     "ask": []

@@ -499,6 +499,12 @@ namespace anakinsoft.game.scenes
                 spriteBatch.Draw(portraitFrame, fillRect, fillColor);
             }
 
+            // Draw stress threshold markers (Doubt = BLUE, Accuse = ORANGE)
+            Color doubtMarkerColor = new Color(50, 100, 255); // Blue
+            Color accuseMarkerColor = new Color(255, 140, 0); // Orange
+            DrawStressMarker(spriteBatch, x, y, width, barHeight, barPadding, activeCharacterStateMachine.DoubtEffectiveThreshold, doubtMarkerColor);
+            DrawStressMarker(spriteBatch, x, y, width, barHeight, barPadding, activeCharacterStateMachine.AccuseEffectiveThreshold, accuseMarkerColor);
+
             // Draw stress percentage text
             var font = Globals.fontNTR;
             string stressText = $"{stressPercentage:F0}%";
@@ -511,6 +517,25 @@ namespace anakinsoft.game.scenes
             );
             spriteBatch.DrawString(font, stressText, textPos + Vector2.One, Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
             spriteBatch.DrawString(font, stressText, textPos, Color.White, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+        }
+
+        /// <summary>
+        /// Draw a stress threshold marker - 2px wide vertical line at the threshold percentage
+        /// </summary>
+        private void DrawStressMarker(SpriteBatch spriteBatch, float barX, float barY, float barWidth, float barHeight, float barPadding, float thresholdPercentage, Color markerColor)
+        {
+            // Calculate marker X position based on threshold percentage
+            float innerBarWidth = barWidth - barPadding * 2;
+            float markerXOffset = innerBarWidth * (thresholdPercentage / 100f);
+
+            int markerX = (int)(barX + barPadding + markerXOffset - 1); // Center the 2px line
+            int markerY = (int)(barY + barPadding);
+            int markerWidth = 2; // 2px wide
+            int markerHeight = (int)(barHeight - barPadding * 2);
+
+            // Draw a 2px wide vertical line at the threshold position
+            Rectangle markerRect = new Rectangle(markerX, markerY, markerWidth, markerHeight);
+            spriteBatch.Draw(portraitFrame, markerRect, markerColor);
         }
 
         private (string name, string role) GetCharacterInfo(string characterKey)

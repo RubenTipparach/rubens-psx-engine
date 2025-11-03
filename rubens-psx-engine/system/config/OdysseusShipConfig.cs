@@ -9,17 +9,17 @@ namespace rubens_psx_engine.system.config
     public class OdysseusShipConfig
     {
         // Ship model settings
-        public float Scale { get; set; } = 1.0f;
+        public float Scale { get; set; } = 2.0f;
         public float[] Rotation { get; set; } = { 0f, 0f, 0f }; // Yaw, Pitch, Roll in degrees
 
         // Animation settings
         public float ApproachDuration { get; set; } = 8.0f; // seconds
 
         // Start position (far away)
-        public float[] StartPosition { get; set; } = { 0f, 0f, 8000f }; // X, Y, Z
+        public float[] StartPosition { get; set; } = { 0f, 0f, 7000f }; // X, Y, Z
 
         // End position (near window)
-        public float[] EndPosition { get; set; } = { 0, 0f, 2000f }; // X, Y, Z
+        public float[] EndPosition { get; set; } = { 0, 0f, 3000f }; // X, Y, Z
 
         // Helper methods to convert arrays to Vector3
         public Vector3 GetStartPosition()

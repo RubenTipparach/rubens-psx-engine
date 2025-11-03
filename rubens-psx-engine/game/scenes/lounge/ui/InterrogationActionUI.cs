@@ -45,6 +45,8 @@ namespace anakinsoft.game.scenes.lounge.ui
         private readonly Color UnselectedColor = Color.White;
         private readonly Color BorderColor = Color.White;
         private readonly Color DismissColor = Color.Red;
+        private readonly Color DoubtColor = new Color(50, 100, 255); // Blue - matches Doubt threshold marker
+        private readonly Color AccuseColor = new Color(255, 140, 0);  // Orange - matches Accuse threshold marker
 
         // Action data (removed numbers)
         private readonly string[] actionLabels = new string[]
@@ -209,24 +211,34 @@ namespace anakinsoft.game.scenes.lounge.ui
         {
             bool isHovered = (index == hoveredIndex);
             bool isDismiss = (index == 5); // Dismiss is now at index 5
+            bool isDoubt = (index == 2);   // Doubt is at index 2
+            bool isAccuse = (index == 3);  // Accuse is at index 3
 
             // Draw black background
             Rectangle bgRect = new Rectangle((int)x, (int)y, (int)width, (int)height);
             DrawFilledRectangle(spriteBatch, bgRect, Color.Black * 0.9f);
 
-            // Draw border (yellow on hover, red for dismiss default, yellow on dismiss hover)
+            // Draw border - white on hover to show selected, colored when not hovering
             Color borderColor;
             if (isHovered)
             {
-                borderColor = HoverColor; // Yellow when hovering (any button including dismiss)
+                borderColor = BorderColor; // White when hovering (shows selection)
             }
             else if (isDismiss)
             {
-                borderColor = DismissColor; // Red for dismiss when not hovering
+                borderColor = DismissColor; // Red for dismiss
+            }
+            else if (isDoubt)
+            {
+                borderColor = DoubtColor; // Blue for doubt
+            }
+            else if (isAccuse)
+            {
+                borderColor = AccuseColor; // Orange for accuse
             }
             else
             {
-                borderColor = BorderColor; // White for normal buttons when not hovering
+                borderColor = BorderColor; // White for normal buttons
             }
             DrawRectangleBorder(spriteBatch, bgRect, borderColor, isHovered ? 3 : 2);
 
@@ -249,19 +261,27 @@ namespace anakinsoft.game.scenes.lounge.ui
                 y + height - descSize.Y - 10f
             );
 
-            // Draw label (yellow when hovered, red for dismiss when not hovered)
+            // Draw label with appropriate color
             Color textColor;
             if (isHovered)
             {
-                textColor = HoverColor; // Yellow when hovering (any button including dismiss)
+                textColor = HoverColor; // Yellow when hovering (any button)
             }
             else if (isDismiss)
             {
-                textColor = DismissColor; // Red for dismiss when not hovering
+                textColor = DismissColor; // Red for dismiss
+            }
+            else if (isDoubt)
+            {
+                textColor = DoubtColor; // Blue for doubt
+            }
+            else if (isAccuse)
+            {
+                textColor = AccuseColor; // Orange for accuse
             }
             else
             {
-                textColor = UnselectedColor; // White for normal buttons when not hovering
+                textColor = UnselectedColor; // White for normal buttons
             }
 
             spriteBatch.DrawString(font, label, labelPos + Vector2.One, Color.Black);
