@@ -1224,9 +1224,9 @@ namespace anakinsoft.game.scenes
 
         private void OnFinaleQuitRequested()
         {
-            Console.WriteLine("[TheLoungeScene] Finale quit requested");
-            // Return to main menu or quit game
+            Console.WriteLine("[TheLoungeScene] Finale quit requested - exiting game");
             finaleEndingScreen.Hide();
+            Globals.screenManager.Exit();
         }
 
         public void HideAutopsyReportVisual()

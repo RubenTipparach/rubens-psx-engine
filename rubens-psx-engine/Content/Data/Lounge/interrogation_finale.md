@@ -129,19 +129,19 @@ After the cinematic intro completes, the player must answer 7 questions covering
 ### QUESTION 7: WHAT WAS COMMANDER VON'S PRIMARY MOTIVE?
 
 **Category:** Motive
-**Correct Answer:** Secret warmonger opposing peace (Option 2)
+**Correct Answer:** Romantic obsession with the Ambassador (Option 3)
 
 **Player selects from:**
 1. Financial gain from treaty sabotage
-2. **Secret warmonger opposing peace** ✓
-3. Romantic obsession with the Ambassador
+2. Secret warmonger opposing peace
+3. **Romantic obsession with the Ambassador** ✓
 4. Revenge for a family betrayal
 
 **Key Details:**
-- Von opposed the peace treaty on ideological grounds
-- She believed eternal conflict was necessary for Telirian cultural survival
-- Her romantic relationship was genuine but secondary to her ideology
-- Thorne helped because the Ambassador was going to oppose the treaty due to "cultural incompatibility"
+- Von was in love with Ambassador Lorath, who was married to her sister in an arranged union
+- In Telirian culture, the only way to free a soul from an arranged marriage is through death and spiritual reunion
+- She killed him to "free him" so they could be together in the spirit realm
+- Her confession: "I loved him more than duty, more than honor. I gave him what he could never have in life - freedom."
 
 ---
 
@@ -165,17 +165,19 @@ After the cinematic intro completes, the player must answer 7 questions covering
 
 ### Commander Sylara Von's Response:
 
-> *Von enters in restraints, her expression serene, almost proud.*
+> *Von enters in restraints, her expression serene, almost peaceful.*
 >
-> "You are correct, Detective. I killed Ambassador Lorath. But not out of hate—out of LOVE. Love for my people. Love for our warrior spirit that this 'peace' would have extinguished."
+> "You are correct, Detective. I killed Ambassador Lorath. But not out of hate—out of LOVE."
 >
-> "The Ambassador was a coward. He would have sold our proud military tradition for human comfort and Federation weakness. I freed him from his own betrayal. In death, he serves Telirian honor better than he ever did in life."
+> "He was bound to my sister in an arranged marriage. In our culture, such unions are sacred, unbreakable in life. But I loved him, Detective. More than duty. More than honor."
 >
-> "And yes, I took 'personal leave.' To perform my ACTUAL duty—protecting Telirian civilization from the rot of peacetime."
+> "In Telirian belief, the only way to free a soul from an arranged union is through death and spiritual reunion. I gave him what he could never have in life—freedom from obligation, freedom to choose."
+>
+> "And yes, I took 'personal leave' to be with him one final time. To free him. So that one day, in the spirit realm, we can finally be together."
 >
 > *She looks at the Telirian Commander.*
 >
-> "You may execute me. But you know I'm right. This treaty will destroy us."
+> "You may execute me. I regret nothing. He is free now."
 
 ### Dr. Lyssa Thorne's Response:
 

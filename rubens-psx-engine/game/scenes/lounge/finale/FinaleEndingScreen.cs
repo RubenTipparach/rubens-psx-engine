@@ -75,17 +75,19 @@ namespace anakinsoft.game.scenes.lounge.finale
             int buttonWidth = 330;
             int buttonHeight = 50;
             int buttonY = screenHeight - 100;
-            int buttonSpacing = 50;
+            // int buttonSpacing = 50;
 
-            restartButtonBounds = new Rectangle(
-                (screenWidth / 2) - buttonWidth - buttonSpacing / 2,
-                buttonY,
-                buttonWidth,
-                buttonHeight
-            );
+            // RESTART INVESTIGATION button disabled - not working properly
+            // restartButtonBounds = new Rectangle(
+            //     (screenWidth / 2) - buttonWidth - buttonSpacing / 2,
+            //     buttonY,
+            //     buttonWidth,
+            //     buttonHeight
+            // );
 
+            // Center the QUIT button
             quitButtonBounds = new Rectangle(
-                (screenWidth / 2) + buttonSpacing / 2,
+                (screenWidth / 2) - (buttonWidth / 2),
                 buttonY,
                 buttonWidth,
                 buttonHeight
@@ -112,11 +114,12 @@ namespace anakinsoft.game.scenes.lounge.finale
             if (mouseState.LeftButton == ButtonState.Released &&
                 previousMouseState.LeftButton == ButtonState.Pressed)
             {
-                if (restartButtonBounds.Contains(mousePosition))
-                {
-                    OnRestartRequested?.Invoke();
-                }
-                else if (quitButtonBounds.Contains(mousePosition))
+                // Restart button disabled
+                // if (restartButtonBounds.Contains(mousePosition))
+                // {
+                //     OnRestartRequested?.Invoke();
+                // }
+                if (quitButtonBounds.Contains(mousePosition))
                 {
                     OnQuitRequested?.Invoke();
                 }
@@ -153,8 +156,8 @@ namespace anakinsoft.game.scenes.lounge.finale
             }
 
             // Draw buttons
-            DrawButton(spriteBatch, restartButtonBounds, "RESTART INVESTIGATION", mousePosition);
-            DrawButton(spriteBatch, quitButtonBounds, "QUIT TO MENU", mousePosition);
+            // DrawButton(spriteBatch, restartButtonBounds, "RESTART INVESTIGATION", mousePosition);
+            DrawButton(spriteBatch, quitButtonBounds, "QUIT", mousePosition);
         }
 
         private void DrawSuccessScreen(SpriteBatch spriteBatch, int screenWidth, ref int yOffset)

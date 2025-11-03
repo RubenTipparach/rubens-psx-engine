@@ -226,7 +226,7 @@ bartender:
         - "Secret warmonger opposing peace"
         - "Romantic obsession with the Ambassador"
         - "Revenge for a family betrayal"
-      correct_answer: 1
+      correct_answer: 2
 
 pathologist:
   name: "Dr. Harmon Kerrigan"
