@@ -37,6 +37,9 @@ namespace anakinsoft.game.scenes
         DialogueSystem dialogueSystem;
         CameraTransitionSystem cameraTransitionSystem;
         bool hasPlayedIntro = false;
+        bool hasStartedFade = false;
+        float fadeDelayTimer = 0f;
+        const float FADE_DELAY_SECONDS = 1f; // Wait half a second before starting fade
 
         // Character selection menu
         CharacterSelectionMenu characterSelectionMenu;
@@ -91,8 +94,12 @@ namespace anakinsoft.game.scenes
         public TheLoungeScreen()
         {
             var gd = Globals.screenManager.getGraphicsDevice.GraphicsDevice;
-            fpsCamera = new FPSCamera(gd, new Vector3(0, 10, 0));
 
+            // Initialize fade transition FIRST to ensure black screen from the very start
+            fadeTransition = new ScreenFadeTransition(gd);
+            fadeTransition.SetBlack();
+
+            fpsCamera = new FPSCamera(gd, new Vector3(0, 16.0f, 0));
             loungeScene = new TheLoungeScene();
             SetScene(loungeScene); // Register scene with physics screen for automatic disposal
 
@@ -162,10 +169,8 @@ namespace anakinsoft.game.scenes
 
             // Initialize interrogation management
             interrogationManager = new InterrogationRoundManager(gameProgress);
-            fadeTransition = new ScreenFadeTransition(gd);
 
-            // Start with black screen to cover loading
-            fadeTransition.SetBlack();
+            // DON'T start fade here - will start in first Update() call after initialization
 
             // Load character data from YAML and initialize state machines
             LoadCharacterDataAndStateMachines();
@@ -190,13 +195,6 @@ namespace anakinsoft.game.scenes
 
             // Set up finale restart handler
             loungeScene.OnRestartInvestigationRequested += OnRestartInvestigationRequested;
-
-            // Fade in from black after intro text completes
-            loungeScene.GetUIManager().OnIntroTextComplete += () =>
-            {
-                Console.WriteLine("[TheLoungeScreen] Intro text complete - fading in");
-                fadeTransition.FadeIn(2.0f);
-            };
 
             // Hide mouse cursor for immersive FPS experience
             Globals.screenManager.IsMouseVisible = false;
@@ -2049,6 +2047,18 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
+            // Wait for delay before starting fade to ensure intro text is visible
+            if (!hasStartedFade)
+            {
+                fadeDelayTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (fadeDelayTimer >= FADE_DELAY_SECONDS)
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Starting fade in after {fadeDelayTimer:F2}s delay");
+                    fadeTransition.FadeIn(1.0f);
+                    hasStartedFade = true;
+                }
+            }
+
             // Check if finale should be triggered (when time reaches 0)
             if (interrogationManager != null && interrogationManager.HoursRemaining <= 0 && !hasTriggeredFinale)
             {
@@ -2226,6 +2236,7 @@ namespace anakinsoft.game.scenes
         {
             var spriteBatch = Globals.screenManager.getSpriteBatch;
             var font = Globals.fontNTR;
+            var viewportBounds = Globals.screenManager.GraphicsDevice.Viewport;
 
             // Draw UI (pass dialogue active state to hide interaction prompts during dialogue AND interrogation actions AND camera transitions)
             bool isInDialogueMode = dialogueSystem.IsActive || dialogueChoiceSystem.IsActive || interrogationActionUI.IsActive || cameraTransitionSystem.IsTransitioning;
@@ -2313,18 +2324,27 @@ namespace anakinsoft.game.scenes
             }
 
             // Draw fade transition (always last, on top of everything)
-            var viewportBounds = Globals.screenManager.GraphicsDevice.Viewport;
             fadeTransition.Draw(spriteBatch, new Rectangle(0, 0, viewportBounds.Width, viewportBounds.Height));
         }
 
         public override void Draw3D(GameTime gameTime)
         {
-            // Draw the lounge scene
-            loungeScene.Draw(gameTime, fpsCamera);
+            // Skip 3D rendering if we're still in black screen mode
+            if (fadeTransition != null && !fadeTransition.IsBlack)
+            {
+                // Draw the lounge scene
+                loungeScene.Draw(gameTime, fpsCamera);
+            }
         }
 
         public override Color? GetBackgroundColor()
         {
+            // Keep background black until fade transition is ready
+            if (fadeTransition == null || fadeTransition.IsBlack)
+            {
+                return Color.Black;
+            }
+
             // Return the lounge scene's background color
             return loungeScene.BackgroundColor;
         }

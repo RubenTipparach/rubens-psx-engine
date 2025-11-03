@@ -9,7 +9,7 @@ namespace anakinsoft.system
     /// </summary>
     public class ScreenFadeTransition
     {
-        private float fadeAlpha = 0f;
+        private float fadeAlpha = 1f;
         private float fadeDuration = 1.0f; // seconds
         private float fadeTimer = 0f;
         private bool isFading = false;
@@ -103,6 +103,8 @@ namespace anakinsoft.system
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, Rectangle screenBounds)
         {
+            // Console.WriteLine($"[ScreenFade] Draw called - fadeAlpha: {fadeAlpha}, isFading: {isFading}, IsBlack: {IsBlack}");
+
             if (fadeAlpha > 0f)
             {
                 spriteBatch.Draw(fadeTexture, screenBounds, Color.Black * fadeAlpha);
