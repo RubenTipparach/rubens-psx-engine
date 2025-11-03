@@ -45,6 +45,14 @@ namespace anakinsoft.game.scenes.lounge.ui
         private readonly Color TextColor = Color.White;
         private readonly Color TextShadowColor = Color.Black;
 
+        // Stress marker colors
+        private readonly Color DoubtMarkerColor = new Color(50, 100, 255); // Blue
+        private readonly Color AccuseMarkerColor = new Color(255, 140, 0); // Orange
+        private const float StressMarkerHeight = 2f; // 2 pixel wide horizontal bar
+
+        // Debug flag to log once
+        private bool hasLoggedMarkers = false;
+
         public bool IsVisible => isVisible;
 
         // Cache for textures to avoid recreation
@@ -198,6 +206,42 @@ namespace anakinsoft.game.scenes.lounge.ui
                 Color fillColor = GetStressColor(stressPercentage);
                 DrawFilledRectangle(spriteBatch, innerRect, fillColor);
             }
+
+            // Draw stress markers for Doubt and Accuse thresholds
+            if (!hasLoggedMarkers)
+            {
+                Console.WriteLine($"[StressMeterUI] Drawing stress markers - Doubt threshold: {stateMachine.DoubtEffectiveThreshold}%, Accuse threshold: {stateMachine.AccuseEffectiveThreshold}%");
+                hasLoggedMarkers = true;
+            }
+            DrawStressMarker(spriteBatch, x, y, width, height, stateMachine.DoubtEffectiveThreshold, DoubtMarkerColor, "Doubt");
+            DrawStressMarker(spriteBatch, x, y, width, height, stateMachine.AccuseEffectiveThreshold, AccuseMarkerColor, "Accuse");
+        }
+
+        /// <summary>
+        /// Draw a stress threshold marker - 2px wide vertical line at the threshold percentage
+        /// </summary>
+        private void DrawStressMarker(SpriteBatch spriteBatch, float barX, float barY, float barWidth, float barHeight, float thresholdPercentage, Color markerColor, string markerName)
+        {
+            // Calculate marker X position based on threshold percentage
+            // The stress bar fills from left (0%) to right (100%)
+            float innerBarWidth = barWidth - BarInnerPadding * 2;
+            float markerXOffset = innerBarWidth * (thresholdPercentage / 100f);
+
+            int markerX = (int)(barX + BarInnerPadding + markerXOffset - 1);
+            int markerY = (int)(barY + BarInnerPadding);
+            int markerWidth = (int)StressMarkerHeight; // 2px wide
+            int markerHeight = (int)(barHeight - BarInnerPadding * 2);
+
+            // Draw a 2px wide vertical line at the threshold position
+            Rectangle markerRect = new Rectangle(markerX, markerY, markerWidth, markerHeight);
+
+            Console.WriteLine($"[StressMeterUI] Drawing {markerName} marker at threshold {thresholdPercentage}%:");
+            Console.WriteLine($"  Bar: X={barX}, Y={barY}, Width={barWidth}, Height={barHeight}");
+            Console.WriteLine($"  Inner bar width: {innerBarWidth}, Marker offset: {markerXOffset}");
+            Console.WriteLine($"  Marker rect: X={markerX}, Y={markerY}, W={markerWidth}, H={markerHeight}");
+            Console.WriteLine($"  Marker color: R={markerColor.R}, G={markerColor.G}, B={markerColor.B}, A={markerColor.A}");
+
+            DrawFilledRectangle(spriteBatch, markerRect, markerColor);
         }
 
         /// <summary>

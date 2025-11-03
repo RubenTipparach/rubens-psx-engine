@@ -67,10 +67,12 @@ namespace anakinsoft.game.scenes.lounge.finale
 
         public void Hide()
         {
-            isActive = false;
+            // Set currentQuestion to null first, then isActive
+            // This ensures Update() exits early if it's running
             currentQuestion = null;
             selectedAnswerIndex = -1;
             answerButtonBounds.Clear();
+            isActive = false;
         }
 
         private void BuildAnswerButtons()
@@ -93,9 +95,20 @@ namespace anakinsoft.game.scenes.lounge.finale
 
         public void Update(GameTime gameTime)
         {
-            if (!isActive || currentQuestion == null) return;
+            if (!isActive) return;
 
             var mouseState = Mouse.GetState();
+
+            // Store local reference to prevent race condition
+            var question = currentQuestion;
+
+            // Guard against null currentQuestion (can happen after Hide() is called)
+            if (question == null)
+            {
+                previousMouseState = mouseState;
+                return;
+            }
+
             var mousePosition = new Point(mouseState.X, mouseState.Y);
 
             // Check hover and click on answer buttons
@@ -109,7 +122,7 @@ namespace anakinsoft.game.scenes.lounge.finale
                     {
                         selectedAnswerIndex = i;
                         OnAnswerSelected?.Invoke(i);
-                        Console.WriteLine("[FinaleUI] Answer selected: {0} - {1}", i, currentQuestion.AnswerOptions[i]);
+                        Console.WriteLine("[FinaleUI] Answer selected: {0} - {1}", i, question.AnswerOptions[i]);
                     }
                 }
             }

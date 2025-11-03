@@ -180,19 +180,17 @@ namespace anakinsoft.game.scenes.lounge.finale
                 Console.WriteLine("[FinaleManager] WRONG! Question {0}/{1}: {2}", currentQuestionIndex + 1, questions.Count, question.Category);
                 Console.WriteLine("[FinaleManager]   Player answered: {0}", questionResult.PlayerAnswer);
                 Console.WriteLine("[FinaleManager]   Correct answer: {0}", questionResult.CorrectAnswer);
-
-                // IMMEDIATE FAILURE - any wrong answer ends the game
-                FinaleComplete(false);
-                return false;
             }
 
             // Move to next question
             currentQuestionIndex++;
 
-            // Check if all questions answered correctly
+            // Check if all questions answered
             if (currentQuestionIndex >= questions.Count)
             {
-                FinaleComplete(true);
+                // Success only if ALL questions were answered correctly
+                bool success = results.CorrectAnswers == questions.Count;
+                FinaleComplete(success);
             }
 
             return true;

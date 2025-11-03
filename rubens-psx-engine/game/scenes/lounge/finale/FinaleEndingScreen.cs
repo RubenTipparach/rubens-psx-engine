@@ -241,7 +241,7 @@ namespace anakinsoft.game.scenes.lounge.finale
             {
                 var questionResult = results.QuestionResults[i];
                 Color resultColor = questionResult.WasCorrect ? correctColor : wrongColor;
-                string resultText = questionResult.WasCorrect ? "[✓]" : "[✗]";
+                string resultText = questionResult.WasCorrect ? "[OK]" : "[X]";
 
                 string questionText = $"{resultText} {questionResult.Category}";
                 if (!questionResult.WasCorrect)

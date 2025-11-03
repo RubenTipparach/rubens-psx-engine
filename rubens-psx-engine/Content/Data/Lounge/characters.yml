@@ -2274,11 +2274,197 @@ lucky_chen:
 
   # Dialogue sequences
   dialogue:
+    # Initial interrogation
+    - sequence_name: "LuckyChenInterrogation"
+      action: "interrogate"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*looks up from datapad with a nervous smile* Detective! Terrible business, just terrible."
+
+        - speaker: "Lucky Chen"
+          text: "The Ambassador seemed like a stand-up fellow. Real tragedy, this whole thing."
+
+        - speaker: "Lucky Chen"
+          text: "Me? I was in Cargo Bay 3 all night, counting medical supplies. Thrilling work, let me tell you. *Chuckles*"
+
+        - speaker: "Lucky Chen"
+          text: "Look, I run a tight ship with my inventory. If something's missing, I'd know about it."
+
+        - speaker: "Lucky Chen"
+          text: "You need anything - information, supplies, a sympathetic ear - Lucky Chen's your man."
+
+    # Follow-up dialogue after interrogation
+    - sequence_name: "LuckyChenFollowUp"
+      action: "talk"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*wipes brow* Still working the case, Detective? I'm here if you need anything."
+
     # Default fallback dialogue
     - sequence_name: "LuckyChenDefault"
       lines:
         - speaker: "Lucky Chen"
           text: "I told you what I know, Detective. I keep track of supplies, not diplomatic scandals."
+
+    # Alibi inquiry - claims he was doing inventory
+    - sequence_name: "LuckyChenAlibi"
+      action: "alibi"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*scratches head* My whereabouts? Like I said, Cargo Bay 3. All night long."
+
+        - speaker: "Lucky Chen"
+          text: "Got the inventory logs to prove it. Medical supplies, food rations, spare parts... the usual."
+
+        - speaker: "Lucky Chen"
+          text: "*defensive* No one saw me because no one works that shift. I prefer the quiet for counting."
+
+        - speaker: "Lucky Chen"
+          text: "Besides, what would a quartermaster want with a dead Ambassador? I deal in supplies, not politics."
+
+    # Relationship with victim - barely knew him
+    - sequence_name: "LuckyChenRelationship"
+      action: "relationship"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*shrugs* The Ambassador? Met him once, maybe twice. Diplomatic types don't usually need quartermasters."
+
+        - speaker: "Lucky Chen"
+          text: "He requested some Fregoilli comfort items when he first boarded. Cultural foods, that sort of thing."
+
+        - speaker: "Lucky Chen"
+          text: "I got them for him - legitimate procurement, all above board."
+
+        - speaker: "Lucky Chen"
+          text: "*nervous laugh* Nice guy. Tipped well. Shame what happened to him."
+
+    # Doubt at low stress - maintains jovial facade
+    - sequence_name: "LuckyChenDoubtLowStress"
+      action: "doubt"
+      requires_stress_below: 30.0
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*holds up hands* Whoa, Detective! You think I'm hiding something?"
+
+        - speaker: "Lucky Chen"
+          text: "I run a legitimate operation here. Sure, I bend a few regulations on personal requisitions..."
+
+        - speaker: "Lucky Chen"
+          text: "*chuckles nervously* Everyone does! It's a long voyage. People want their comforts."
+
+        - speaker: "Lucky Chen"
+          text: "But murder? That's way outside my... portfolio. I'm a businessman, not a killer."
+
+    # Doubt at high stress - starts to crack
+    - sequence_name: "LuckyChenDoubtHighStress"
+      action: "doubt"
+      requires_stress_above: 30.0
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*sweating* Okay, okay! Look... I may have some side operations. Small stuff!"
+
+        - speaker: "Lucky Chen"
+          text: "People want things. Earth antiques, exotic foods, the occasional... regulated substance."
+
+        - speaker: "Lucky Chen"
+          text: "But I DON'T ask what they do with it! That's not my business!"
+
+        - speaker: "Lucky Chen"
+          text: "*voice rising* And I sure as hell don't murder people! Bad for business! Very bad!"
+
+    # Accuse at low stress - rejects it completely
+    - sequence_name: "LuckyChenAccuseLowStress"
+      action: "accuse"
+      requires_stress_below: 50.0
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*stands up, offended* ACCUSE me?! Detective, you've got the wrong man!"
+
+        - speaker: "Lucky Chen"
+          text: "I'm a quartermaster! I count boxes! I requisition toilet paper!"
+
+        - speaker: "Lucky Chen"
+          text: "Why would I kill an Ambassador? What's my motive? What's my connection?"
+
+        - speaker: "Lucky Chen"
+          text: "*angry* This is harassment! I want my union representative!"
+
+    # Accuse at high stress - panics and reveals connection
+    - sequence_name: "LuckyChenAccuseHighStress"
+      action: "accuse"
+      requires_stress_above: 50.0
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*voice cracks* Wait, WAIT! I didn't kill anyone! I'm just a middleman!"
+
+        - speaker: "Lucky Chen"
+          text: "*frantically* Yes, I move things! Exotic compounds, rare materials! But I don't ASK questions!"
+
+        - speaker: "Lucky Chen"
+          text: "Someone wanted breturium! I got it! I didn't know it was for MURDER!"
+
+        - speaker: "Lucky Chen"
+          text: "*breaking down* Dr. Kerrigan set it up! I'm just the supplier! I'm not a killer!"
+
+        - speaker: "Lucky Chen"
+          text: "Please, Detective... I'm trying to remember who I sold it to... I keep records, I just..."
+
+    # Black market inquiry - reveals his side business
+    - sequence_name: "LuckyChenBlackMarket"
+      action: "black_market"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*defensive* Black market? That's a strong word, Detective."
+
+        - speaker: "Lucky Chen"
+          text: "I prefer... 'alternative procurement specialist.' People have needs."
+
+        - speaker: "Lucky Chen"
+          text: "*leaning in* Look, on a ship this size, on a voyage this long... morale is important."
+
+        - speaker: "Lucky Chen"
+          text: "Someone wants their homeworld delicacies? I get it. Someone needs Earth bourbon? I know a guy."
+
+        - speaker: "Lucky Chen"
+          text: "*nervous* Mostly harmless stuff. Entertainment. Comfort items. Nothing... lethal."
+
+    # Kerrigan connection - reveals gambling/bookie relationship
+    - sequence_name: "LuckyChenKerrigan"
+      action: "kerrigan"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*shifts uncomfortably* Dr. Kerrigan? Yeah, we do business sometimes."
+
+        - speaker: "Lucky Chen"
+          text: "*quiet* He likes to gamble. I... facilitate certain betting opportunities."
+
+        - speaker: "Lucky Chen"
+          text: "Sports from Earth, racing from Telara, combat games from Vraxis... I run the book."
+
+        - speaker: "Lucky Chen"
+          text: "He owes me some credits. But we're friendly! Business relationship!"
+
+        - speaker: "Lucky Chen"
+          text: "*cautious* Sometimes he asks me to source... special items. Medical compounds. Research materials."
+
+    # Breturium inquiry - the key connection
+    - sequence_name: "LuckyChenBreturium"
+      action: "breturium"
+      lines:
+        - speaker: "Lucky Chen"
+          text: "*face goes pale* Breturium? I... how do you know about that?"
+
+        - speaker: "Lucky Chen"
+          text: "*stammering* Look, someone requested it through Kerrigan's network. Said it was for research!"
+
+        - speaker: "Lucky Chen"
+          text: "I didn't ask questions! That's rule number one in my line of work!"
+
+        - speaker: "Lucky Chen"
+          text: "*desperately* I swear I didn't know it was for... for what happened to the Ambassador!"
+
+        - speaker: "Lucky Chen"
+          text: "*trying to remember* The buyer... it was arranged anonymously. Kerrigan handled the contact. I just... supplied it."
 
 # Game configuration
 game_settings:

@@ -68,7 +68,7 @@ namespace anakinsoft.game.scenes.lounge.ui
 
         // Display settings
         private const float BoxPadding = 20f;
-        private const float SpeakerOffset = 40f;
+        private const float SpeakerOffset = 10f; // Reduced from 40f to minimize space between name and dialogue
         private const float FixedBoxWidth = 800f; // Fixed width for consistency
         private readonly Color BoxColor = Color.Black * 0.85f;
         private readonly Color SpeakerColor = Color.Yellow;

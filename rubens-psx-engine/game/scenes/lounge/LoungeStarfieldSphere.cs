@@ -158,7 +158,9 @@ namespace anakinsoft.game.scenes
             graphicsDevice.Indices = indexBuffer;
 
             // Set shader parameters - matrices
-            starFieldEffect.Parameters["World"]?.SetValue(Matrix.Identity);
+            // Translate the sphere to follow camera position (removes parallax effect)
+            Matrix world = Matrix.CreateTranslation(camera.Position);
+            starFieldEffect.Parameters["World"]?.SetValue(world);
             starFieldEffect.Parameters["View"]?.SetValue(camera.View);
             starFieldEffect.Parameters["Projection"]?.SetValue(camera.Projection);
 

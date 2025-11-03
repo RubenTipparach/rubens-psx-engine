@@ -489,13 +489,6 @@ namespace anakinsoft.game.scenes.lounge.ui
 
             var viewport = Globals.screenManager.GraphicsDevice.Viewport;
 
-            // If showing finale button, draw that instead of character grid
-            if (showFinaleButton)
-            {
-                DrawFinaleButton(spriteBatch, font, viewport);
-                return;
-            }
-
             // Calculate grid dimensions
             int rows = (int)Math.Ceiling((float)characters.Count / GridColumns);
             float cellWidth = CellWidth + ItemSpacing;
@@ -644,30 +637,32 @@ namespace anakinsoft.game.scenes.lounge.ui
                 }
             }
 
-            // Draw controls hint at bottom
-            string hint = "[Mouse/Arrows] Navigate  [Click/Space] Toggle  [Enter] Confirm  [Tab] Cancel";
-            var hintSize = font.MeasureString(hint) * 0.6f;
-            Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding);
-            spriteBatch.DrawString(font, hint, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+            // Draw controls hint at bottom (unless finale button is showing)
+            if (!showFinaleButton)
+            {
+                string hint = "[Mouse/Arrows] Navigate  [Click/Space] Toggle  [Enter] Confirm  [Tab] Cancel";
+                var hintSize = font.MeasureString(hint) * 0.6f;
+                Vector2 hintPos = new Vector2(menuX + (menuWidth - hintSize.X) / 2, menuY + menuHeight - BoxPadding);
+                spriteBatch.DrawString(font, hint, hintPos, Color.Gray, 0f, Vector2.Zero, 0.6f, SpriteEffects.None, 0f);
+            }
+
+            // If showing finale button, draw it overlaid on the disabled character grid
+            if (showFinaleButton)
+            {
+                DrawFinaleButtonOverlay(spriteBatch, font, viewport, menuX, menuY, menuWidth, menuHeight);
+            }
         }
 
-        private void DrawFinaleButton(SpriteBatch spriteBatch, SpriteFont font, Viewport viewport)
+        private void DrawFinaleButtonOverlay(SpriteBatch spriteBatch, SpriteFont font, Viewport viewport, float menuX, float menuY, float menuWidth, float menuHeight)
         {
-            // Calculate menu dimensions
-            float menuWidth = 600;
-            float menuHeight = 300;
-            float menuX = (viewport.Width - menuWidth) / 2;
-            float menuY = (viewport.Height - menuHeight) / 2;
+            // Draw semi-transparent overlay to dim the character grid
+            DrawFilledRectangle(spriteBatch, new Rectangle((int)menuX, (int)menuY, (int)menuWidth, (int)menuHeight), Color.Black * 0.7f);
 
-            // Draw background
-            DrawFilledRectangle(spriteBatch, new Rectangle((int)menuX, (int)menuY, (int)menuWidth, (int)menuHeight), BackgroundColor);
-            DrawRectangleBorder(spriteBatch, new Rectangle((int)menuX, (int)menuY, (int)menuWidth, (int)menuHeight), Color.White, 3);
-
-            // Draw title
+            // Draw title centered at top
             string title = "ROUND 3 COMPLETE";
-            var titleSize = font.MeasureString(title);
-            Vector2 titlePos = new Vector2(menuX + (menuWidth - titleSize.X) / 2, menuY + 40);
-            spriteBatch.DrawString(font, title, titlePos, SelectedColor, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
+            var titleSize = font.MeasureString(title) * 1.2f;
+            Vector2 titlePos = new Vector2(menuX + (menuWidth - titleSize.X) / 2, menuY + 60);
+            spriteBatch.DrawString(font, title, titlePos, SelectedColor, 0f, Vector2.Zero, 1.2f, SpriteEffects.None, 0f);
 
             // Draw button
             float buttonWidth = 400;

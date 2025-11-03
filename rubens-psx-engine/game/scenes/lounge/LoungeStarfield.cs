@@ -21,6 +21,7 @@ namespace anakinsoft.game.scenes
         }
 
         private List<Star> stars;
+        private float currentLengthMultiplier = 1.0f; // Current streak length multiplier for finale animation
 
         // Starfield constants
         private const int StarCount = 1000;
@@ -115,9 +116,12 @@ namespace anakinsoft.game.scenes
             }
         }
 
-        public void Update(GameTime gameTime, float speedMultiplier = 1.0f)
+        public void Update(GameTime gameTime, float speedMultiplier = 1.0f, float lengthMultiplier = 1.0f)
         {
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            // Store length multiplier for use in Draw method
+            currentLengthMultiplier = lengthMultiplier;
 
             for (int i = 0; i < stars.Count; i++)
             {
@@ -162,8 +166,9 @@ namespace anakinsoft.game.scenes
             foreach (var star in stars)
             {
                 // Create a line streak pointing forward along +Z axis (trail effect showing motion away from camera)
+                // Length multiplier allows shortening streaks during finale (1.0 = full, 0.0 = no streaks)
                 Vector3 startPoint = star.Position;
-                Vector3 endPoint = star.Position + new Vector3(0, 0, StarLineLength);
+                Vector3 endPoint = star.Position + new Vector3(0, 0, StarLineLength * currentLengthMultiplier);
 
                 // Add the line (2 vertices per star)
                 starVertices.Add(new VertexPositionColor(startPoint, star.Color));

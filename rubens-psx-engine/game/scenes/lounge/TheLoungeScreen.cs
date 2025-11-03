@@ -359,12 +359,34 @@ namespace anakinsoft.game.scenes
                 fadeTransition.FadeOut(1.0f);
             };
 
-            // Handle finale button click
+            // Handle finale button click (no longer used - finale starts automatically after round 3)
             characterSelectionMenu.OnFinaleButtonClicked += () =>
             {
-                Console.WriteLine("[TheLoungeScreen] Finale button clicked - player acknowledged, directing to bartender");
-                // Button just closes the menu - player must talk to Zix to begin
-                // Zix's dialogue will trigger the finale via FinaleReady sequence
+                Console.WriteLine("[TheLoungeScreen] Finale button clicked (deprecated - should not happen)");
+                characterSelectionMenu.Hide();
+            };
+
+            // Handle finale intro sequence completion
+            loungeScene.GetFinaleIntroSequence().OnSequenceComplete += () =>
+            {
+                Console.WriteLine("[TheLoungeScreen] Finale intro sequence complete - setting bartender to finale ready");
+                // Transition bartender to finale ready state so player can talk to Zix
+                if (bartenderStateMachine != null)
+                {
+                    bartenderStateMachine.SetFinaleReady();
+
+                    // Update bartender's dialogue to show FinaleReady
+                    var bartender = loungeScene.GetBartender();
+                    if (bartender != null)
+                    {
+                        var finaleDialogue = GetBartenderDialogue();
+                        if (finaleDialogue != null)
+                        {
+                            bartender.SetDialogue(finaleDialogue);
+                            Console.WriteLine("[TheLoungeScreen] Bartender dialogue updated to FinaleReady");
+                        }
+                    }
+                }
             };
 
             // Update fade out handler to use pending characters
@@ -753,6 +775,24 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation in progress
                 characterSelectionMenu.SetInterrogationInProgress(true);
 
+                // Update bartender to show hint/rumor for this round
+                if (bartenderStateMachine != null)
+                {
+                    bartenderStateMachine.SetRoundHint(interrogationManager.CurrentRound);
+
+                    // Update bartender's dialogue to reflect new state
+                    var bartender = loungeScene.GetBartender();
+                    if (bartender != null)
+                    {
+                        var bartenderDialogue = GetBartenderDialogue();
+                        if (bartenderDialogue != null)
+                        {
+                            bartender.SetDialogue(bartenderDialogue);
+                            Console.WriteLine($"[TheLoungeScreen] Bartender dialogue updated for round {interrogationManager.CurrentRound}");
+                        }
+                    }
+                }
+
                 // If round 3, disable character selection and show finale button
                 if (interrogationManager.CurrentRound == 3)
                 {
@@ -802,12 +842,15 @@ namespace anakinsoft.game.scenes
                 // Mark interrogation no longer in progress (allows suspects file interaction)
                 characterSelectionMenu.SetInterrogationInProgress(false);
 
-                // If round 3, enable finale button and show it automatically
+                // If round 3, start the finale intro sequence immediately
                 if (interrogationManager.CurrentRound == 3)
                 {
-                    Console.WriteLine("[TheLoungeScreen] Round 3 complete - enabling and showing finale button");
-                    characterSelectionMenu.EnableFinaleButton();
-                    characterSelectionMenu.Show(); // Automatically show the finale button menu
+                    Console.WriteLine("[TheLoungeScreen] Round 3 complete - starting finale intro sequence");
+                    hasTriggeredFinale = true; // Mark as triggered
+
+                    // Start the finale intro sequence (fade, text, ship arrival)
+                    // This will play while player transitions back to FPS mode
+                    loungeScene.StartFinaleIntro();
                 }
                 else
                 {
@@ -1666,6 +1709,30 @@ namespace anakinsoft.game.scenes
                     Console.WriteLine("[TheLoungeScreen] ERROR: Could not find FinaleReady dialogue, using current state dialogue");
                 }
             }
+            // Check if we're in an active interrogation round - if so, provide round-based hint
+            else if (interrogationManager != null && interrogationManager.CurrentRound > 0 && interrogationManager.CurrentRound <= 3)
+            {
+                // Check if both characters have been dismissed (meaning player is between interrogations)
+                if (interrogationManager.AllCharactersDismissed && !characterSelectionMenu.IsInterrogationInProgress)
+                {
+                    Console.WriteLine($"[TheLoungeScreen] Round {interrogationManager.CurrentRound} active - providing round hint");
+
+                    // Get the appropriate round hint
+                    string hintSequenceName = $"BartenderRound{interrogationManager.CurrentRound}Hint";
+                    var roundHint = charactersData?.bartender?.dialogue?.FirstOrDefault(d => d.sequence_name == hintSequenceName);
+
+                    if (roundHint != null)
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] Found round hint: {hintSequenceName}");
+                        yamlDialogue = roundHint;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[TheLoungeScreen] WARNING: Could not find {hintSequenceName}, using default dialogue");
+                    }
+                }
+            }
+
             if (yamlDialogue == null)
             {
                 Console.WriteLine("[TheLoungeScreen] No dialogue available from bartender state machine");
@@ -1679,16 +1746,71 @@ namespace anakinsoft.game.scenes
                 sequence.AddLine(line.speaker, line.text);
             }
 
-            // Special handling for FinaleReady dialogue - auto-trigger finale on completion
+            // Special handling for FinaleReady dialogue - show dialogue choices
             if (yamlDialogue.sequence_name == "FinaleReady")
             {
                 sequence.OnSequenceComplete = () =>
                 {
-                    Console.WriteLine($"[TheLoungeScreen] FinaleReady dialogue complete - starting finale");
+                    Console.WriteLine($"[TheLoungeScreen] FinaleReady dialogue complete - showing choices");
                     bartenderStateMachine.OnDialogueComplete(yamlDialogue.sequence_name);
 
-                    // Auto-start the finale (player can review transcripts before talking to bartender again if not ready)
-                    loungeScene.StartFinaleIntro();
+                    // Show dialogue choices if they exist in the YAML
+                    if (yamlDialogue.choices != null && yamlDialogue.choices.Count > 0)
+                    {
+                        var dialogueOptions = new List<DialogueOption>();
+
+                        foreach (var choice in yamlDialogue.choices)
+                        {
+                            var option = new DialogueOption(choice.text, () =>
+                            {
+                                Console.WriteLine($"[TheLoungeScreen] Player chose: {choice.text} -> {choice.next_sequence}");
+
+                                // Handle "FinaleQuestions" - show Zix's intro dialogue first
+                                if (choice.next_sequence == "FinaleQuestions")
+                                {
+                                    Console.WriteLine("[TheLoungeScreen] Starting FinaleQuestions dialogue sequence");
+                                    // Find and trigger FinaleQuestions dialogue
+                                    var finaleQuestionsDialogue = charactersData?.bartender?.dialogue?.FirstOrDefault(d => d.sequence_name == "FinaleQuestions");
+                                    if (finaleQuestionsDialogue != null)
+                                    {
+                                        var finaleSequence = new DialogueSequence(finaleQuestionsDialogue.sequence_name);
+                                        foreach (var line in finaleQuestionsDialogue.lines)
+                                        {
+                                            finaleSequence.AddLine(line.speaker, line.text);
+                                        }
+
+                                        // When this dialogue completes, THEN start the finale questions
+                                        finaleSequence.OnSequenceComplete = () =>
+                                        {
+                                            Console.WriteLine("[TheLoungeScreen] FinaleQuestions dialogue complete - starting finale UI");
+                                            loungeScene.StartFinaleQuestions();
+                                        };
+
+                                        dialogueSystem.StartDialogue(finaleSequence);
+                                    }
+                                }
+                                // Handle "FinaleNotReady" - player wants to review more evidence
+                                else if (choice.next_sequence == "FinaleNotReady")
+                                {
+                                    Console.WriteLine("[TheLoungeScreen] Player wants to review more evidence");
+                                    // Find and trigger FinaleNotReady dialogue
+                                    var notReadyDialogue = charactersData?.bartender?.dialogue?.FirstOrDefault(d => d.sequence_name == "FinaleNotReady");
+                                    if (notReadyDialogue != null)
+                                    {
+                                        var notReadySequence = new DialogueSequence(notReadyDialogue.sequence_name);
+                                        foreach (var line in notReadyDialogue.lines)
+                                        {
+                                            notReadySequence.AddLine(line.speaker, line.text);
+                                        }
+                                        dialogueSystem.StartDialogue(notReadySequence);
+                                    }
+                                }
+                            });
+                            dialogueOptions.Add(option);
+                        }
+
+                        dialogueChoiceSystem.ShowChoices("", dialogueOptions);
+                    }
                 };
                 return sequence;
             }
@@ -2004,19 +2126,17 @@ namespace anakinsoft.game.scenes
         }
 
         /// <summary>
-        /// Trigger the finale sequence when investigation time reaches 0
+        /// Trigger the finale availability when investigation time reaches 0
+        /// Player must click the finale button in the character selection menu to actually start
         /// </summary>
         private void TriggerFinale()
         {
             hasTriggeredFinale = true;
-            Console.WriteLine("[TheLoungeScreen] Triggering finale - investigation time has expired!");
+            Console.WriteLine("[TheLoungeScreen] Investigation time expired - finale button is ready!");
 
-            // Start the finale intro sequence (fade, text, ship arrival)
-            // The finale system will take control of the screen
-            loungeScene.StartFinaleIntro();
-
-            // TODO: May want to close active UI elements before finale
-            // For now, the finale UI will overlay everything
+            // The finale button is already enabled at the end of round 3
+            // Player must open the character selection menu and click the finale button
+            // That will trigger the intro sequence and then the finale questions
         }
 
         public override void UpdateInput(GameTime gameTime)
@@ -2024,8 +2144,8 @@ namespace anakinsoft.game.scenes
             if (!Globals.screenManager.IsActive)
                 return;
 
-            // Show mouse cursor when character selection menu, transcript review, interrogation actions, evidence selection, or confirmation dialog are active
-            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive || evidenceSelectionUI.IsVisible)
+            // Show mouse cursor when character selection menu, transcript review, interrogation actions, evidence selection, confirmation dialog, or finale UI are active
+            if (characterSelectionMenu.IsActive || transcriptReviewUI.IsActive || interrogationActionUI.IsActive || confirmationDialog.IsActive || evidenceSelectionUI.IsVisible || loungeScene.IsFinaleUIActive)
             {
                 Globals.screenManager.IsMouseVisible = true;
             }
@@ -2034,10 +2154,11 @@ namespace anakinsoft.game.scenes
                 Globals.screenManager.IsMouseVisible = false;
             }
 
-            // Only update FPS camera when not showing intro, not in dialogue, not in menus, and not transitioning
+            // Only update FPS camera when not showing intro, not in dialogue, not in menus, not in finale UI, and not transitioning
             if (!loungeScene.IsShowingIntroText() && !dialogueSystem.IsActive &&
                 !cameraTransitionSystem.IsInInteractionMode && !cameraTransitionSystem.IsTransitioning &&
-                !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive && !interrogationActionUI.IsActive)
+                !characterSelectionMenu.IsActive && !transcriptReviewUI.IsActive && !interrogationActionUI.IsActive &&
+                !loungeScene.IsFinaleUIActive)
             {
                 fpsCamera.Update(gameTime);
             }
@@ -2149,8 +2270,16 @@ namespace anakinsoft.game.scenes
                 transcriptReviewUI.Draw(spriteBatch, font);
             }
 
-            // Note: Stress meter is now integrated into dialogue UI and shown during action selection
-            // No need for standalone stress meter drawing
+            // Draw stress meters for both characters during interrogation
+            var stressPortraits = loungeScene.GetCharacterPortraits();
+            if (char1StressUI.IsVisible && font != null)
+            {
+                char1StressUI.Draw(spriteBatch, font, stressPortraits);
+            }
+            if (char2StressUI.IsVisible && font != null)
+            {
+                char2StressUI.Draw(spriteBatch, font, stressPortraits);
+            }
 
             // Draw interrogation action UI
             if (interrogationActionUI.IsActive && font != null)

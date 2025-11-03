@@ -18,6 +18,7 @@ namespace anakinsoft.game.scenes.lounge.finale
         private enum IntroState
         {
             FadeIn,
+            PreTextDelay,  // 5 second delay before showing text - let player see approaching ship
             ShowText,
             ShipApproach,
             Complete
@@ -29,7 +30,7 @@ namespace anakinsoft.game.scenes.lounge.finale
         private bool isComplete;
         private SpriteFont font;
 
-        // Ship animation (loaded from config)
+        // Ship animation settings (from config)
         private Vector3 shipStartPosition;
         private Vector3 shipEndPosition;
         private Vector3 currentShipPosition;
@@ -37,6 +38,7 @@ namespace anakinsoft.game.scenes.lounge.finale
 
         // Timing constants
         private const float FadeInDuration = 5.0f;
+        private const float PreTextDelayDuration = 5.0f; // Delay before showing text so player can see ship approaching
         private const float TextDisplayDuration = 4.0f;
 
         // Fade
@@ -44,25 +46,26 @@ namespace anakinsoft.game.scenes.lounge.finale
 
         // Text
         private const string IntroText = "0 HOURS REMAIN.\nTHE MOMENT OF JUDGEMENT HAS ARRIVED.";
+        private const string InstructionText = "Talk to Zix and provide a solution to the murder.";
 
         public bool IsActive => isActive;
         public bool IsComplete => isComplete;
         public Vector3 ShipPosition => currentShipPosition;
         public float StarfieldSpeedMultiplier { get; private set; } = 1.0f;
+        public float StarfieldLengthMultiplier { get; private set; } = 1.0f;
         public bool IsShipVisible => currentState == IntroState.ShipApproach || currentState == IntroState.Complete;
 
         public event Action OnSequenceComplete;
 
         public FinaleIntroSequence()
         {
-            // Load ship animation settings from config
-            var config = OdysseusShipConfigManager.Config;
-            shipStartPosition = config.GetStartPosition();
-            shipEndPosition = config.GetEndPosition();
-            shipApproachDuration = config.ApproachDuration;
+            // Load ship config
+            var shipConfig = OdysseusShipConfigManager.Config;
+            shipStartPosition = shipConfig.GetStartPosition();
+            shipEndPosition = shipConfig.GetEndPosition();
+            shipApproachDuration = shipConfig.ApproachDuration;
             currentShipPosition = shipStartPosition;
-
-            Console.WriteLine($"[FinaleIntroSequence] Loaded config - Duration: {shipApproachDuration}s, Start: {shipStartPosition}, End: {shipEndPosition}");
+            Console.WriteLine($"[FinaleIntroSequence] Ship settings - Duration: {shipApproachDuration}s, Start: {shipStartPosition}, End: {shipEndPosition}");
         }
 
         public void Initialize()
@@ -77,15 +80,10 @@ namespace anakinsoft.game.scenes.lounge.finale
             currentState = IntroState.FadeIn;
             stateTimer = 0f;
             fadeAlpha = 1.0f;
-
-            // Reload config in case it changed
-            var config = OdysseusShipConfigManager.Config;
-            shipStartPosition = config.GetStartPosition();
-            shipEndPosition = config.GetEndPosition();
-            shipApproachDuration = config.ApproachDuration;
             currentShipPosition = shipStartPosition;
 
             StarfieldSpeedMultiplier = 1.0f;
+            StarfieldLengthMultiplier = 1.0f;
             Console.WriteLine("[FinaleIntroSequence] Sequence started");
         }
 
@@ -100,6 +98,10 @@ namespace anakinsoft.game.scenes.lounge.finale
             {
                 case IntroState.FadeIn:
                     UpdateFadeIn(deltaTime);
+                    break;
+
+                case IntroState.PreTextDelay:
+                    UpdatePreTextDelay(deltaTime);
                     break;
 
                 case IntroState.ShowText:
@@ -124,9 +126,20 @@ namespace anakinsoft.game.scenes.lounge.finale
             if (stateTimer >= FadeInDuration)
             {
                 fadeAlpha = 0f;
+                currentState = IntroState.PreTextDelay;
+                stateTimer = 0f;
+                Console.WriteLine("[FinaleIntroSequence] Fade complete, starting pre-text delay");
+            }
+        }
+
+        private void UpdatePreTextDelay(float deltaTime)
+        {
+            // Wait 5 seconds before showing text - let player see ship approaching
+            if (stateTimer >= PreTextDelayDuration)
+            {
                 currentState = IntroState.ShowText;
                 stateTimer = 0f;
-                Console.WriteLine("[FinaleIntroSequence] Fade complete, showing text");
+                Console.WriteLine("[FinaleIntroSequence] Pre-text delay complete, showing text");
             }
         }
 
@@ -152,13 +165,16 @@ namespace anakinsoft.game.scenes.lounge.finale
             // Animate ship position
             currentShipPosition = Vector3.Lerp(shipStartPosition, shipEndPosition, easedProgress);
 
-            // Slow down starfield as ship approaches
+            // Slow down starfield and shorten streaks as ship approaches
+            // Speed: 2000 -> 0, Length: 500 -> 0 over 10 seconds
             StarfieldSpeedMultiplier = 1.0f - progress; // Goes from 1.0 to 0.0
+            StarfieldLengthMultiplier = 1.0f - progress; // Goes from 1.0 to 0.0
 
             if (stateTimer >= shipApproachDuration)
             {
                 currentShipPosition = shipEndPosition;
                 StarfieldSpeedMultiplier = 0f;
+                StarfieldLengthMultiplier = 0f;
                 currentState = IntroState.Complete;
                 Console.WriteLine("[FinaleIntroSequence] Ship arrived, starfield stopped");
             }
@@ -201,15 +217,26 @@ namespace anakinsoft.game.scenes.lounge.finale
                     textAlpha = 1.0f - (stateTimer / 2.0f); // Fade out over 2 seconds
                 }
 
+                // Draw main intro text centered
                 Vector2 textSize = font.MeasureString(IntroText);
                 Vector2 textPosition = new Vector2(
                     (screenWidth - textSize.X) / 2,
-                    (screenHeight - textSize.Y) / 2
+                    (screenHeight - textSize.Y) / 2 - 40
                 );
 
                 // Draw text with shadow
                 spriteBatch.DrawString(font, IntroText, textPosition + Vector2.One * 2, Color.Black * textAlpha);
                 spriteBatch.DrawString(font, IntroText, textPosition, Color.White * textAlpha);
+
+                // Draw instruction text below
+                Vector2 instructionSize = font.MeasureString(InstructionText);
+                Vector2 instructionPosition = new Vector2(
+                    (screenWidth - instructionSize.X) / 2,
+                    textPosition.Y + textSize.Y + 40
+                );
+
+                spriteBatch.DrawString(font, InstructionText, instructionPosition + Vector2.One * 2, Color.Black * textAlpha);
+                spriteBatch.DrawString(font, InstructionText, instructionPosition, Color.Yellow * textAlpha);
             }
         }
 

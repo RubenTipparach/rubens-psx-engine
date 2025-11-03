@@ -183,7 +183,8 @@ namespace anakinsoft.game.scenes
             finaleEndingScreen.Initialize();
 
             // Wire up finale event handlers
-            finaleIntro.OnSequenceComplete += OnFinaleIntroComplete;
+            // NOTE: finaleIntro.OnSequenceComplete is handled in TheLoungeScreen to set bartender state
+            // NOT here - we don't auto-start questions anymore
             finaleUI.OnAnswerSelected += OnFinaleAnswerSelected;
             finaleEndingScreen.OnRestartRequested += OnFinaleRestartRequested;
             finaleEndingScreen.OnQuitRequested += OnFinaleQuitRequested;
@@ -987,9 +988,11 @@ namespace anakinsoft.game.scenes
                 finaleEndingScreen.Update(gameTime);
             }
 
-            // Update starfield with speed multiplier from finale intro
-            float starfieldSpeed = finaleIntro.IsActive ? finaleIntro.StarfieldSpeedMultiplier : 1.0f;
-            starfield.Update(gameTime, starfieldSpeed);
+            // Update starfield with speed and length multipliers from finale intro
+            // Keep starfield disabled (0) if finale intro has completed
+            float starfieldSpeed = finaleIntro.IsComplete ? 0f : (finaleIntro.IsActive ? finaleIntro.StarfieldSpeedMultiplier : 1.0f);
+            float starfieldLength = finaleIntro.IsComplete ? 0f : (finaleIntro.IsActive ? finaleIntro.StarfieldLengthMultiplier : 1.0f);
+            starfield.Update(gameTime, starfieldSpeed, starfieldLength);
             starfieldSphere.Update(gameTime);
         }
 
@@ -1137,6 +1140,7 @@ namespace anakinsoft.game.scenes
         public Quaternion GetCharacterInitialRotation() => characterInitialRotation;
         public InteractableCharacter GetBartender() => bartender.Interaction;
         public InteractableCharacter GetPathologist() => pathologist.Interaction;
+        public FinaleIntroSequence GetFinaleIntroSequence() => finaleIntro;
         public InteractableItem GetEvidenceVial() => evidenceVial;
         public EvidenceDocument GetSecurityLog() => securityLog;
         public EvidenceDocument GetDatapad() => datapad;
@@ -1151,6 +1155,7 @@ namespace anakinsoft.game.scenes
         public InteractionSystem GetInteractionSystem() => interactionSystem;
         public EvidenceInventory GetEvidenceInventory() => evidenceInventory;
         public bool IsShowingIntroText() => uiManager.ShowIntroText;
+        public bool IsFinaleUIActive => finaleUI.IsActive;
         public Dictionary<string, Texture2D> GetCharacterPortraits() => uiManager.CharacterPortraits;
         public CharacterProfileManager GetProfileManager() => profileManager;
 
@@ -1169,13 +1174,21 @@ namespace anakinsoft.game.scenes
             Console.WriteLine("[TheLoungeScene] Finale intro sequence started");
         }
 
-        // Finale event handlers
-        private void OnFinaleIntroComplete()
+        /// <summary>
+        /// Start the finale questions UI directly (skips intro sequence)
+        /// Call this when player chooses to start solution questions from dialogue
+        /// </summary>
+        public void StartFinaleQuestions()
         {
-            Console.WriteLine("[TheLoungeScene] Finale intro complete, starting questions");
+            Console.WriteLine("[TheLoungeScene] Starting finale questions directly");
             finaleManager.StartFinale();
             finaleUI.Show(finaleManager.CurrentQuestion);
         }
+
+        // Finale event handlers
+        // NOTE: OnFinaleIntroComplete is no longer used
+        // The intro sequence completion is now handled in TheLoungeScreen
+        // to set the bartender to finale_ready state so player can talk to Zix
 
         private void OnFinaleAnswerSelected(int answerIndex)
         {

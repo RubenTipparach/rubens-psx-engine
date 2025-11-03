@@ -299,9 +299,54 @@ namespace anakinsoft.game.scenes.lounge.ui
             spriteBatch.DrawString(font, instructions, instructionsPos + new Vector2(1, 1), Color.Black);
             spriteBatch.DrawString(font, instructions, instructionsPos, Color.Gray);
 
-            // Transcript content
-            int yOffset = panelY + 90;
+            // Game Mechanics Information
+            int yOffset = panelY + 80;
             float textScale = 0.5f; // 50% font size
+
+            // Draw mechanics box
+            string mechanicsTitle = "=== INTERROGATION MECHANICS ===";
+            Vector2 mechanicsTitleSize = font.MeasureString(mechanicsTitle) * textScale;
+            Vector2 mechanicsTitlePos = new Vector2((screenWidth - mechanicsTitleSize.X) / 2, yOffset);
+            spriteBatch.DrawString(font, mechanicsTitle, mechanicsTitlePos + new Vector2(1, 1), Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            spriteBatch.DrawString(font, mechanicsTitle, mechanicsTitlePos, Color.Cyan, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            yOffset += (int)(font.LineSpacing * textScale) + 10;
+
+            // Mechanics text with color-coded markers
+            string[] mechanicsLines = new string[]
+            {
+                "Stress Levels: Answers change when stress crosses threshold markers on the stress meter.",
+                "Doubt (BLUE marker): Increases stress moderately. Use to pressure suspects for more info.",
+                "Accuse (ORANGE marker): Increases stress heavily. Use when you have strong evidence.",
+                "WARNING: Incorrect accusations will max out stress (100%) and end questioning!",
+                "Limit: You can only question 6 characters total. Choose wisely!"
+            };
+
+            Color[] mechanicsColors = new Color[]
+            {
+                Color.White,
+                new Color(50, 100, 255), // Blue for Doubt
+                new Color(255, 140, 0),  // Orange for Accuse
+                new Color(255, 50, 50),  // Red for warning
+                Color.Yellow             // Yellow for limit warning
+            };
+
+            for (int i = 0; i < mechanicsLines.Length; i++)
+            {
+                Vector2 linePos = new Vector2(panelX + 30, yOffset);
+                spriteBatch.DrawString(font, mechanicsLines[i], linePos + new Vector2(1, 1), Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                spriteBatch.DrawString(font, mechanicsLines[i], linePos, mechanicsColors[i], 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+                yOffset += (int)(font.LineSpacing * textScale) + 6;
+            }
+
+            yOffset += 15; // Extra spacing before transcript content
+
+            // Transcript content separator
+            string transcriptHeader = "=== TRANSCRIPT ===";
+            Vector2 transcriptHeaderSize = font.MeasureString(transcriptHeader) * textScale;
+            Vector2 transcriptHeaderPos = new Vector2((screenWidth - transcriptHeaderSize.X) / 2, yOffset);
+            spriteBatch.DrawString(font, transcriptHeader, transcriptHeaderPos + new Vector2(1, 1), Color.Black, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            spriteBatch.DrawString(font, transcriptHeader, transcriptHeaderPos, Color.Yellow, 0f, Vector2.Zero, textScale, SpriteEffects.None, 0f);
+            yOffset += (int)(font.LineSpacing * textScale) + 10;
             int baseLineHeight = (int)(font.LineSpacing * textScale);
             int lineSpacing = baseLineHeight + 8; // Add spacing between lines
             int currentLine = 0;

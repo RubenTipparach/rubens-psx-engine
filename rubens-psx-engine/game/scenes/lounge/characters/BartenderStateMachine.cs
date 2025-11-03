@@ -29,6 +29,22 @@ namespace anakinsoft.game.scenes.lounge.characters
                     // After intro, direct player to pathologist
                     return GetDialogueSequence("BartenderPostIntro");
 
+                case "round1_hint":
+                    // Round 1 hint/rumor
+                    return GetDialogueSequence("BartenderRound1Hint");
+
+                case "round2_hint":
+                    // Round 2 hint/rumor
+                    return GetDialogueSequence("BartenderRound2Hint");
+
+                case "round3_hint":
+                    // Round 3 hint/rumor
+                    return GetDialogueSequence("BartenderRound3Hint");
+
+                case "finale_ready":
+                    // Round 3 complete, finale intro played - ready for solution
+                    return GetDialogueSequence("FinaleReady");
+
                 case "idle":
                     // Player has talked to pathologist, bartender has nothing new to say
                     return null;
@@ -95,6 +111,34 @@ namespace anakinsoft.game.scenes.lounge.characters
         public bool ShouldSpawnPathologist()
         {
             return GetFlag("pathologist_spawned");
+        }
+
+        /// <summary>
+        /// Set the bartender to show the hint/rumor for the given round
+        /// Call this when a round starts
+        /// </summary>
+        public void SetRoundHint(int roundNumber)
+        {
+            string state = roundNumber switch
+            {
+                1 => "round1_hint",
+                2 => "round2_hint",
+                3 => "round3_hint",
+                _ => "idle"
+            };
+
+            Console.WriteLine($"[BartenderStateMachine] Setting round {roundNumber} hint state: {state}");
+            TransitionTo(state);
+        }
+
+        /// <summary>
+        /// Transition bartender to finale ready state
+        /// Call this after round 3 is complete and finale intro has played
+        /// </summary>
+        public void SetFinaleReady()
+        {
+            Console.WriteLine("[BartenderStateMachine] Setting finale ready state");
+            TransitionTo("finale_ready");
         }
     }
 }

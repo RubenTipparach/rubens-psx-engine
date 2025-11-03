@@ -85,7 +85,7 @@ namespace anakinsoft.game.scenes.lounge.evidence
                 if (!CanInteract)
                     return $"{Name} - Not available yet";
 
-                return $"[E] Examine {Name}";
+                return $"{Name}";
             }
         }
 
