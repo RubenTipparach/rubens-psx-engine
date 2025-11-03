@@ -1179,7 +1179,7 @@
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
-/build:Assets/shaders/surface/StarField.fx;shaders/surface/StarField
+/build:Assets/shaders/surface/StarField.fx;Assets/shaders/surface/StarField
 
 #begin Assets/shaders/surface/Unlit.fx
 /importer:EffectImporter

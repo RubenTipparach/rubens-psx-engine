@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BepuUtilities", "bepuphysic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProceduralTerrain", "ProceduralTerrain\ProceduralTerrain.csproj", "{44476B8B-C061-6503-A851-B835C8C2C9CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinnedModelPipeline", "SkinnedModelPipeline\SkinnedModelPipeline.csproj", "{D1A2E8F3-9B4C-4E6D-8A7F-1C5D2E3F4A5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{44476B8B-C061-6503-A851-B835C8C2C9CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44476B8B-C061-6503-A851-B835C8C2C9CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44476B8B-C061-6503-A851-B835C8C2C9CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1A2E8F3-9B4C-4E6D-8A7F-1C5D2E3F4A5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1A2E8F3-9B4C-4E6D-8A7F-1C5D2E3F4A5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1A2E8F3-9B4C-4E6D-8A7F-1C5D2E3F4A5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1A2E8F3-9B4C-4E6D-8A7F-1C5D2E3F4A5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
