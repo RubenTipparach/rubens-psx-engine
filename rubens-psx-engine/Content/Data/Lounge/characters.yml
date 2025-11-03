@@ -47,10 +47,10 @@ bartender:
           text: "Welcome to the Lounge, detective."
 
         - speaker: "Zix"
-          text: "The Telirian ambassador is dead. This is no accident."
+          text: "The Telirian ambassador is dead. Found this morning - Christmas Day. Murdered on Christmas Eve."
 
         - speaker: "Zix"
-          text: "You need to question the suspects and determine motive, means, and opportunity."
+          text: "This is no accident. You need to question the suspects and determine motive, means, and opportunity."
 
         - speaker: "Zix"
           text: "Determine who is guilty before the Telirians arrive. Failure to do so will mean all out war."
@@ -677,7 +677,7 @@ dr_thorne:
           text: "Me? I was in my quarters. Right next door actually - we're on the same deck for diplomatic protocol reasons."
 
         - speaker: "Dr. Lyssa Thorne"
-          text: "I was reviewing my notes. Cross-referencing Telirian biological markers with comparative xenobiology. Fascinating stuff, really."
+          text: "I was reviewing my notes. Missed the crew Christmas party to finish my research. Cross-referencing Telirian biological markers. Fascinating stuff."
 
         - speaker: "Dr. Lyssa Thorne"
           text: "I didn't hear anything unusual. The walls are quite thick - soundproofed for privacy."
@@ -1116,7 +1116,7 @@ lt_webb:
       action: "alibi"
       lines:
         - speaker: "Lieutenant Marcus Webb"
-          text: "My alibi? I already told you - I was on the bridge monitoring sensors during alpha shift."
+          text: "My alibi? I already told you - I was on the bridge monitoring sensors during alpha shift. While everyone else was drinking eggnog, I got stuck with night watch."
 
         - speaker: "Lieutenant Marcus Webb"
           text: "2300 to 0700 hours. Alone. Standard skeleton crew protocol during diplomatic functions."
