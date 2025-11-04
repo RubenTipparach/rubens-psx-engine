@@ -59,12 +59,16 @@ namespace anakinsoft.game.scenes.lounge.ui
         // Teletype effect
         private float teletypeTimer = 0f;
         private int visibleCharacters = 0;
+        private int previousVisibleCharacters = 0; // Track previous frame's character count for blip triggering
         private const float CharactersPerSecond = 30f; // Speed of teletype effect
         private bool teletypeComplete = false;
         private bool acceptInput = false; // Prevent input on first frame after dialogue starts
 
         // State machine integration (optional - only shown during interrogation, includes stress)
         private CharacterStateMachine activeCharacterStateMachine = null;
+
+        // Audio manager for text blip sound
+        private rubens_psx_engine.system.GameAudioManager audioManager = null;
 
         // Display settings
         private const float BoxPadding = 20f;
@@ -105,6 +109,14 @@ namespace anakinsoft.game.scenes.lounge.ui
         public void ClearActiveCharacter()
         {
             activeCharacterStateMachine = null;
+        }
+
+        /// <summary>
+        /// Sets the audio manager for playing text blip sounds
+        /// </summary>
+        public void SetAudioManager(rubens_psx_engine.system.GameAudioManager manager)
+        {
+            audioManager = manager;
         }
 
         /// <summary>
@@ -153,6 +165,9 @@ namespace anakinsoft.game.scenes.lounge.ui
                 return;
 
             isActive = false;
+
+            // Stop text blip sound when dialogue ends
+            audioManager?.StopTextBlip();
 
             var sequence = currentSequence;
             currentSequence = null;
@@ -223,10 +238,19 @@ namespace anakinsoft.game.scenes.lounge.ui
                 teletypeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 visibleCharacters = (int)(teletypeTimer * CharactersPerSecond);
 
+                // Play text blip when a new character appears
+                if (visibleCharacters > previousVisibleCharacters)
+                {
+                    audioManager?.PlayTextBlip();
+                    previousVisibleCharacters = visibleCharacters;
+                }
+
                 if (visibleCharacters >= CurrentLine.Text.Length)
                 {
                     visibleCharacters = CurrentLine.Text.Length;
                     teletypeComplete = true;
+                    // Stop text blip when teletype completes
+                    audioManager?.StopTextBlip();
                 }
             }
 
@@ -237,7 +261,10 @@ namespace anakinsoft.game.scenes.lounge.ui
                 {
                     // Complete teletype immediately
                     visibleCharacters = CurrentLine?.Text.Length ?? 0;
+                    previousVisibleCharacters = visibleCharacters;
                     teletypeComplete = true;
+                    // Stop text blip when user skips
+                    audioManager?.StopTextBlip();
                 }
                 else
                 {
@@ -265,6 +292,7 @@ namespace anakinsoft.game.scenes.lounge.ui
         {
             teletypeTimer = 0f;
             visibleCharacters = 0;
+            previousVisibleCharacters = 0;
             teletypeComplete = false;
         }
 

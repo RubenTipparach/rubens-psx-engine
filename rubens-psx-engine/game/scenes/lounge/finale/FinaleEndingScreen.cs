@@ -19,6 +19,7 @@ namespace anakinsoft.game.scenes.lounge.finale
         private Rectangle restartButtonBounds;
         private Rectangle quitButtonBounds;
         private Texture2D whitePixel;
+        private rubens_psx_engine.system.GameAudioManager audioManager;
 
         // Colors
         private readonly Color successColor = new Color(100, 255, 100);
@@ -47,10 +48,25 @@ namespace anakinsoft.game.scenes.lounge.finale
             whitePixel.SetData(new[] { Color.White });
         }
 
+        public void SetAudioManager(rubens_psx_engine.system.GameAudioManager manager)
+        {
+            audioManager = manager;
+        }
+
         public void Show(FinaleResults finaleResults, Camera camera)
         {
             isActive = true;
             results = finaleResults;
+
+            // Play appropriate jingle based on results
+            if (results.Success)
+            {
+                audioManager?.PlayWinJingle();
+            }
+            else
+            {
+                audioManager?.PlayLoseJingle();
+            }
 
             // Position camera at (0, 20, 0) looking towards positive Z (0, 20, 10)
             camera.Position = new Vector3(0, 20, 0);
@@ -255,18 +271,23 @@ namespace anakinsoft.game.scenes.lounge.finale
             spriteBatch.DrawString(font, detailsHeader, detailsHeaderPos, statsColor);
             yOffset += 40;
 
-            // List each question result (first 3 for space)
-            int questionsToShow = Math.Min(3, results.QuestionResults.Count);
-            for (int i = 0; i < questionsToShow; i++)
+            // List each question result (all questions for complete review)
+            for (int i = 0; i < results.QuestionResults.Count; i++)
             {
                 var questionResult = results.QuestionResults[i];
                 Color resultColor = questionResult.WasCorrect ? correctColor : wrongColor;
                 string resultText = questionResult.WasCorrect ? "[OK]" : "[X]";
 
-                string questionText = $"{resultText} {questionResult.Category}";
-                if (!questionResult.WasCorrect)
+                // For correct answers, show what they got right
+                // For incorrect answers, show what they got wrong and what was correct
+                string questionText;
+                if (questionResult.WasCorrect)
                 {
-                    questionText += $" - Wrong: {questionResult.PlayerAnswer}";
+                    questionText = $"{resultText} {questionResult.Category}: {questionResult.PlayerAnswer}";
+                }
+                else
+                {
+                    questionText = $"{resultText} {questionResult.Category} - Wrong: {questionResult.PlayerAnswer}, Correct: {questionResult.CorrectAnswer}";
                 }
 
                 Vector2 questionTextSize = font.MeasureString(questionText);

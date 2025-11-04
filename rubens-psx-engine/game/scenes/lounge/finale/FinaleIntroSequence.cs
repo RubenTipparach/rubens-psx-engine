@@ -29,6 +29,9 @@ namespace anakinsoft.game.scenes.lounge.finale
         private bool isComplete;
         private SpriteFont font;
 
+        // Audio manager for warp speed sound
+        private rubens_psx_engine.system.GameAudioManager audioManager;
+
         // Ship animation settings (from config)
         private Vector3 shipStartPosition;
         private Vector3 shipEndPosition;
@@ -71,6 +74,11 @@ namespace anakinsoft.game.scenes.lounge.finale
             font = Globals.screenManager.Content.Load<SpriteFont>("fonts/Arial");
         }
 
+        public void SetAudioManager(rubens_psx_engine.system.GameAudioManager manager)
+        {
+            audioManager = manager;
+        }
+
         public void Start()
         {
             isActive = true;
@@ -82,7 +90,14 @@ namespace anakinsoft.game.scenes.lounge.finale
 
             StarfieldSpeedMultiplier = 1.0f;
             StarfieldLengthMultiplier = 1.0f;
-            Console.WriteLine("[FinaleIntroSequence] Sequence started");
+
+            // Play finale intro music when sequence starts ("judgement is here" moment)
+            audioManager?.PlayFinaleIntroMusic();
+
+            // Play warp speed sound when Odysseus ship spawns
+            audioManager?.PlayWarpSpeed();
+
+            Console.WriteLine("[FinaleIntroSequence] Sequence started with finale music and warp speed sound");
         }
 
         public void Update(GameTime gameTime)

@@ -1145,6 +1145,7 @@ namespace anakinsoft.game.scenes
         public InteractableCharacter GetBartender() => bartender.Interaction;
         public InteractableCharacter GetPathologist() => pathologist.Interaction;
         public FinaleIntroSequence GetFinaleIntroSequence() => finaleIntro;
+        public FinaleEndingScreen GetFinaleEndingScreen() => finaleEndingScreen;
         public InteractableItem GetEvidenceVial() => evidenceVial;
         public EvidenceDocument GetSecurityLog() => securityLog;
         public EvidenceDocument GetDatapad() => datapad;

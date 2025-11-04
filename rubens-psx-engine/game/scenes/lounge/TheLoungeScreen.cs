@@ -28,6 +28,7 @@ namespace anakinsoft.game.scenes
         public Camera GetCamera { get { return fpsCamera; } }
 
         TheLoungeScene loungeScene;
+        public GameAudioManager GetAudioManager { get { return audioManager; } }
 
         // Camera offset configuration
         public Vector3 CameraOffset = new Vector3(0, 16.0f, 0); // Y offset to mount camera above character center
@@ -85,6 +86,9 @@ namespace anakinsoft.game.scenes
         InterrogationRoundManager interrogationManager;
         ScreenFadeTransition fadeTransition;
 
+        // Audio manager
+        rubens_psx_engine.system.GameAudioManager audioManager;
+
         // Finale trigger
         bool hasTriggeredFinale = false;
 
@@ -100,11 +104,19 @@ namespace anakinsoft.game.scenes
             loungeScene = new TheLoungeScene();
             SetScene(loungeScene); // Register scene with physics screen for automatic disposal
 
-            // Subscribe to intro text completion event to start fade-in
+            // Initialize audio manager
+            audioManager = new GameAudioManager(Globals.screenManager.Content);
+            audioManager.LoadContent();
+
+            // Pass audio manager to UI manager for text blip sounds
+            loungeScene.GetUIManager().SetAudioManager(audioManager);
+
+            // Subscribe to intro text completion event to start fade-in and background music
             loungeScene.GetUIManager().OnIntroTextComplete += () =>
             {
-                Console.WriteLine("[TheLoungeScreen] Intro text complete - starting fade in");
+                Console.WriteLine("[TheLoungeScreen] Intro text complete - starting fade in and background music");
                 fadeTransition.FadeIn(1.0f);
+                audioManager.PlayBackgroundMusic();
             };
 
             // Create camera and set its rotation from the character's initial rotation
@@ -112,6 +124,7 @@ namespace anakinsoft.game.scenes
 
             // Initialize dialogue system
             dialogueSystem = new DialogueSystem();
+            dialogueSystem.SetAudioManager(audioManager); // Wire audio manager for text blip sounds
             cameraTransitionSystem = new CameraTransitionSystem(fpsCamera);
 
             // Initialize character selection menu
@@ -388,6 +401,12 @@ namespace anakinsoft.game.scenes
                 Console.WriteLine("[TheLoungeScreen] Finale button clicked (deprecated - should not happen)");
                 characterSelectionMenu.Hide();
             };
+
+            // Pass audio manager to finale intro sequence for warp speed sound and music
+            loungeScene.GetFinaleIntroSequence().SetAudioManager(audioManager);
+
+            // Pass audio manager to finale ending screen for win/lose jingles
+            loungeScene.GetFinaleEndingScreen().SetAudioManager(audioManager);
 
             // Handle finale intro sequence completion
             loungeScene.GetFinaleIntroSequence().OnSequenceComplete += () =>
@@ -2051,6 +2070,9 @@ namespace anakinsoft.game.scenes
 
         public override void Update(GameTime gameTime)
         {
+            // Start ship rumbling ambient sound (will only play once, then loop)
+            audioManager?.PlayShipRumbling();
+
             // Fade-in now starts when intro text completes (via OnIntroTextComplete event)
             // No timer-based fade start needed anymore
 

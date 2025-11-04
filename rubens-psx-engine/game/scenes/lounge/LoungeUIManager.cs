@@ -21,6 +21,9 @@ namespace anakinsoft.game.scenes
         private Texture2D portraitFrame;
         private CharacterProfileManager profileManager;
 
+        // Audio manager (set from TheLoungeScreen)
+        private rubens_psx_engine.system.GameAudioManager audioManager;
+
         // Intro text state
         private bool showIntroText = true;
         private float introTextTimer = 0f;
@@ -30,7 +33,8 @@ namespace anakinsoft.game.scenes
         // Intro text teletype effect
         private float introTeletypeTimer = 0f;
         private int introVisibleCharacters = 0;
-        private const float IntroCharactersPerSecond = 15f; // Slowed down 50%
+        private int introPreviousVisibleCharacters = 0; // Track previous frame's character count for blip triggering
+        private const float IntroCharactersPerSecond = 22.5f; // Sped up 50% from previous
         private bool introTeletypeComplete = false;
         private KeyboardState previousKeyboardState;
 
@@ -63,6 +67,14 @@ namespace anakinsoft.game.scenes
         public void Initialize()
         {
             InitializeCharacterPortraits();
+        }
+
+        /// <summary>
+        /// Set the audio manager for playing sound effects
+        /// </summary>
+        public void SetAudioManager(rubens_psx_engine.system.GameAudioManager manager)
+        {
+            audioManager = manager;
         }
 
         /// <summary>
@@ -112,7 +124,10 @@ namespace anakinsoft.game.scenes
 
         public void UpdateIntroText(GameTime gameTime)
         {
-            if (!showIntroText) return;
+            if (!showIntroText)
+            {
+                return;
+            }
 
             var keyboard = Keyboard.GetState();
 
@@ -122,10 +137,19 @@ namespace anakinsoft.game.scenes
                 introTeletypeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 introVisibleCharacters = (int)(introTeletypeTimer * IntroCharactersPerSecond);
 
+                // Play text blip when a new character appears
+                if (introVisibleCharacters > introPreviousVisibleCharacters)
+                {
+                    audioManager?.PlayTextBlip();
+                    introPreviousVisibleCharacters = introVisibleCharacters;
+                }
+
                 if (introVisibleCharacters >= IntroText.Length)
                 {
                     introVisibleCharacters = IntroText.Length;
                     introTeletypeComplete = true;
+                    // Stop text blip when teletype completes
+                    audioManager?.StopTextBlip();
                 }
             }
 
@@ -136,12 +160,17 @@ namespace anakinsoft.game.scenes
                 {
                     // Complete teletype immediately
                     introVisibleCharacters = IntroText.Length;
+                    introPreviousVisibleCharacters = introVisibleCharacters;
                     introTeletypeComplete = true;
+                    // Stop text blip when user skips
+                    audioManager?.StopTextBlip();
                 }
                 else
                 {
                     // Skip intro text entirely
                     showIntroText = false;
+                    // Stop text blip when intro ends
+                    audioManager?.StopTextBlip();
                     OnIntroTextComplete?.Invoke();
                 }
             }

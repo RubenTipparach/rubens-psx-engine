@@ -89,5 +89,48 @@ Follow the pattern established in `AutopsyReport` and `SuspectsFile`:
 
 ---
 
+## Debugging MonoGame Applications
+
+### Problem: Console.WriteLine Output Not Visible When Using `dotnet run`
+
+**Symptoms:**
+- Running `dotnet run` in terminal/bash
+- Console.WriteLine statements in game code not appearing in output
+- Unable to see debug logs or exception messages
+
+**Root Cause:**
+MonoGame applications open their own external console window when launched. The `dotnet run` command does NOT pipe this external console output to the terminal where the command was executed.
+
+**Wrong Approach:**
+```bash
+dotnet run --project rubens-psx-engine/rubens-psx-engine.csproj
+# Console.WriteLine output goes to the game's external window, not your terminal
+```
+
+**Correct Approaches:**
+
+1. **Use VSCode Debugger (F5):**
+   - Press F5 or use "Launch rubens-psx-engine" configuration from [launch.json](.vscode/launch.json#L5)
+   - Uses `"console": "externalTerminal"` which opens a visible console window
+   - View debug output in the external terminal window that appears
+   - Full debugging support with breakpoints
+
+2. **Check the Actual Game Console Window:**
+   - When running with `dotnet run`, look for the external console window that opens alongside the game window
+   - Console.WriteLine output appears there, not in your bash terminal
+
+3. **Use Build Task Then Launch:**
+   - Run VSCode build task (Ctrl+Shift+B)
+   - Then launch with F5 for proper console output
+
+**Configuration Reference:**
+- [launch.json](.vscode/launch.json): VSCode launch configuration with externalTerminal
+- [tasks.json](.vscode/tasks.json): Build task definition
+
+**Prevention:**
+When debugging MonoGame applications, always use VSCode debugger (F5) or check the external console window. Do not rely on bash terminal output from `dotnet run`.
+
+---
+
 ## Last Updated
-2025-10-31
+2025-11-03
